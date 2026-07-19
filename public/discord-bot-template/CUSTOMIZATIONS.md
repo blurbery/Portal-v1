@@ -6,7 +6,30 @@
 
 `.env` is host-only. Never commit Discord tokens, PostgreSQL passwords, or provider API keys.
 
-The Portal and bot share a public contract: PostgreSQL records, provider names, media-server account fields, and Lifetime-parent/sub-user relationships. If that contract changes in the Portal, update the bot adapter, SQL/query logic, generated manifest, deployment docs, and card instructions in the same public branch. Then rebuild, register commands, and test membership/account synchronization.
+## User creation and account lifecycle
 
-Preserve the protected configuration loader at the top of `index.js`. Test ticket categories, selected provider commands, `/pricing`, provider account creation, Lifetime membership, parent/sub-user limits, and Portal membership sync after every contract change.
+The Portal is the source of truth for account relationships. A service account is created as a parent account with its own provider record and stream/account pool. A parent may hold the pool for linked sub-users; the current public contract allows up to five named sub-users per parent.
 
+When a member is created from Discord, the bot must:
+
+1. Resolve the Discord identity and selected provider.
+2. Create or reuse the matching Portal/provider parent record.
+3. Apply the selected trial or paid plan and stream count.
+4. Persist the Discord-to-provider link in the same PostgreSQL records used by the Portal.
+5. Create a linked sub-user only when the parent pool and the five-sub-user limit allow it.
+6. Return the account details without exposing provider API keys or database secrets.
+
+Lifetime membership is a distinct entitlement. It uses the configured Lifetime price and the 10-stream Lifetime pool. A Lifetime parent can continue to hold linked sub-users while the parent relationship remains intact. Deleting a sub-user must return its allocated streams/account capacity to the parent pool; deleting the parent must handle or reject linked sub-users according to the Portal’s safety rules rather than orphaning provider records.
+
+Provider adapters must preserve this relationship model for Emby, Silo, Jellyfin, and Plex. Discord-created accounts and Portal-created accounts must read and write the same provider/account tables. Do not create a second bot-only user database or silently change parent/sub-user limits in the bot.
+
+## Contract synchronization
+
+The Portal and bot share a public contract: PostgreSQL records, provider names, media-server account fields, pricing, command names, and Lifetime-parent/sub-user relationships. If that contract changes in the Portal, update the bot adapter, SQL/query logic, generated manifest, deployment docs, and card instructions in the same public branch. Then rebuild, register commands, and test membership/account synchronization.
+
+After a Portal contract or bot-command change, deploy a fresh bundle and run:
+
+`docker compose up -d --build`
+`docker compose run --rm portal-discord-bot node index.js register`
+
+Preserve the protected configuration loader at the top of `index.js`. Test ticket categories, selected provider commands, `/pricing`, provider account creation, trials, Lifetime membership, parent/sub-user limits, sub-user deletion and stream return, and Portal membership sync after every contract change.
