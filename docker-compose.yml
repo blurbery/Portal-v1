@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: portal
       POSTGRES_USER: portal
-      POSTGRES_PASSWORD: change-this-password
+      POSTGRES_PASSWORD: ${PORTAL_DB_PASSWORD:-change-this-password}
     volumes:
       - portal-v1-public-postgres:/var/lib/postgresql/data
       - ./portal_schema.sql:/docker-entrypoint-initdb.d/001-portal-schema.sql:ro
@@ -34,7 +34,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       PORTAL_BUILD_ID: portal-v1-public
-      DATABASE_URL: postgres://portal:change-this-password@db:5432/portal
+      DATABASE_URL: postgres://portal:${PORTAL_DB_PASSWORD:-change-this-password}@db:5432/portal
     ports:
       - "3100:3000"
     security_opt:
