@@ -3578,7 +3578,7 @@ let lastHealthError = null;
 // is treated as a real outage.
 function buildEmbyHealthUrls() {
   const configured = String(process.env.EMBY_HEALTH_URL || '').trim();
-  const base = String(process.env.EMBY_DIRECT_URL || process.env.EMBY_URL || '').trim().replace(/\\/+$/, '');
+  const base = String(process.env.EMBY_DIRECT_URL || process.env.EMBY_URL || '').trim().replace(/\/+$/, '');
   const urls = configured
     ? [configured]
     : base
