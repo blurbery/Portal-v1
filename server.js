@@ -64,7 +64,6 @@ const PORTAL_CONFIG_FIELDS = [
   { key: 'DISCORD_BOT_GUILD_ID', label: 'Discord bot guild/server ID', category: 'Discord', type: 'text', secret: false },
   { key: 'DISCORD_BOT_PUBLIC_KEY', label: 'Discord application public key', category: 'Discord', type: 'text', secret: false },
   { key: 'DISCORD_BOT_DATABASE_URL', label: 'Discord bot PostgreSQL URL', category: 'Discord', type: 'url', secret: false },
-  { key: 'DISCORD_BOT_SUPABASE_ANON_KEY', label: 'Discord bot PostgreSQL publishable/anon key', category: 'Discord', type: 'text', secret: false },
   { key: 'EMBY_URL', label: 'Emby server URL', category: 'Media servers', type: 'url', secret: false },
   { key: 'EMBY_DIRECT_URL', label: 'Emby direct URL', category: 'Media servers', type: 'url', secret: false },
   { key: 'EMBY_API_KEY', label: 'Emby API key', category: 'Media servers', type: 'password', secret: true },
