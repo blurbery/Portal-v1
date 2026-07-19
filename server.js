@@ -2807,6 +2807,28 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
     plex: Boolean(process.env.PLEX_URL && process.env.PLEX_TOKEN),
     jellyfin: Boolean(process.env.JELLYFIN_URL && process.env.JELLYFIN_API_KEY),
   };
+
+  try {
+    const [embyResult, siloResult] = await Promise.all([
+      db.from('emby_accounts').select('*'),
+      db.from('silo_accounts').select('*'),
+    ]);
+    const firstError = [embyResult?.error, siloResult?.error].find(Boolean);
+    if (firstError) throw firstError;
+
+    // IPTV is not part of the PostgreSQL public schema. Keep the response
+    // shape compatible with the dashboard so the provider tabs remain stable.
+    res.json({
+      emby: embyResult?.data || [],
+      silo: siloResult?.data || [],
+      iptv: [],
+      iptvLines: [],
+      configured,
+    });
+  } catch (error) {
+    console.error('[admin/users]', error.message);
+    res.status(500).json({ error: 'Unable to load users.' });
+  }
 });
 
 function serviceUserExpiry(body) {
