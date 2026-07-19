@@ -2481,14 +2481,12 @@ function applyPortalCapabilities(data) {
   const featureNav = { navLibraryEbooks: portalCapabilities.ebooks, navLibraryAudiobooks: portalCapabilities.audiobooks, navLibraryComics: portalCapabilities.comics, navRequestMovies: portalCapabilities.requestMovies, navRequestShows: portalCapabilities.requestShows, navRequestMy: portalCapabilities.requestMy, navRequestIssues: portalCapabilities.requestIssues };
   Object.entries(featureNav).forEach(([id, visible]) => { const el = document.getElementById(id); if (el) el.style.display = visible ? 'flex' : 'none'; });
   if (embyGroup) embyGroup.style.display = portalCapabilities.emby ? 'block' : 'none';
-  if (iptvGroup) iptvGroup.style.display = false ? 'block' : 'none';
   if (libraryCard) libraryCard.style.display = portalCapabilities.library ? 'flex' : 'none';
   if (embyChillioGuide) embyChillioGuide.style.display = portalCapabilities.manageUsers ? 'none' : 'inline-flex';
   if (lifetimeUsersButton) lifetimeUsersButton.style.display = portalCapabilities.manageUsers ? 'inline-flex' : 'none';
   if (streamingGroup) streamingGroup.style.display = (portalCapabilities.silo || portalCapabilities.emby ) ? 'block' : 'none';
   if (streamingSilo) streamingSilo.style.display = portalCapabilities.silo ? 'flex' : 'none';
   if (streamingEmby) streamingEmby.style.display = portalCapabilities.emby ? 'flex' : 'none';
-  if (streamingIptv) streamingIptv.style.display = false ? 'flex' : 'none';
   if (streamingApps) streamingApps.style.display = (portalCapabilities.emby ) ? 'flex' : 'none';
   if (bottomSearch) bottomSearch.style.display = portalCapabilities.library ? 'flex' : 'none';
   if (bottomBooks) bottomBooks.style.display = portalCapabilities.library ? 'flex' : 'none';
