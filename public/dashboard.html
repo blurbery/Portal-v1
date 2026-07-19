@@ -1180,6 +1180,14 @@
     .v3-recent-card strong { font-size:0.62rem; }
     .v3-recent-card small { font-size:0.54rem; }
   }
+  /* Public desktop build: preserve the desktop canvas when the browser is resized. */
+  html, body { min-width: 1280px !important; }
+  body { overflow-x: auto !important; }
+  nav { min-width: 984px !important; left: 296px !important; width: calc(100% - 296px) !important; }
+  .layout { display: block !important; min-width: 1280px !important; padding-left: 296px !important; }
+  .sidebar { position: fixed !important; inset: 0 auto 0 0 !important; transform: none !important; width: 296px !important; height: 100vh !important; z-index: 110 !important; }
+  .sidebar-overlay, #sidebarToggleBtn { display: none !important; }
+  main, main.wide { min-width: 984px !important; max-width: 1420px !important; margin: 0 auto !important; padding: 2.35rem 1.5rem !important; }
 </style>
 <style>
   /* Keep the complete shell readable when the light theme is enabled. */
