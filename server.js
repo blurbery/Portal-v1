@@ -5,8 +5,7 @@ const axios = require('axios');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { createClient } = require('@supabase/supabase-js');
-const ws = require('ws');
+const { createDatabase } = require('./db');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
@@ -30,13 +29,11 @@ try {
 } catch(e) { webpush = null; }
 
 const app = express();
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
-  realtime: { transport: ws }
-});
+const db = createDatabase();
 const EMBY_STATS_CACHE = new Map();
 
 // Provider configuration is intentionally allow-listed and stored outside the
-// source tree. Secrets are encrypted before they are written to Supabase.
+// source tree. Secrets are encrypted before they are written to PostgreSQL.
 // CONFIG_ENCRYPTION_KEY is a bootstrap secret and must remain an environment
 // variable (it is never exposed by the admin API).
 const PORTAL_CONFIG_FIELDS = [
@@ -66,8 +63,8 @@ const PORTAL_CONFIG_FIELDS = [
   { key: 'DISCORD_BOT_CLIENT_ID', label: 'Discord bot application/client ID', category: 'Discord', type: 'text', secret: false },
   { key: 'DISCORD_BOT_GUILD_ID', label: 'Discord bot guild/server ID', category: 'Discord', type: 'text', secret: false },
   { key: 'DISCORD_BOT_PUBLIC_KEY', label: 'Discord application public key', category: 'Discord', type: 'text', secret: false },
-  { key: 'DISCORD_BOT_SUPABASE_URL', label: 'Discord bot Supabase URL', category: 'Discord', type: 'url', secret: false },
-  { key: 'DISCORD_BOT_SUPABASE_ANON_KEY', label: 'Discord bot Supabase publishable/anon key', category: 'Discord', type: 'text', secret: false },
+  { key: 'DISCORD_BOT_DATABASE_URL', label: 'Discord bot PostgreSQL URL', category: 'Discord', type: 'url', secret: false },
+  { key: 'DISCORD_BOT_SUPABASE_ANON_KEY', label: 'Discord bot PostgreSQL publishable/anon key', category: 'Discord', type: 'text', secret: false },
   { key: 'EMBY_URL', label: 'Emby server URL', category: 'Media servers', type: 'url', secret: false },
   { key: 'EMBY_DIRECT_URL', label: 'Emby direct URL', category: 'Media servers', type: 'url', secret: false },
   { key: 'EMBY_API_KEY', label: 'Emby API key', category: 'Media servers', type: 'password', secret: true },
@@ -252,8 +249,8 @@ function applyRuntimeSettings() {
 }
 
 async function loadPortalSettings() {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) return;
-  const { data, error } = await supabase.from('portal_settings').select('key_name,value_encrypted');
+  if (!process.env.DATABASE_URL || !process.env.DATABASE_URL) return;
+  const { data, error } = await db.from('portal_settings').select('key_name,value_encrypted');
   if (error) {
     console.warn(`[config] portal_settings unavailable: ${error.message}`);
     return;
@@ -487,11 +484,11 @@ async function siloAdminRequest(method, endpoint, data = null) {
 async function linkedSiloAccount(req) {
   const session = req.session.user || {};
   if (session.silo_user_id) {
-    const { data } = await supabase.from('silo_accounts').select('*').eq('silo_user_id', String(session.silo_user_id)).maybeSingle();
+    const { data } = await db.from('silo_accounts').select('*').eq('silo_user_id', String(session.silo_user_id)).maybeSingle();
     if (data) return data;
   }
   if (!session.discord_id) return null;
-  const { data } = await supabase.from('silo_accounts').select('*')
+  const { data } = await db.from('silo_accounts').select('*')
     .eq('discord_user_id', String(session.discord_id))
     .is('parent_silo_user_id', null)
     .maybeSingle();
@@ -500,7 +497,7 @@ async function linkedSiloAccount(req) {
 
 async function siloChildren(parentId) {
   if (!parentId) return [];
-  const { data } = await supabase.from('silo_accounts').select('*').eq('parent_silo_user_id', String(parentId)).order('created_at', { ascending: true });
+  const { data } = await db.from('silo_accounts').select('*').eq('parent_silo_user_id', String(parentId)).order('created_at', { ascending: true });
   return data || [];
 }
 
@@ -537,7 +534,7 @@ function portalAdminPasswordMatches(password) {
 }
 
 async function getPortalAdminAccounts() {
-  const { data, error } = await supabase.from('portal_settings').select('value_encrypted').eq('key_name', 'PORTAL_ADMIN_ACCOUNTS').maybeSingle();
+  const { data, error } = await db.from('portal_settings').select('value_encrypted').eq('key_name', 'PORTAL_ADMIN_ACCOUNTS').maybeSingle();
   if (error || !data?.value_encrypted) return [];
   try {
     const parsed = JSON.parse(decryptConfigValue(data.value_encrypted));
@@ -546,7 +543,7 @@ async function getPortalAdminAccounts() {
 }
 
 async function getPortalDesignatedAdmin() {
-  const { data, error } = await supabase.from('portal_settings').select('value_encrypted').eq('key_name', 'PORTAL_DESIGNATED_ADMIN').maybeSingle();
+  const { data, error } = await db.from('portal_settings').select('value_encrypted').eq('key_name', 'PORTAL_DESIGNATED_ADMIN').maybeSingle();
   if (error || !data?.value_encrypted) return null;
   try {
     const parsed = JSON.parse(decryptConfigValue(data.value_encrypted));
@@ -576,7 +573,7 @@ async function portalAdminLoginMatches(username, password) {
 
 async function savePortalAdminAccounts(accounts) {
   configEncryptionKey();
-  const { error } = await supabase.from('portal_settings').upsert({
+  const { error } = await db.from('portal_settings').upsert({
     key_name: 'PORTAL_ADMIN_ACCOUNTS',
     value_encrypted: encryptConfigValue(JSON.stringify(accounts)),
     is_secret: true,
@@ -587,7 +584,7 @@ async function savePortalAdminAccounts(accounts) {
 
 async function savePortalDesignatedAdmin(record) {
   configEncryptionKey();
-  const { error } = await supabase.from('portal_settings').upsert({
+  const { error } = await db.from('portal_settings').upsert({
     key_name: 'PORTAL_DESIGNATED_ADMIN',
     value_encrypted: encryptConfigValue(JSON.stringify(record)),
     is_secret: true,
@@ -598,7 +595,7 @@ async function savePortalDesignatedAdmin(record) {
 
 async function getAdminLinkedServices() {
   const keys = ['ADMIN_SERVICE_EMBY_USERNAME','ADMIN_SERVICE_EMBY_PASSWORD','ADMIN_SERVICE_EMBY_USER_ID','ADMIN_SERVICE_SILO_USERNAME','ADMIN_SERVICE_SILO_PASSWORD','ADMIN_SERVICE_SILO_USER_ID'];
-  const { data, error } = await supabase.from('portal_settings').select('key_name,value_encrypted').in('key_name', keys);
+  const { data, error } = await db.from('portal_settings').select('key_name,value_encrypted').in('key_name', keys);
   if (error) return {};
   const values = {};
   for (const row of data || []) { try { values[row.key_name] = decryptConfigValue(row.value_encrypted); } catch (e) {} }
@@ -612,14 +609,14 @@ async function getAdminLinkedServiceRecords(linked) {
   const result = { emby: null, silo: null };
   if (linked?.emby?.username) {
     const { data } = linked.emby.user_id
-      ? await supabase.from('emby_accounts').select('*').eq('emby_user_id', String(linked.emby.user_id)).maybeSingle()
-      : await supabase.from('emby_accounts').select('*').ilike('username', linked.emby.username).is('parent_emby_user_id', null).maybeSingle();
+      ? await db.from('emby_accounts').select('*').eq('emby_user_id', String(linked.emby.user_id)).maybeSingle()
+      : await db.from('emby_accounts').select('*').ilike('username', linked.emby.username).is('parent_emby_user_id', null).maybeSingle();
     result.emby = data || null;
   }
   if (linked?.silo?.username) {
     const { data } = linked.silo.user_id
-      ? await supabase.from('silo_accounts').select('*').eq('silo_user_id', String(linked.silo.user_id)).maybeSingle()
-      : await supabase.from('silo_accounts').select('*').ilike('username', linked.silo.username).is('parent_silo_user_id', null).maybeSingle();
+      ? await db.from('silo_accounts').select('*').eq('silo_user_id', String(linked.silo.user_id)).maybeSingle()
+      : await db.from('silo_accounts').select('*').ilike('username', linked.silo.username).is('parent_silo_user_id', null).maybeSingle();
     result.silo = data || null;
   }
   return result;
@@ -630,14 +627,14 @@ async function saveAdminLinkedService(service, username, password, metadata = {}
   const entries = [[`${prefix}_USERNAME`, username], [`${prefix}_PASSWORD`, password]];
   if (metadata.user_id != null) entries.push([`${prefix}_USER_ID`, String(metadata.user_id)]);
   for (const [key, value] of entries) {
-    const { error } = await supabase.from('portal_settings').upsert({ key_name: key, value_encrypted: encryptConfigValue(value), is_secret: true, updated_at: new Date().toISOString() }, { onConflict: 'key_name' });
+    const { error } = await db.from('portal_settings').upsert({ key_name: key, value_encrypted: encryptConfigValue(value), is_secret: true, updated_at: new Date().toISOString() }, { onConflict: 'key_name' });
     if (error) throw error;
   }
 }
 
 async function deleteAdminLinkedService(service) {
   const prefix = `ADMIN_SERVICE_${String(service).toUpperCase()}`;
-  const { error } = await supabase.from('portal_settings').delete().in('key_name', [`${prefix}_USERNAME`, `${prefix}_PASSWORD`, `${prefix}_USER_ID`]);
+  const { error } = await db.from('portal_settings').delete().in('key_name', [`${prefix}_USERNAME`, `${prefix}_PASSWORD`, `${prefix}_USER_ID`]);
   if (error) throw error;
 }
 
@@ -705,7 +702,7 @@ app.post('/auth/emby-connect/login', async (req, res) => {
   const candidateEmails = embyConnectIdentityEmails(email, attempt.data);
   let account = null;
   for (const candidate of candidateEmails) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('emby_accounts')
       .select('*')
       .ilike('connect_email', candidate)
@@ -772,13 +769,13 @@ app.get('/auth/callback', async (req, res) => {
     // share that ownership ID and sign in with their own media-server or
     // Emby Connect credentials instead of Discord OAuth.
     const [{ data: account }, { data: siloAccount }] = await Promise.all([
-      supabase
+      db
         .from('emby_accounts')
         .select('*')
         .eq('discord_user_id', discordUser.id)
         .is('parent_emby_user_id', null)
         .maybeSingle(),
-      supabase
+      db
         .from('silo_accounts')
         .select('*')
         .eq('discord_user_id', discordUser.id)
@@ -786,7 +783,7 @@ app.get('/auth/callback', async (req, res) => {
         .maybeSingle(),
     ]);
 
-    console.log(`[login timing] supabase lookups: ${Date.now() - __login_t0}ms`);
+    console.log(`[login timing] db lookups: ${Date.now() - __login_t0}ms`);
     // Must have either Emby or Silo account
     if (!account && !siloAccount) return res.redirect('/no-account');
 
@@ -856,13 +853,13 @@ app.post('/auth/login', async (req, res) => {
     const siloUser = siloAuth?.user || siloAuth?.User || null;
     const siloUserId = siloUser?.id ?? siloUser?.user_id ?? null;
     if (siloUser && siloUserId != null) {
-      let { data: siloAccount } = await supabase
+      let { data: siloAccount } = await db
         .from('silo_accounts')
         .select('*')
         .eq('silo_user_id', String(siloUserId))
         .maybeSingle();
       if (!siloAccount) {
-        const { data: byName } = await supabase
+        const { data: byName } = await db
           .from('silo_accounts')
           .select('*')
           .ilike('username', username)
@@ -871,7 +868,7 @@ app.post('/auth/login', async (req, res) => {
       }
       if (siloAccount) {
         const { data: embyAccount } = !siloAccount.parent_silo_user_id && siloAccount.discord_user_id
-          ? await supabase.from('emby_accounts').select('emby_user_id, username').eq('discord_user_id', siloAccount.discord_user_id).is('parent_emby_user_id', null).maybeSingle()
+          ? await db.from('emby_accounts').select('emby_user_id, username').eq('discord_user_id', siloAccount.discord_user_id).is('parent_emby_user_id', null).maybeSingle()
           : { data: null };
         req.session.user = markPortalOwner({
           discord_id: siloAccount.parent_silo_user_id ? null : (siloAccount.discord_user_id || null),
@@ -891,7 +888,7 @@ app.post('/auth/login', async (req, res) => {
     }
 
     // Check if account exists but is disabled
-    const { data: disabledCheck } = await supabase
+    const { data: disabledCheck } = await db
       .from('emby_accounts')
       .select('is_disabled, username')
       .ilike('username', username)
@@ -911,16 +908,16 @@ app.post('/auth/login', async (req, res) => {
   const embyUserId = auth.User.Id;
   const embyUsername = auth.User.Name;
 
-  let { data: account, error: accountLookupError } = await supabase
+  let { data: account, error: accountLookupError } = await db
     .from('emby_accounts')
     .select('*')
     .eq('emby_user_id', embyUserId)
     .maybeSingle();
 
-  if (accountLookupError) console.error('[auth/login] Supabase account lookup failed:', accountLookupError.message);
+  if (accountLookupError) console.error('[auth/login] PostgreSQL account lookup failed:', accountLookupError.message);
 
   if (!account) {
-    console.log(`Auto-creating Supabase record for Emby user ${embyUsername}`);
+    console.log(`Auto-creating PostgreSQL record for Emby user ${embyUsername}`);
 
     let streamLimit = 1;
     try {
@@ -934,7 +931,7 @@ app.post('/auth/login', async (req, res) => {
       console.error('Stream fetch error:', e.message);
     }
 
-    const { data: newAccount, error } = await supabase
+    const { data: newAccount, error } = await db
       .from('emby_accounts')
       .insert({
         emby_user_id: embyUserId,
@@ -973,19 +970,19 @@ app.post('/api/report-issue', requireAuth, async (req, res) => {
   const subject = String(req.body?.subject || '').trim();
   const details = String(req.body?.details || '').trim();
   if (!subject || !details) return res.status(400).json({ error: 'Subject and details are required.' });
-  const { error } = await supabase.from('portal_issue_reports').insert({
+  const { error } = await db.from('portal_issue_reports').insert({
     discord_user_id: req.session.user.discord_id || null,
     username: req.session.user.discord_username || req.session.user.emby_username || 'Member',
     subject, details, status: 'open'
   });
-  if (error) return res.status(500).json({ error: 'Could not save the issue report. Ask the administrator to run the Supabase setup SQL.' });
+  if (error) return res.status(500).json({ error: 'Could not save the issue report. Ask the administrator to run the PostgreSQL setup SQL.' });
   // The private support inbox is an admin-only configuration value.  A member
   // submits this form without ever seeing that address.
   const adminMail = getAdminMailConfig();
   if (adminMail.apiKey && adminMail.fromEmail && adminMail.supportInbox) {
     let replyTo = '';
     if (req.session.user.emby_user_id) {
-      const { data: member } = await supabase.from('emby_accounts').select('recovery_email').eq('emby_user_id', req.session.user.emby_user_id).maybeSingle();
+      const { data: member } = await db.from('emby_accounts').select('recovery_email').eq('emby_user_id', req.session.user.emby_user_id).maybeSingle();
       replyTo = String(member?.recovery_email || '').trim();
     }
     sendAdminMail({
@@ -1087,14 +1084,14 @@ app.get('/api/account', requireAuth, async (req, res) => {
   // primary account alongside Emby so a member can use either service.
   let siloAccount = null;
   if (req.session.user.silo_user_id) {
-    const { data } = await supabase
+    const { data } = await db
       .from('silo_accounts')
       .select('*')
       .eq('silo_user_id', String(req.session.user.silo_user_id))
       .maybeSingle();
     siloAccount = data || null;
   } else if (discord_id && !is_sub) {
-    const { data } = await supabase
+    const { data } = await db
       .from('silo_accounts')
       .select('*')
       .eq('discord_user_id', String(discord_id))
@@ -1108,7 +1105,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
     // admin-only profile here: the dashboard uses this response to decide
     let adminAccount = null;
     if (emby_user_id) {
-      const { data } = await supabase
+      const { data } = await db
         .from('emby_accounts')
         .select('*')
         .eq('emby_user_id', emby_user_id)
@@ -1116,7 +1113,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
       adminAccount = data || null;
     }
     if (!adminAccount && discord_id) {
-      const { data } = await supabase
+      const { data } = await db
         .from('emby_accounts')
         .select('*')
         .eq('discord_user_id', String(discord_id))
@@ -1128,7 +1125,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
     // Direct Emby owner login may not carry Discord's id in the session.
     const adminDiscordId = String(discord_id || adminAccount?.discord_user_id || '').trim();
     if (!siloAccount && adminDiscordId) {
-      const { data } = await supabase.from('silo_accounts').select('*').eq('discord_user_id', adminDiscordId).is('parent_silo_user_id', null).maybeSingle();
+      const { data } = await db.from('silo_accounts').select('*').eq('discord_user_id', adminDiscordId).is('parent_silo_user_id', null).maybeSingle();
       siloAccount = data || null;
     }
 
@@ -1206,7 +1203,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
       };
     }
     const siloSubUsers = !siloAccount.parent_silo_user_id && siloAccount.is_lifetime ? await siloChildren(siloAccount.silo_user_id) : [];
-    const siloParent = siloAccount.parent_silo_user_id ? await supabase.from('silo_accounts').select('username,silo_user_id,connections,total_pool').eq('silo_user_id', siloAccount.parent_silo_user_id).maybeSingle().then(result => result.data || null) : null;
+    const siloParent = siloAccount.parent_silo_user_id ? await db.from('silo_accounts').select('username,silo_user_id,connections,total_pool').eq('silo_user_id', siloAccount.parent_silo_user_id).maybeSingle().then(result => result.data || null) : null;
     return res.json({
       isAdmin: req.session.user.is_admin === true,
       kindleSenderEmail: getKindleSenderEmail(),
@@ -1249,7 +1246,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
     });
   }
 
-  const { data: account } = await supabase
+  const { data: account } = await db
     .from('emby_accounts')
     .select('*')
     .eq('emby_user_id', emby_user_id)
@@ -1262,7 +1259,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
 
   let parentAccount = null;
   if (is_sub && parent_emby_user_id) {
-    const { data: p } = await supabase
+    const { data: p } = await db
       .from('emby_accounts')
       .select('username, emby_user_id, connections, total_pool')
       .eq('emby_user_id', parent_emby_user_id)
@@ -1272,7 +1269,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
 
   let subUsers = [];
   if (!is_sub && account.is_lifetime) {
-    const { data: subs } = await supabase
+    const { data: subs } = await db
       .from('emby_accounts')
       .select('*')
       .eq('parent_emby_user_id', emby_user_id);
@@ -1283,7 +1280,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
     : [];
   console.log(`[account timing] after subUsers: ${Date.now() - __t0}ms`);
 
-  // Use the cached connect_email from Supabase — kept in sync by the Save/Remove
+  // Use the cached connect_email from PostgreSQL — kept in sync by the Save/Remove
   // actions directly, so no need for a live Emby round-trip on every page load.
   const connectEmail = account.connect_email || null;
   const memberFeatures = getMemberPortalFeatures(features, true, !is_sub && siloAccount ? ['emby', 'silo'] : 'emby');
@@ -1374,7 +1371,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
           const currentStored = account.profile_pic_url || '';
           // Only update if no custom upload or if it's still an Emby URL
           if (!currentStored || currentStored.includes('example.invalid') || currentStored.includes('example.invalid')) {
-            await supabase.from('emby_accounts')
+            await db.from('emby_accounts')
               .update({ profile_pic_url: embyImgUrl })
               .eq('emby_user_id', account.emby_user_id);
           }
@@ -1455,7 +1452,7 @@ app.get('/api/announcements', requireAuth, async (req, res) => {
     const configuredMemberRoles = configuredMemberAnnouncementRoleIds({ hasEmby, hasSilo });
     // Exclude server status messages at query level so they don't eat announcement slots
     const STATUS_CHANNEL = '000000000000000000';
-    let query = supabase
+    let query = db
       .from('announcements')
       .select('*')
       .not('channel_id', 'eq', STATUS_CHANNEL)
@@ -1551,7 +1548,7 @@ app.post('/api/silo/subuser/add', requireAuth, async (req, res) => {
     });
     const userId = created?.id || created?.user?.id || created?.data?.id;
     if (!userId) throw new Error('Silo did not return a user ID');
-    const { error } = await supabase.from('silo_accounts').insert({
+    const { error } = await db.from('silo_accounts').insert({
       discord_user_id: parent.discord_user_id || req.session.user.discord_id || null,
       friend_of_discord_id: parent.friend_of_discord_id || parent.discord_user_id || req.session.user.discord_id || null,
       silo_user_id: String(userId), username: subUsername, password, connections: requested, total_pool: requested,
@@ -1571,7 +1568,7 @@ app.post('/api/subuser/add', requireAuth, async (req, res) => {
 
   if (req.session.user.is_sub) return res.json({ error: 'Sub-users cannot create sub-users' });
 
-  const { data: parent } = await supabase
+  const { data: parent } = await db
     .from('emby_accounts')
     .select('*')
     .eq('emby_user_id', req.session.user.emby_user_id)
@@ -1580,7 +1577,7 @@ app.post('/api/subuser/add', requireAuth, async (req, res) => {
   if (!parent) return res.json({ error: 'Account not found' });
   if (!parent.is_lifetime) return res.json({ error: 'Sub-users are only available on Lifetime plans' });
 
-  const { data: existingSubs } = await supabase
+  const { data: existingSubs } = await db
     .from('emby_accounts')
     .select('id')
     .eq('parent_emby_user_id', parent.emby_user_id);
@@ -1664,7 +1661,7 @@ app.post('/api/subuser/add', requireAuth, async (req, res) => {
     return res.json({ error: 'The sub-account was created but Emby rejected the generated credentials. Please delete it and try again.' });
   }
 
-  const { error } = await supabase.from('emby_accounts').insert({
+  const { error } = await db.from('emby_accounts').insert({
     discord_user_id: parent.discord_user_id,
     emby_user_id: newUser.Id,
     username: subUsername,
@@ -1679,7 +1676,7 @@ app.post('/api/subuser/add', requireAuth, async (req, res) => {
   });
 
   if (error) {
-    console.error(`[subuser] Supabase mapping failed for ${subUsername}:`, error.message);
+    console.error(`[subuser] PostgreSQL mapping failed for ${subUsername}:`, error.message);
     return res.json({ error: 'Emby account created, but the portal account link could not be saved. Please contact support before trying to log in.' });
   }
 
@@ -1692,7 +1689,7 @@ app.post('/api/subuser/:emby_user_id/reset-password', requireAuth, async (req, r
   const parentId = req.session.user.emby_user_id;
   if (req.session.user.is_sub) return res.json({ error: 'Not authorized' });
 
-  const { data: sub } = await supabase
+  const { data: sub } = await db
     .from('emby_accounts')
     .select('emby_user_id, username, parent_emby_user_id')
     .eq('emby_user_id', emby_user_id)
@@ -1709,11 +1706,11 @@ app.post('/api/subuser/:emby_user_id/reset-password', requireAuth, async (req, r
     return res.json({ error: 'Emby did not accept the new password, so the portal password was not changed.' });
   }
 
-  const { error } = await supabase.from('emby_accounts')
+  const { error } = await db.from('emby_accounts')
     .update({ password: newPassword })
     .eq('emby_user_id', emby_user_id)
     .eq('parent_emby_user_id', parentId);
-  if (error) return res.json({ error: 'Emby password changed, but Supabase could not save it. Contact support.' });
+  if (error) return res.json({ error: 'Emby password changed, but PostgreSQL could not save it. Contact support.' });
   res.json({ success: true, username: sub.username, password: newPassword });
 });
 
@@ -1723,7 +1720,7 @@ app.delete('/api/subuser/:emby_user_id', requireAuth, async (req, res) => {
 
   if (req.session.user.is_sub) return res.json({ error: 'Not authorized' });
 
-  const { data: sub } = await supabase
+  const { data: sub } = await db
     .from('emby_accounts')
     .select('*')
     .eq('emby_user_id', emby_user_id)
@@ -1761,7 +1758,7 @@ app.delete('/api/subuser/:emby_user_id', requireAuth, async (req, res) => {
     console.error('Failed to restore parent streams:', e.message);
   }
 
-  await supabase.from('emby_accounts').delete().eq('emby_user_id', emby_user_id);
+  await db.from('emby_accounts').delete().eq('emby_user_id', emby_user_id);
   res.json({ success: true });
 });
 
@@ -1882,7 +1879,7 @@ app.get('/api/chilllink', requireAuth, async (req, res) => {
   if (!emby_user_id) return res.json({ error: 'ChillLink is only available for Emby accounts.' });
 
   try {
-    const { data: account } = await supabase
+    const { data: account } = await db
       .from('emby_accounts')
       .select('username, password, is_disabled')
       .eq('emby_user_id', emby_user_id)
@@ -1989,7 +1986,7 @@ app.get('/api/avatar-test/:userId', requireAuth, async (req, res) => {
   }
 });
 
-// ─── API: Upload avatar (base64, stored in Supabase + synced to Emby) ──────────
+// ─── API: Upload avatar (base64, stored in PostgreSQL + synced to Emby) ──────────
 app.post('/api/upload-avatar', requireAuth, async (req, res) => {
   const { dataUrl } = req.body;
   if (!dataUrl || !dataUrl.startsWith('data:image/')) return res.json({ error: 'Invalid image data' });
@@ -2034,7 +2031,7 @@ app.post('/api/upload-avatar', requireAuth, async (req, res) => {
     }
 
     // Save to emby_accounts
-    const { error } = await supabase.from('emby_accounts')
+    const { error } = await db.from('emby_accounts')
       .update({ profile_pic_url: dataUrl })
       .eq('emby_user_id', emby_user_id);
     if (error) return res.json({ error: 'Failed to save avatar' });
@@ -2052,7 +2049,7 @@ app.post('/api/set-recovery-email', requireAuth, async (req, res) => {
   if (!email || !email.includes('@')) return res.json({ error: 'Valid email required' });
   const { emby_user_id } = req.session.user;
   if (!emby_user_id) return res.json({ error: 'No Emby account linked' });
-  const { error } = await supabase.from('emby_accounts')
+  const { error } = await db.from('emby_accounts')
     .update({ recovery_email: email.toLowerCase().trim() })
     .eq('emby_user_id', emby_user_id);
   if (error) return res.json({ error: 'Failed to save email' });
@@ -2067,7 +2064,7 @@ app.post('/api/forgot-password', async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   try {
     // Match on recovery_email only — it's unique per account
-    const { data: accounts } = await supabase
+    const { data: accounts } = await db
       .from('emby_accounts')
       .select('emby_user_id, username, recovery_email, is_disabled')
       .eq('recovery_email', cleanEmail)
@@ -2077,7 +2074,7 @@ app.post('/api/forgot-password', async (req, res) => {
     const account = accounts[0];
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    await supabase.from('emby_accounts').update({
+    await db.from('emby_accounts').update({
       reset_token: token,
       reset_token_expires: expires
     }).eq('emby_user_id', account.emby_user_id);
@@ -2094,7 +2091,7 @@ app.post('/api/forgot-password', async (req, res) => {
 app.get('/api/reset-password/verify', async (req, res) => {
   const { token } = req.query;
   if (!token) return res.json({ valid: false });
-  const { data } = await supabase.from('emby_accounts')
+  const { data } = await db.from('emby_accounts')
     .select('username, reset_token_expires')
     .eq('reset_token', token)
     .limit(1);
@@ -2110,7 +2107,7 @@ app.post('/api/reset-password/submit', async (req, res) => {
     return res.json({ error: 'Password must be at least 6 characters.' });
   }
   try {
-    const { data } = await supabase.from('emby_accounts')
+    const { data } = await db.from('emby_accounts')
       .select('emby_user_id, username, reset_token_expires')
       .eq('reset_token', token)
       .limit(1);
@@ -2118,8 +2115,8 @@ app.post('/api/reset-password/submit', async (req, res) => {
     if (new Date(data[0].reset_token_expires) < new Date()) return res.json({ error: 'Reset link has expired. Please request a new one.' });
     const { emby_user_id } = data[0];
     await embySetPassword(emby_user_id, newPassword);
-    // Update in Supabase + clear token
-    await supabase.from('emby_accounts').update({
+    // Update in PostgreSQL + clear token
+    await db.from('emby_accounts').update({
       password: newPassword,
       reset_token: null,
       reset_token_expires: null
@@ -2143,7 +2140,7 @@ app.post('/api/reset-password', requireAuth, async (req, res) => {
 
   await embySetPassword(emby_user_id, newPassword);
 
-  await supabase
+  await db
     .from('emby_accounts')
     .update({ password: newPassword })
     .eq('emby_user_id', emby_user_id);
@@ -2160,7 +2157,7 @@ app.post('/api/change-password', requireAuth, async (req, res) => {
 
   await embySetPassword(emby_user_id, newPassword);
 
-  await supabase
+  await db
     .from('emby_accounts')
     .update({ password: newPassword })
     .eq('emby_user_id', emby_user_id);
@@ -2178,7 +2175,7 @@ app.post('/api/silo/change-password', requireAuth, async (req, res) => {
     const account = await linkedSiloAccount(req);
     if (!account) return res.json({ error: 'No Silo account is linked to this portal account.' });
     await siloAdminRequest('PUT', `/api/v1/admin/users/${encodeURIComponent(account.silo_user_id)}`, { password: newPassword });
-    const { error } = await supabase.from('silo_accounts').update({ password: newPassword }).eq('id', account.id);
+    const { error } = await db.from('silo_accounts').update({ password: newPassword }).eq('id', account.id);
     if (error) throw error;
     res.json({ success: true, password: newPassword });
   } catch (e) {
@@ -2193,7 +2190,7 @@ app.post('/api/silo/reset-password', requireAuth, async (req, res) => {
     const account = await linkedSiloAccount(req);
     if (!account) return res.json({ error: 'No Silo account is linked to this portal account.' });
     await siloAdminRequest('PUT', `/api/v1/admin/users/${encodeURIComponent(account.silo_user_id)}`, { password: newPassword });
-    const { error } = await supabase.from('silo_accounts').update({ password: newPassword }).eq('id', account.id);
+    const { error } = await db.from('silo_accounts').update({ password: newPassword }).eq('id', account.id);
     if (error) throw error;
     res.json({ success: true, password: newPassword });
   } catch (e) {
@@ -2214,7 +2211,7 @@ app.post('/api/connect-email', requireAuth, async (req, res) => {
     // A Connect email identifies exactly one portal account. Keep this check
     // scoped to the saved Emby row so sub-users cannot alter or collide with
     // the parent account's login identity.
-    const { data: existingConnectAccount, error: existingConnectError } = await supabase
+    const { data: existingConnectAccount, error: existingConnectError } = await db
       .from('emby_accounts')
       .select('emby_user_id, parent_emby_user_id')
       .ilike('connect_email', email)
@@ -2236,7 +2233,7 @@ app.post('/api/connect-email', requireAuth, async (req, res) => {
       timeout: 10000
     });
 
-    await supabase
+    await db
       .from('emby_accounts')
       .update({ connect_email: email })
       .eq('emby_user_id', emby_user_id);
@@ -2264,13 +2261,13 @@ app.post('/api/connect-email/remove', requireAuth, async (req, res) => {
       },
       timeout: 10000
     });
-    await supabase.from('emby_accounts').update({ connect_email: null }).eq('emby_user_id', emby_user_id);
+    await db.from('emby_accounts').update({ connect_email: null }).eq('emby_user_id', emby_user_id);
     res.json({ success: true });
   } catch (e) {
     const msg = e.response?.data?.Message || e.message;
     console.error('Emby Connect remove error:', msg);
     // Even if Emby call fails, clear from DB
-    await supabase.from('emby_accounts').update({ connect_email: null }).eq('emby_user_id', emby_user_id);
+    await db.from('emby_accounts').update({ connect_email: null }).eq('emby_user_id', emby_user_id);
     res.json({ success: true });
   }
 });
@@ -2281,7 +2278,7 @@ app.post('/api/subuser/rename', requireAuth, async (req, res) => {
   if (!emby_user_id || !newName) return res.json({ error: 'Missing fields' });
   if (req.session.user.is_sub) return res.json({ error: 'Not authorized' });
 
-  const { data: sub } = await supabase
+  const { data: sub } = await db
     .from('emby_accounts')
     .select('*')
     .eq('emby_user_id', emby_user_id)
@@ -2315,7 +2312,7 @@ app.post('/api/subuser/rename', requireAuth, async (req, res) => {
     return res.json({ error: 'Failed to rename in Emby: ' + (e.response?.data?.Message || e.message) });
   }
 
-  await supabase.from('emby_accounts').update({ username: newName }).eq('emby_user_id', emby_user_id);
+  await db.from('emby_accounts').update({ username: newName }).eq('emby_user_id', emby_user_id);
 
   res.json({ success: true });
 });
@@ -2327,9 +2324,9 @@ app.post('/api/subuser/streams', requireAuth, async (req, res) => {
   if (req.session.user.is_sub) return res.json({ error: 'Not authorized' });
 
   const [{ data: parent }, { data: sub }, { data: allSubs }] = await Promise.all([
-    supabase.from('emby_accounts').select('*').eq('emby_user_id', req.session.user.emby_user_id).maybeSingle(),
-    supabase.from('emby_accounts').select('*').eq('emby_user_id', emby_user_id).eq('parent_emby_user_id', req.session.user.emby_user_id).maybeSingle(),
-    supabase.from('emby_accounts').select('connections, emby_user_id').eq('parent_emby_user_id', req.session.user.emby_user_id),
+    db.from('emby_accounts').select('*').eq('emby_user_id', req.session.user.emby_user_id).maybeSingle(),
+    db.from('emby_accounts').select('*').eq('emby_user_id', emby_user_id).eq('parent_emby_user_id', req.session.user.emby_user_id).maybeSingle(),
+    db.from('emby_accounts').select('connections, emby_user_id').eq('parent_emby_user_id', req.session.user.emby_user_id),
   ]);
 
   if (!parent) return res.json({ error: 'Parent account not found' });
@@ -2348,8 +2345,8 @@ app.post('/api/subuser/streams', requireAuth, async (req, res) => {
     return res.json({ error: 'Not enough streams in your pool' });
   }
 
-  // Update Supabase immediately and respond — don't wait for Emby
-  await supabase.from('emby_accounts').update({ connections: newSubStreams }).eq('emby_user_id', emby_user_id);
+  // Update PostgreSQL immediately and respond — don't wait for Emby
+  await db.from('emby_accounts').update({ connections: newSubStreams }).eq('emby_user_id', emby_user_id);
 
   const parentAvailable = totalPool - (usedExcludingThis + newSubStreams);
   res.json({ success: true, parentAvailable, totalPool });
@@ -2413,7 +2410,7 @@ app.get('/api/admin/config', requireAdmin, async (req, res) => {
   res.json({
     fields: configResponse(),
     encryptionConfigured: Boolean(process.env.CONFIG_ENCRYPTION_KEY),
-    bootstrap: ['SUPABASE_URL', 'SUPABASE_KEY', 'SESSION_SECRET', 'CONFIG_ENCRYPTION_KEY'],
+    bootstrap: ['DATABASE_URL', 'DATABASE_URL', 'SESSION_SECRET', 'CONFIG_ENCRYPTION_KEY'],
   });
 });
 
@@ -2483,7 +2480,7 @@ app.post('/api/admin/branding/upload', requireAdmin, async (req, res) => {
     const brandingDir = path.join(__dirname, 'public', 'branding');
     fs.mkdirSync(brandingDir, { recursive: true });
     fs.writeFileSync(path.join(brandingDir, `${kind}.${extension}`), buffer, { mode: 0o644 });
-    const { error } = await supabase.from('portal_settings').upsert({
+    const { error } = await db.from('portal_settings').upsert({
       key_name: fieldKey,
       value_encrypted: encryptConfigValue(relativeUrl),
       is_secret: false,
@@ -2513,7 +2510,7 @@ app.put('/api/admin/config', requireAdmin, async (req, res) => {
       const value = String(rawValue ?? '').trim();
       if (!value) continue;
       const encrypted = encryptConfigValue(value);
-      const { error } = await supabase.from('portal_settings').upsert({
+      const { error } = await db.from('portal_settings').upsert({
         key_name: key,
         value_encrypted: encrypted,
         is_secret: field.secret,
@@ -2526,7 +2523,7 @@ app.put('/api/admin/config', requireAdmin, async (req, res) => {
     }
     for (const key of clear) {
       if (!PORTAL_CONFIG_BY_KEY.has(key)) continue;
-      const { error } = await supabase.from('portal_settings').delete().eq('key_name', key);
+      const { error } = await db.from('portal_settings').delete().eq('key_name', key);
       if (error) throw error;
       portalSettings.delete(key);
       delete process.env[key];
@@ -2569,7 +2566,7 @@ app.post('/api/admin/email/migrate-legacy', requireAdmin, async (req, res) => {
     configEncryptionKey();
     for (const [key, value] of Object.entries(fields)) {
       const definition = PORTAL_CONFIG_BY_KEY.get(key);
-      const { error } = await supabase.from('portal_settings').upsert({
+      const { error } = await db.from('portal_settings').upsert({
         key_name: key, value_encrypted: encryptConfigValue(value), is_secret: definition.secret, updated_at: new Date().toISOString(),
       }, { onConflict: 'key_name' });
       if (error) throw error;
@@ -2780,7 +2777,7 @@ app.delete('/api/admin/services/:service', requireAdmin, async (req, res) => {
 // A primary member may verify one of their existing services from the portal.
 // This deliberately does not create accounts, move ownership, save credentials,
 // or grant new permissions: the login must already belong to the same Discord
-// account that Portal has linked in Supabase. Sub-users cannot use this route.
+// account that Portal has linked in PostgreSQL. Sub-users cannot use this route.
 app.get('/api/provider-status', requireAuth, async (req, res) => {
   await settingsReady;
   const configured = key => Boolean(process.env[key]);
@@ -2836,7 +2833,7 @@ app.post('/api/admin/service-user/create', requireAdmin, async (req, res) => {
       const userId = created?.Id || created?.id;
       if (!userId) throw new Error('Emby did not return a user ID.');
       await embyRequest('POST', `/Users/${encodeURIComponent(userId)}/Policy`, { IsDisabled: false, SimultaneousStreamLimit: connections });
-      const { error } = await supabase.from('emby_accounts').insert({ discord_user_id: discordUserId, emby_user_id: userId, username, password, connections, total_pool: connections, ...expiry });
+      const { error } = await db.from('emby_accounts').insert({ discord_user_id: discordUserId, emby_user_id: userId, username, password, connections, total_pool: connections, ...expiry });
       if (error) throw error;
       return res.status(201).json({ success: true, service, username, password, user_id: userId });
     }
@@ -2851,7 +2848,7 @@ app.post('/api/admin/service-user/create', requireAdmin, async (req, res) => {
     });
     const userId = created?.id || created?.user?.id || created?.data?.id;
     if (!userId) throw new Error('Silo did not return a user ID.');
-    const { error } = await supabase.from('silo_accounts').insert({ discord_user_id: discordUserId, silo_user_id: String(userId), username, password, connections, total_pool: connections, ...expiry });
+    const { error } = await db.from('silo_accounts').insert({ discord_user_id: discordUserId, silo_user_id: String(userId), username, password, connections, total_pool: connections, ...expiry });
     if (error) throw error;
     return res.status(201).json({ success: true, service, username, password, user_id: String(userId) });
   } catch (error) {
@@ -2865,10 +2862,10 @@ app.post('/api/admin/silo/create-subuser', requireAdmin, async (req, res) => {
   const username = String(req.body?.username || '').trim();
   if (!parentId || !username) return res.status(400).json({ error: 'Parent Silo account and username are required.' });
   try {
-    const { data: parent, error: parentError } = await supabase.from('silo_accounts').select('*').eq('silo_user_id', parentId).maybeSingle();
+    const { data: parent, error: parentError } = await db.from('silo_accounts').select('*').eq('silo_user_id', parentId).maybeSingle();
     if (parentError || !parent) return res.status(404).json({ error: 'Parent Silo account was not found.' });
     if (!parent.is_lifetime) return res.status(400).json({ error: 'Only lifetime Silo parents can create sub-users.' });
-    const { data: children, error: childrenError } = await supabase.from('silo_accounts').select('silo_user_id,connections').eq('parent_silo_user_id', parentId);
+    const { data: children, error: childrenError } = await db.from('silo_accounts').select('silo_user_id,connections').eq('parent_silo_user_id', parentId);
     if (childrenError) throw childrenError;
     if ((children || []).length >= 5) return res.status(400).json({ error: 'A Silo parent can have up to 5 sub-users.' });
     const requested = Math.max(1, Number(req.body?.connections) || 1);
@@ -2888,7 +2885,7 @@ app.post('/api/admin/silo/create-subuser', requireAdmin, async (req, res) => {
     });
     const userId = created?.id || created?.user?.id || created?.data?.id;
     if (!userId) throw new Error('Silo did not return a sub-user ID.');
-    const { error } = await supabase.from('silo_accounts').insert({
+    const { error } = await db.from('silo_accounts').insert({
       discord_user_id: parent.discord_user_id || null,
       friend_of_discord_id: parent.friend_of_discord_id || parent.discord_user_id || null,
       silo_user_id: String(userId), username, password, connections: requested, total_pool: requested,
@@ -2944,7 +2941,7 @@ app.post('/api/admin/user/edit', requireAdmin, async (req, res) => {
     console.error('Admin stream sync error:', e.message);
   }
 
-  const { error } = await supabase.from('emby_accounts').update(update).eq('emby_user_id', emby_user_id);
+  const { error } = await db.from('emby_accounts').update(update).eq('emby_user_id', emby_user_id);
   if (error) return res.json({ error: 'Failed to update' });
   res.json({ success: true });
 });
@@ -2971,7 +2968,7 @@ app.post('/api/admin/silo/edit', requireAdmin, async (req, res) => {
     if (update.password) remote.password = update.password;
     if (update.connections) remote.connections = update.connections;
     if (Object.keys(remote).length) await siloAdminRequest('PUT', `/api/v1/admin/users/${encodeURIComponent(siloUserId)}`, remote);
-    const { error } = await supabase.from('silo_accounts').update(update).eq('silo_user_id', siloUserId);
+    const { error } = await db.from('silo_accounts').update(update).eq('silo_user_id', siloUserId);
     if (error) throw error;
     res.json({ success: true });
   } catch (e) {
@@ -2990,21 +2987,21 @@ app.delete('/api/admin/account', requireAdmin, async (req, res) => {
   try {
     if (service === 'emby') {
       if (!embyUserId) return res.status(400).json({ error: 'Missing Emby user ID.' });
-      const { data: account } = await supabase.from('emby_accounts').select('emby_user_id').eq('emby_user_id', embyUserId).maybeSingle();
+      const { data: account } = await db.from('emby_accounts').select('emby_user_id').eq('emby_user_id', embyUserId).maybeSingle();
       if (!account) return res.status(404).json({ error: 'Emby account was not found.' });
-      const { data: children } = await supabase.from('emby_accounts').select('emby_user_id').eq('parent_emby_user_id', embyUserId);
+      const { data: children } = await db.from('emby_accounts').select('emby_user_id').eq('parent_emby_user_id', embyUserId);
       const ids = [embyUserId, ...(children || []).map(item => String(item.emby_user_id || '')).filter(Boolean)];
       for (const id of ids) { try { await axios.delete(`${process.env.EMBY_URL}/emby/Users/${encodeURIComponent(id)}`, { headers: { 'X-Emby-Token': process.env.EMBY_API_KEY }, timeout: 8000 }); } catch (error) { if (Number(error.response?.status) !== 404) throw error; } }
-      await supabase.from('emby_accounts').delete().in('emby_user_id', ids);
+      await db.from('emby_accounts').delete().in('emby_user_id', ids);
       return res.json({ success: true, deleted: ids.length, service });
     }
     if (!siloUserId) return res.status(400).json({ error: 'Missing Silo user ID.' });
-    const { data: account } = await supabase.from('silo_accounts').select('silo_user_id').eq('silo_user_id', siloUserId).maybeSingle();
+    const { data: account } = await db.from('silo_accounts').select('silo_user_id').eq('silo_user_id', siloUserId).maybeSingle();
     if (!account) return res.status(404).json({ error: 'Silo account was not found.' });
-    const { data: children } = await supabase.from('silo_accounts').select('silo_user_id').eq('parent_silo_user_id', siloUserId);
+    const { data: children } = await db.from('silo_accounts').select('silo_user_id').eq('parent_silo_user_id', siloUserId);
     const ids = [siloUserId, ...(children || []).map(item => String(item.silo_user_id || '')).filter(Boolean)];
     for (const id of ids) { try { await siloAdminRequest('DELETE', `/api/v1/admin/users/${encodeURIComponent(id)}`); } catch (error) { if (Number(error.response?.status) !== 404) throw error; } }
-    await supabase.from('silo_accounts').delete().in('silo_user_id', ids);
+    await db.from('silo_accounts').delete().in('silo_user_id', ids);
     return res.json({ success: true, deleted: ids.length, service });
   } catch (error) { return res.status(502).json({ error: `The ${service} account could not be deleted from its provider.` }); }
 });
@@ -3022,7 +3019,7 @@ app.delete('/api/admin/user/:emby_user_id', requireAdmin, async (req, res) => {
     console.error('Admin Emby delete error:', e.response?.status, e.response?.data?.Message || e.message);
     return res.json({ error: 'Failed to delete from Emby: ' + (e.response?.data?.Message || e.message) });
   }
-  await supabase.from('emby_accounts').delete().eq('emby_user_id', emby_user_id);
+  await db.from('emby_accounts').delete().eq('emby_user_id', emby_user_id);
   res.json({ success: true });
 });
 
@@ -3039,10 +3036,10 @@ app.post('/api/admin/user/toggle-disable', requireAdmin, async (req, res) => {
     await axios.post(`${process.env.EMBY_URL}/emby/Users/${emby_user_id}/Policy`, policy, {
       headers: { 'X-Emby-Token': process.env.EMBY_API_KEY }, timeout: 8000
     });
-    await supabase.from('emby_accounts').update({ is_disabled: disable }).eq('emby_user_id', emby_user_id);
+    await db.from('emby_accounts').update({ is_disabled: disable }).eq('emby_user_id', emby_user_id);
 
     // Also disable/enable all sub-accounts
-    const { data: subs } = await supabase
+    const { data: subs } = await db
       .from('emby_accounts')
       .select('emby_user_id')
       .eq('parent_emby_user_id', emby_user_id);
@@ -3056,7 +3053,7 @@ app.post('/api/admin/user/toggle-disable', requireAdmin, async (req, res) => {
         await axios.post(`${process.env.EMBY_URL}/emby/Users/${sub.emby_user_id}/Policy`, subPolicy, {
           headers: { 'X-Emby-Token': process.env.EMBY_API_KEY }, timeout: 8000
         });
-        await supabase.from('emby_accounts').update({ is_disabled: disable }).eq('emby_user_id', sub.emby_user_id);
+        await db.from('emby_accounts').update({ is_disabled: disable }).eq('emby_user_id', sub.emby_user_id);
       } catch(e) {
         console.error('Sub disable error:', sub.emby_user_id, e.message);
       }
@@ -3339,7 +3336,7 @@ app.get('/api/libraries', requireAuth, async (req, res) => {
       };
     });
 
-    const { data: account } = await supabase
+    const { data: account } = await db
       .from('emby_accounts')
       .select('username')
       .eq('emby_user_id', emby_user_id)
@@ -3577,7 +3574,7 @@ let healthSuccessStreak = 0;
 let lastHealthCheck = null;
 let lastHealthError = null;
 
-// Availability alerts use the direct Emby origin, not Discord/Supabase
+// Availability alerts use the direct Emby origin, not Discord/PostgreSQL
 // announcements. A proxy hiccup must persist across several checks before it
 // is treated as a real outage.
 const EMBY_HEALTH_URLS = [
@@ -3692,13 +3689,13 @@ let downtimeCacheTs = 0;
 async function refreshDowntimeCache() {
   const STATUS_CHANNEL = '000000000000000000';
   const t = Date.now();
-  const { data: events } = await supabase
+  const { data: events } = await db
     .from('announcements')
     .select('id,embed_title,embed_desc,embed_fields,posted_at')
     .eq('channel_id', STATUS_CHANNEL)
     .order('posted_at', { ascending: false })
     .limit(200);
-  console.log(`[downtime cache] Supabase query took ${Date.now()-t}ms, ${(events||[]).length} rows`);
+  console.log(`[downtime cache] PostgreSQL query took ${Date.now()-t}ms, ${(events||[]).length} rows`);
   if (events?.length) {
     console.log('[downtime cache] Sample titles:', events.slice(0, 5).map(e => `"${e.embed_title}" (${e.posted_at?.slice(0,10)})`).join(', '));
   }
@@ -3828,7 +3825,7 @@ app.post('/api/push/subscribe', requireAuth, async (req, res) => {
   const { emby_user_id, discord_id } = req.session.user;
   const userId = emby_user_id || discord_id;
   try {
-    await supabase.from('push_subscriptions').upsert({
+    await db.from('push_subscriptions').upsert({
       user_id: userId,
       endpoint: subscription.endpoint,
       subscription: JSON.stringify(subscription),
@@ -3853,14 +3850,14 @@ app.post('/api/push/subscribe', requireAuth, async (req, res) => {
 app.post('/api/push/unsubscribe', requireAuth, async (req, res) => {
   const { endpoint } = req.body;
   if (!endpoint) return res.json({ error: 'Missing endpoint' });
-  await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint);
+  await db.from('push_subscriptions').delete().eq('endpoint', endpoint);
   res.json({ success: true });
 });
 
 async function sendPushToAll(title, body, url = '/') {
   if (!webpush) return;
   try {
-    const { data: subs } = await supabase.from('push_subscriptions').select('endpoint, subscription');
+    const { data: subs } = await db.from('push_subscriptions').select('endpoint, subscription');
     if (!subs?.length) return;
     const payload = JSON.stringify({ title, body, url, icon: '/logo.png' });
     let sent = 0, failed = 0;
@@ -3871,7 +3868,7 @@ async function sendPushToAll(title, body, url = '/') {
       } catch(e) {
         if (e.statusCode === 410 || e.statusCode === 404) {
           // Subscription expired — clean it up
-          await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+          await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
         }
         failed++;
       }
@@ -3886,8 +3883,8 @@ app.get('/api/sub-stream-status', requireAuth, async (req, res) => {
   if (!emby_user_id) return res.json({ streams: {}, mainActive: 0, mainTotal: 0 });
   try {
     const [{ data: subs }, { data: mainAccount }] = await Promise.all([
-      supabase.from('emby_accounts').select('emby_user_id, connections').eq('parent_emby_user_id', emby_user_id),
-      supabase.from('emby_accounts').select('connections').eq('emby_user_id', emby_user_id).maybeSingle(),
+      db.from('emby_accounts').select('emby_user_id, connections').eq('parent_emby_user_id', emby_user_id),
+      db.from('emby_accounts').select('connections').eq('emby_user_id', emby_user_id).maybeSingle(),
     ]);
 
     const { data: sessions } = await axios.get(`${process.env.EMBY_URL}/emby/Sessions`, {
@@ -3941,19 +3938,19 @@ app.post('/api/admin/bulk', requireAdmin, async (req, res) => {
     let updated = 0;
     for (const emby_user_id of userIds) {
       if (action === 'enable') {
-        await supabase.from('emby_accounts').update({ is_disabled: false }).eq('emby_user_id', emby_user_id);
+        await db.from('emby_accounts').update({ is_disabled: false }).eq('emby_user_id', emby_user_id);
         await axios.post(`${process.env.EMBY_URL}/emby/Users/${emby_user_id}/Policy`,
           { IsDisabled: false }, { headers: { 'X-Emby-Token': process.env.EMBY_API_KEY, 'Content-Type': 'application/json' }, timeout: 8000 }
         ).catch(() => {});
         updated++;
       } else if (action === 'disable') {
-        await supabase.from('emby_accounts').update({ is_disabled: true }).eq('emby_user_id', emby_user_id);
+        await db.from('emby_accounts').update({ is_disabled: true }).eq('emby_user_id', emby_user_id);
         await axios.post(`${process.env.EMBY_URL}/emby/Users/${emby_user_id}/Policy`,
           { IsDisabled: true }, { headers: { 'X-Emby-Token': process.env.EMBY_API_KEY, 'Content-Type': 'application/json' }, timeout: 8000 }
         ).catch(() => {});
         updated++;
       } else if (action === 'delete') {
-        await supabase.from('emby_accounts').delete().eq('emby_user_id', emby_user_id);
+        await db.from('emby_accounts').delete().eq('emby_user_id', emby_user_id);
         await axios.delete(`${process.env.EMBY_URL}/emby/Users/${emby_user_id}`,
           { headers: { 'X-Emby-Token': process.env.EMBY_API_KEY }, timeout: 8000 }
         ).catch(() => {});
@@ -3969,7 +3966,7 @@ app.get('/api/admin/search', requireAuth, async (req, res) => {
   if (!req.session.user.is_admin) return res.status(403).json({ error: 'Admin only' });
   const { q } = req.query;
   if (!q || q.trim().length < 2) return res.json({ users: [] });
-  const { data, error } = await supabase.from('emby_accounts')
+  const { data, error } = await db.from('emby_accounts')
     .select('emby_user_id, username, is_disabled, is_lifetime, is_trial, expires_at, connections, discord_user_id')
     .ilike('username', `%${q.trim()}%`)
     .limit(20);
@@ -4284,7 +4281,7 @@ app.post('/api/send-expiry-reminders', requireAuth, async (req, res) => {
   const cutoffStr = cutoffDate.toISOString();
   const nowStr = new Date().toISOString();
   try {
-    const { data: expiring } = await supabase.from('emby_accounts')
+    const { data: expiring } = await db.from('emby_accounts')
       .select('username, recovery_email, expires_at, is_lifetime')
       .eq('is_lifetime', false).eq('is_disabled', false).not('recovery_email', 'is', null)
       .lte('expires_at', cutoffStr).gte('expires_at', nowStr);
@@ -4327,7 +4324,7 @@ async function sendReminderEmail(toEmail, username, daysLeft) {
     const now = new Date().toISOString();
     let data = [];
     try {
-      const result = await supabase.from('emby_accounts')
+      const result = await db.from('emby_accounts')
         .select('username, recovery_email, expires_at')
         .eq('is_lifetime', false).eq('is_disabled', false).not('recovery_email', 'is', null)
         .lte('expires_at', cutoff).gte('expires_at', now);
@@ -4575,7 +4572,7 @@ async function requireOpdsAuth(req, res, next) {
 
   const auth = await embyAuthenticate(username, password);
   if (!auth?.User?.Id) return opdsAuthChallenge(res);
-  const { data: account } = await supabase.from('emby_accounts')
+  const { data: account } = await db.from('emby_accounts')
     .select('is_disabled, username, emby_user_id')
     .eq('emby_user_id', auth.User.Id)
     .maybeSingle();
@@ -5489,7 +5486,7 @@ app.get('/api/library/books/:id/epub', requireAuth, async (req, res) => {
 app.post('/api/library/books/:id/send-kindle', requireAuth, async (req, res) => {
   const { emby_user_id } = req.session.user;
   if (!emby_user_id) return res.json({ error: 'No Emby account linked' });
-  const { data: account } = await supabase.from('emby_accounts')
+  const { data: account } = await db.from('emby_accounts')
     .select('kindle_email').eq('emby_user_id', emby_user_id).maybeSingle();
   if (!account?.kindle_email) return res.json({ error: 'No Kindle email set — add it in your profile first' });
   try {
@@ -5616,7 +5613,7 @@ app.post('/api/library/comics/items/:id/send-kindle', requireAuth, async (req, r
   if (!kindleMailConfigured()) return res.json({ error: 'Kindle email delivery is not configured' });
   let tempDir = null;
   try {
-    const { data: account } = await supabase.from('emby_accounts')
+    const { data: account } = await db.from('emby_accounts')
       .select('kindle_email, username').eq('emby_user_id', emby_user_id).maybeSingle();
     if (!account?.kindle_email) return res.json({ error: 'No Kindle email set — add it in Settings first' });
 
@@ -5865,7 +5862,7 @@ app.post('/api/library/request', requireAuth, async (req, res) => {
     const description = raw?.description || raw?.summary || null;
     const authorStr = raw?.author || (Array.isArray(raw?.authors) ? raw.authors[0] : null) || author || null;
     const yearStr = raw?.year || raw?.publish_year || (raw?.publishedDate ? String(raw.publishedDate).slice(0,4) : null) || null;
-    await supabase.from('library_requests').insert({
+    await db.from('library_requests').insert({
       title: label,
       author: authorStr,
       cover_url: coverUrl,
@@ -5890,7 +5887,7 @@ app.get('/api/library/comics/request-history', requireAuth, async (req, res) => 
   const username = req.session.user.emby_username || req.session.user.discord_username;
   const cleanTitle = t => (t || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('library_requests')
       .select('id,title,author,cover_url,year,status,created_at,raw_data')
       .eq('requested_by', username)
@@ -5944,16 +5941,16 @@ app.post('/api/my-books/remove', requireAuth, async (req, res) => {
   if (!title) return res.json({ error: 'Title required' });
   try {
     // Delete from my_books
-    await supabase.from('my_books').delete().eq('saved_by', username)
+    await db.from('my_books').delete().eq('saved_by', username)
       .or(`title.eq.${title},title.ilike.${title.slice(0,30)}%`);
     // Delete from library_requests
-    await supabase.from('library_requests').delete().eq('requested_by', username)
+    await db.from('library_requests').delete().eq('requested_by', username)
       .or(`title.eq.${title},title.ilike.${title.slice(0,30)}%`);
     // Delete from shelfmark_downloads if source_id provided or title matches
     if (source_id) {
-      await supabase.from('shelfmark_downloads').delete().eq('source_id', source_id);
+      await db.from('shelfmark_downloads').delete().eq('source_id', source_id);
     } else {
-      await supabase.from('shelfmark_downloads').delete().eq('requested_by', username)
+      await db.from('shelfmark_downloads').delete().eq('requested_by', username)
         .ilike('title', `%${title.slice(0,30)}%`);
     }
     res.json({ success: true });
@@ -5970,7 +5967,7 @@ app.post('/api/my-books/add', requireAuth, async (req, res) => {
   if (!title) return res.json({ error: 'Title required' });
   try {
   const { language } = req.body;
-    const { error } = await supabase.from('my_books').upsert({
+    const { error } = await db.from('my_books').upsert({
       title, author: author || null, cover_url: cover || null,
       year: year || null, description: description || null,
       format: format || null, language: language || null,
@@ -5992,8 +5989,8 @@ app.get('/api/my-requests', requireAuth, async (req, res) => {
   const username = req.session.user.emby_username || req.session.user.discord_username;
   try {
     const [myBooksResult, smResult] = await Promise.all([
-      supabase.from('my_books').select('*').eq('saved_by', username).order('saved_at', { ascending: false }).limit(100),
-      supabase.from('shelfmark_downloads').select('title, format, language, author, cover_url, description, year').eq('requested_by', username),
+      db.from('my_books').select('*').eq('saved_by', username).order('saved_at', { ascending: false }).limit(100),
+      db.from('shelfmark_downloads').select('title, format, language, author, cover_url, description, year').eq('requested_by', username),
     ]);
 
     // Build a lookup from shelfmark_downloads by title for enrichment
@@ -6850,7 +6847,7 @@ app.get('/api/library/ebooks/request-history', requireAuth, async (req, res) => 
   const username = req.session.user.emby_username || req.session.user.discord_username;
   const cleanTitle = t => (t || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('library_requests')
       .select('id,title,author,cover_url,year,status,created_at,raw_data')
       .eq('requested_by', username)
@@ -6990,7 +6987,7 @@ app.get('/api/library/audiobooks/request-history', requireAuth, async (req, res)
   const username = req.session.user.emby_username || req.session.user.discord_username;
   const cleanTitle = t => (t || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('library_requests')
       .select('id,title,author,cover_url,year,status,created_at,raw_data')
       .eq('requested_by', username)
@@ -7123,7 +7120,7 @@ function findBookOnDisk(title, author, format) {
 }
 
 async function getShelfmarkRecord(source_id) {
-  const { data: record } = await supabase.from('shelfmark_downloads')
+  const { data: record } = await db.from('shelfmark_downloads')
     .select('source_id, filename, title, format, source, author, cover_url, year, description')
     .eq('source_id', source_id).maybeSingle();
   return record || null;
@@ -7186,7 +7183,7 @@ app.post('/api/shelfmark/download', requireAuth, async (req, res) => {
     // Check if already on disk — skip triggering a new download
     const existingFile = findBookOnDisk(title, author, format);
     if (existingFile) {
-      await supabase.from('shelfmark_downloads').upsert({
+      await db.from('shelfmark_downloads').upsert({
         source_id, source, title, format: format || 'epub', size,
         isbn: isbn || null, provider_id: provider_id || null, provider: provider || null,
         author: author || null, cover_url: cover_url || null, year: year || null, description: description || null,
@@ -7199,7 +7196,7 @@ app.post('/api/shelfmark/download', requireAuth, async (req, res) => {
     // Check daily cap (skip for unlimited user)
     if (username !== BOOKS_UNLIMITED_USER) {
       const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-      const { count } = await supabase.from('shelfmark_downloads')
+      const { count } = await db.from('shelfmark_downloads')
         .select('id', { count: 'exact', head: true })
         .eq('requested_by', username)
         .gte('created_at', todayStart.toISOString());
@@ -7218,7 +7215,7 @@ app.post('/api/shelfmark/download', requireAuth, async (req, res) => {
       // Check disk first
       const diskFile = findBookOnDisk(title, author, format);
       if (diskFile) {
-        await supabase.from('shelfmark_downloads').upsert({
+        await db.from('shelfmark_downloads').upsert({
           source_id, source, title, format: format || 'epub', size,
           isbn: isbn || null, provider_id: provider_id || null, provider: provider || null,
           author: author || null, cover_url: cover_url || null, year: year || null,
@@ -7240,7 +7237,7 @@ app.post('/api/shelfmark/download', requireAuth, async (req, res) => {
             { source: freshRel.source, source_id: freshRel.source_id, title: freshRel.title || title, format: freshRel.format || format, size: freshRel.size, extra: freshRel.extra || {} },
             { headers: { Cookie: cookie, 'Content-Type': 'application/json' }, timeout: 15000 }
           );
-          await supabase.from('shelfmark_downloads').upsert({
+          await db.from('shelfmark_downloads').upsert({
             source_id: freshRel.source_id, source: freshRel.source, title: freshRel.title || title,
             format: freshRel.format || format || 'epub', size: freshRel.size,
             author: author || freshRel.extra?.author || null, cover_url: cover_url || null,
@@ -7255,7 +7252,7 @@ app.post('/api/shelfmark/download', requireAuth, async (req, res) => {
       }
       return res.json({ error: 'Download failed — this source may be unavailable. Try searching for the book again.' });
     }
-    await supabase.from('shelfmark_downloads').upsert({
+    await db.from('shelfmark_downloads').upsert({
       source_id, source, title, format: format || 'epub', size,
       isbn: isbn || null, provider_id: provider_id || null, provider: provider || null,
       author: author || null, cover_url: cover_url || null, year: year || null,
@@ -7275,7 +7272,7 @@ app.post('/api/shelfmark/download', requireAuth, async (req, res) => {
 app.get('/api/shelfmark/status/:source_id', requireAuth, async (req, res) => {
   const { source_id } = req.params;
   try {
-    const { data: record } = await supabase.from('shelfmark_downloads')
+    const { data: record } = await db.from('shelfmark_downloads')
       .select('title, status, filename, author').eq('source_id', source_id).maybeSingle();
     // Check exact filename first
     if (record?.filename && fs.existsSync(path.join(BOOKS_DIR, record.filename))) {
@@ -7284,7 +7281,7 @@ app.get('/api/shelfmark/status/:source_id', requireAuth, async (req, res) => {
     // Use helper to find by title+author
     const match = findBookOnDisk(record?.title, record?.author);
     if (match) {
-      await supabase.from('shelfmark_downloads').update({ status: 'complete', filename: match }).eq('source_id', source_id);
+      await db.from('shelfmark_downloads').update({ status: 'complete', filename: match }).eq('source_id', source_id);
       return res.json({ status: 'complete', filename: match });
     }
     // kindle_sent means file was sent but may still be on disk
@@ -7311,7 +7308,7 @@ app.get('/api/shelfmark/epub/:source_id', requireAuth, async (req, res) => {
           console.log(`[shelfmark] Deleted after EPUB download: ${original.filename}`);
         }
         if (fs.existsSync(epubPath)) fs.unlinkSync(epubPath);
-        await supabase.from('shelfmark_downloads').update({ status: 'delivered', filename: null }).eq('source_id', req.params.source_id);
+        await db.from('shelfmark_downloads').update({ status: 'delivered', filename: null }).eq('source_id', req.params.source_id);
       } catch(delErr) {
         console.error('[shelfmark epub] cleanup failed:', delErr.message);
       }
@@ -7326,7 +7323,7 @@ app.get('/api/shelfmark/epub/:source_id', requireAuth, async (req, res) => {
 app.get('/api/shelfmark/file/:source_id', requireAuth, async (req, res) => {
   const { source_id } = req.params;
   try {
-    const { data: record } = await supabase.from('shelfmark_downloads')
+    const { data: record } = await db.from('shelfmark_downloads')
       .select('filename, title, format, author').eq('source_id', source_id).maybeSingle();
 
     let filename = record?.filename;
@@ -7341,7 +7338,7 @@ app.get('/api/shelfmark/file/:source_id', requireAuth, async (req, res) => {
 
     // Update DB with filename if not already set
     if (record && !record.filename) {
-      await supabase.from('shelfmark_downloads').update({ status: 'complete', filename }).eq('source_id', source_id);
+      await db.from('shelfmark_downloads').update({ status: 'complete', filename }).eq('source_id', source_id);
     }
 
     // Serve the file, then delete from disk after download completes
@@ -7355,7 +7352,7 @@ app.get('/api/shelfmark/file/:source_id', requireAuth, async (req, res) => {
         fs.unlinkSync(filePath);
         console.log(`[shelfmark] Deleted after download: ${filename}`);
         // Mark as delivered in DB
-        await supabase.from('shelfmark_downloads').update({ status: 'delivered', filename: null }).eq('source_id', source_id);
+        await db.from('shelfmark_downloads').update({ status: 'delivered', filename: null }).eq('source_id', source_id);
       } catch(delErr) {
         console.error('[shelfmark] Delete failed:', delErr.message);
       }
@@ -7376,13 +7373,13 @@ app.post('/api/shelfmark/send-kindle', requireAuth, async (req, res) => {
   const { emby_user_id } = req.session.user;
   if (!emby_user_id) return res.json({ error: 'No Emby account linked' });
 
-  // Get Kindle email from Supabase
-  const { data: account } = await supabase.from('emby_accounts')
+  // Get Kindle email from PostgreSQL
+  const { data: account } = await db.from('emby_accounts')
     .select('kindle_email, username').eq('emby_user_id', emby_user_id).maybeSingle();
   if (!account?.kindle_email) return res.json({ error: 'No Kindle email set — add it in your profile first' });
 
   // Find the file — re-download if it was deleted after previous delivery
-  const { data: record } = await supabase.from('shelfmark_downloads')
+  const { data: record } = await db.from('shelfmark_downloads')
     .select('filename, title, format, source, author').eq('source_id', source_id).maybeSingle();
 
   let filename = record?.filename;
@@ -7392,7 +7389,7 @@ app.post('/api/shelfmark/send-kindle', requireAuth, async (req, res) => {
   if (!filename && record?.title) filename = findBookOnDisk(record.title, record.author, record.format);
   // Also check my_books for the title if source_id didn't match
   if (!filename) {
-    const { data: mbRecord } = await supabase.from('my_books')
+    const { data: mbRecord } = await db.from('my_books')
       .select('title, format').eq('book_source_id', source_id).maybeSingle();
     if (mbRecord?.title) filename = findBookOnDisk(mbRecord.title, null, mbRecord.format);
     if (!filename && mbRecord?.title && !record) {
@@ -7465,7 +7462,7 @@ app.post('/api/shelfmark/send-kindle', requireAuth, async (req, res) => {
     } catch(delErr) {
       console.error('[shelfmark] Kindle cleanup failed:', delErr.message);
     }
-    await supabase.from('shelfmark_downloads').update({ status: 'kindle_sent', filename: null }).eq('source_id', source_id);
+    await db.from('shelfmark_downloads').update({ status: 'kindle_sent', filename: null }).eq('source_id', source_id);
     res.json({ success: true });
   } catch(e) {
     console.error('[kindle send] FULL ERROR:', e.message, e.response?.data);
@@ -7479,7 +7476,7 @@ app.post('/api/user/kindle-email', requireAuth, async (req, res) => {
   if (!email || !email.includes('@')) return res.json({ error: 'Valid email required' });
   const { emby_user_id } = req.session.user;
   if (!emby_user_id) return res.json({ error: 'No Emby account linked' });
-  const { error } = await supabase.from('emby_accounts')
+  const { error } = await db.from('emby_accounts')
     .update({ kindle_email: email.trim() }).eq('emby_user_id', emby_user_id);
   if (error) return res.json({ error: 'Failed to save' });
   res.json({ success: true });
@@ -7502,7 +7499,7 @@ async function cleanupShelfmarkBooks() {
     let deleted = 0;
 
     // Rule 1: Delete books scheduled for deletion (finished by user)
-    const { data: scheduledRows } = await supabase.from('shelfmark_downloads')
+    const { data: scheduledRows } = await db.from('shelfmark_downloads')
       .select('source_id, filename, title, delete_after')
       .not('delete_after', 'is', null)
       .lt('delete_after', new Date().toISOString());
@@ -7517,18 +7514,18 @@ async function cleanupShelfmarkBooks() {
           deleted++;
         }
       }
-      await supabase.from('shelfmark_downloads').delete().eq('source_id', row.source_id);
-      await supabase.from('reading_progress').delete().eq('source_id', row.source_id);
+      await db.from('shelfmark_downloads').delete().eq('source_id', row.source_id);
+      await db.from('reading_progress').delete().eq('source_id', row.source_id);
     }
 
     // Rule 2: Delete books inactive for 14+ days (not opened since)
-    const { data: progressRows } = await supabase.from('reading_progress')
+    const { data: progressRows } = await db.from('reading_progress')
       .select('source_id, book_title, last_read, filename')
       .lt('last_read', new Date(inactivityCutoff).toISOString());
 
     for (const row of (progressRows || [])) {
       if (!row.source_id) continue;
-      const { data: dlRow } = await supabase.from('shelfmark_downloads')
+      const { data: dlRow } = await db.from('shelfmark_downloads')
         .select('filename, title').eq('source_id', row.source_id).maybeSingle();
       const filename = dlRow?.filename;
       if (filename) {
@@ -7711,7 +7708,7 @@ app.post('/api/reader/prepare', requireAuth, async (req, res) => {
     const comicFormats = ['cbz','cbr'];
     const ebookFormats = ['epub','mobi','azw3','fb2','pdf'];
     if (source_id) {
-      const { data: byId } = await supabase.from('shelfmark_downloads')
+      const { data: byId } = await db.from('shelfmark_downloads')
         .select('source_id, status, filename, title, format')
         .eq('source_id', source_id).maybeSingle();
       if (byId?.filename || byId?.status === 'complete') {
@@ -7719,7 +7716,7 @@ app.post('/api/reader/prepare', requireAuth, async (req, res) => {
       }
     }
     // Title match — must also match type (comic vs ebook) via format field
-    const { data: existing } = await supabase.from('shelfmark_downloads')
+    const { data: existing } = await db.from('shelfmark_downloads')
       .select('source_id, status, filename, title, format')
       .ilike('title', `%${title.slice(0,30)}%`)
       .limit(10);
@@ -7764,10 +7761,10 @@ app.post('/api/reader/prepare', requireAuth, async (req, res) => {
       if (match) {
         const fakeId = crypto.createHash('md5').update(title + username).digest('hex').slice(0,16);
         // Check if this fakeId already exists to avoid duplicates
-        const { data: existing } = await supabase.from('shelfmark_downloads')
+        const { data: existing } = await db.from('shelfmark_downloads')
           .select('source_id').eq('source_id', fakeId).maybeSingle();
         if (!existing) {
-          await supabase.from('shelfmark_downloads').insert({
+          await db.from('shelfmark_downloads').insert({
             source_id: fakeId, source: 'direct', title, format: match.split('.').pop(),
             status: 'complete', filename: match, requested_by: username,
             created_at: new Date().toISOString(),
@@ -7818,7 +7815,7 @@ app.post('/api/reader/prepare', requireAuth, async (req, res) => {
       { source: dlSource, source_id: dlSourceId, title: dlTitle, format: dlFormat, size: dlSize, extra: {} },
       { headers: { Cookie: cookie, 'Content-Type': 'application/json' }, timeout: 15000 }
     );
-    await supabase.from('shelfmark_downloads').upsert({
+    await db.from('shelfmark_downloads').upsert({
       source_id: dlSourceId, source: dlSource, title: dlTitle,
       format: dlFormat, size: dlSize, requested_by: username, status: 'queued',
       created_at: new Date().toISOString(),
@@ -7835,7 +7832,7 @@ app.post('/api/reader/prepare', requireAuth, async (req, res) => {
 app.get('/api/reader/file/:source_id', requireAuth, async (req, res) => {
   const { source_id } = req.params;
   try {
-    const { data: record } = await supabase.from('shelfmark_downloads')
+    const { data: record } = await db.from('shelfmark_downloads')
       .select('filename, title').eq('source_id', source_id).maybeSingle();
     
     let filename = record?.filename;
@@ -7877,7 +7874,7 @@ app.get('/api/reader/file/:source_id', requireAuth, async (req, res) => {
 // Get reading progress
 app.get('/api/reader/progress/:book_title', requireAuth, async (req, res) => {
   const username = req.session.user.emby_username || req.session.user.discord_username;
-  const { data } = await supabase.from('reading_progress')
+  const { data } = await db.from('reading_progress')
     .select('*').eq('user_id', username).eq('book_title', req.params.book_title).maybeSingle();
   res.json(data || {});
 });
@@ -7889,7 +7886,7 @@ app.post('/api/reader/progress', requireAuth, async (req, res) => {
 
   const isFinished = percentage >= (BOOKS_FINISH_THRESHOLD * 100);
 
-  await supabase.from('reading_progress').upsert({
+  await db.from('reading_progress').upsert({
     user_id: username, book_title, source_id, cfi, page, total_pages,
     bookmarks: bookmarks || [],
     percentage: percentage || 0,
@@ -7901,7 +7898,7 @@ app.post('/api/reader/progress', requireAuth, async (req, res) => {
   // If finished, schedule file for deletion after 24h (mark in DB)
   if (isFinished && source_id) {
     const deleteAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    await supabase.from('shelfmark_downloads')
+    await db.from('shelfmark_downloads')
       .update({ delete_after: deleteAt })
       .eq('source_id', source_id)
       .is('delete_after', null); // only set once
