@@ -7,5 +7,11 @@ services:
       - .env
     volumes:
       - ./bot-config.json:/app/bot-config.json:ro
+    networks:
+      - portal-v1-postgres_default
     security_opt:
       - no-new-privileges:true
+
+networks:
+  portal-v1-postgres_default:
+    external: true
