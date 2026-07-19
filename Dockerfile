@@ -1,0 +1,26 @@
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV PORTAL_BUILD_ID=portal-v1-public
+
+COPY package*.json ./
+RUN npm install --omit=dev && npm cache clean --force
+
+COPY . .
+COPY docker/entrypoint.sh /usr/local/bin/portal-v1-public
+
+RUN chmod 0555 /usr/local/bin/portal-v1-public \
+  && chown -R node:node /app
+
+USER node
+
+EXPOSE 3000
+
+LABEL org.opencontainers.image.title="Portal-v1 public build" \
+      org.opencontainers.image.description="Provider-neutral public-safe Portal deployment" \
+      com.portal.build="public-safe"
+
+ENTRYPOINT ["/usr/local/bin/portal-v1-public"]
