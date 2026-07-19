@@ -4206,6 +4206,18 @@ async function testSeerrConnection(button) {
   finally { button.disabled = false; }
 }
 
+function renderVpsConfigurationDetail() {
+  const fields = Object.fromEntries((portalAdminConfig.fields || []).map(field => [field.key, field]));
+  const field = key => fields[key] || { key, value:'', configured:false, secret:false, type:'text' };
+  const vpsName = field('VPS_NAME').value || 'Portal public PostgreSQL VPS';
+  const sshPort = field('VPS_SSH_PORT').value || '22';
+  const detail = document.getElementById('portalAdminDetailContent');
+  detail.innerHTML = `<div class="portal-admin-detail-head"><h2>VPS Configuration</h2><p>Docker supplies safe installation defaults for this public Portal build. Add the host address and dedicated SSH user for remote operations; private keys and credentials are never auto-filled.</p></div><section class="settings-group-card wide"><h3>Public test VPS</h3><p>These values describe the host running the public PostgreSQL Docker Compose project. The host and SSH user are deployment settings, not portal login credentials.</p><div class="portal-admin-fields"><div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>VPS name</strong><span>Friendly label for this installation.</span></div><div class="portal-admin-field-control"><input data-portal-admin-key="VPS_NAME" value="${v3Escape(vpsName)}" placeholder="Portal public PostgreSQL VPS"></div></div><div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>VPS host</strong><span>Hostname, public IP, or Tailscale address.</span></div><div class="portal-admin-field-control"><input data-portal-admin-key="VPS_HOST" value="${v3Escape(field('VPS_HOST').value || '')}" placeholder="vps.example.com"></div></div><div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>SSH port</strong><span>Normally 22.</span></div><div class="portal-admin-field-control"><input data-portal-admin-key="VPS_SSH_PORT" type="number" min="1" max="65535" value="${v3Escape(sshPort)}" placeholder="22"></div></div><div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>SSH user</strong><span>Use a dedicated deployment/monitoring user where possible.</span></div><div class="portal-admin-field-control"><input data-portal-admin-key="VPS_SSH_USER" value="${v3Escape(field('VPS_SSH_USER').value || '')}" placeholder="portal"></div></div></div></section><section class="settings-group-card wide"><h3>Credential safety</h3><p>The private-key field remains available for encrypted storage but is never populated by Docker, returned by the API, or written into generated bot files. Save this card only after entering the host details you want the portal to retain.</p></section><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveAdminDetail('VPS')">Save VPS settings</button></div>`;
+  document.getElementById('portalAdminIndex').style.display = 'none';
+  document.getElementById('portalAdminDetail').style.display = 'block';
+  attachAdminDetailTrail('VPS Configuration');
+}
+
 function openAdminDetail(cardKey) {
   const card = PORTAL_ADMIN_CARD_DEFS.find(item => item.key === cardKey);
   if (!card || !portalAdminConfig) return;
