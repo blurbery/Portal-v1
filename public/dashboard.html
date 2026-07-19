@@ -2890,7 +2890,7 @@ async function loadAccount() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
-    const res = await fetch('/api/account', { signal: controller.signal });
+    const res = await fetch('/api/account', { signal: controller.signal, credentials: 'same-origin', cache: 'no-store' });
     clearTimeout(timeout);
     const data = await res.json();
     if (res.status === 401 || data.error === 'Not authenticated') {
@@ -2934,6 +2934,8 @@ async function loadAccount() {
     }
   } catch (e) {
     console.error('[portal] Failed to load account', e);
+    const loading = document.getElementById('loading');
+    if (loading) loading.innerHTML = '<div style="color:var(--danger);margin-bottom:.75rem">Account request timed out or failed.</div><button class="btn-sm" onclick="window.location.reload()">Try again</button>';
     showToast('Failed to load account', 'error');
   }
 }
