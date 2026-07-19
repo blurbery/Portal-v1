@@ -2931,6 +2931,7 @@ async function loadAccount() {
       showSection(hash);
     } else if (window.location.hash === '#users') {
       showSection('users');
+    }
   } catch (e) {
     console.error('[portal] Failed to load account', e);
     showToast('Failed to load account', 'error');
