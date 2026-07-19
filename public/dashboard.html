@@ -3177,12 +3177,9 @@ async function loadAccount() {
     applyPortalCapabilities(data);
     renderDashboard(data);
     loadV3HomeContent();
-    // Sub users never see IPTV — it belongs to the main account
-    if (!data.account?.is_sub) {
-      loadIptv(data.services?.hasEmby ?? true);
-    } else {
-      renderQuickLinks(data.services?.hasEmby ?? true, false);
-    }
+    // Service cards are rendered from the account response. The public build
+    // does not call a separate legacy provider endpoint here.
+    renderQuickLinks(Boolean(data.services?.hasEmby), false);
     // Prompt Emby users to set recovery email if not set
     // Show recovery email prompt once for Emby users (not IPTV-only) who haven't set one
     if (data.services?.hasEmby && data.account?.emby_user_id && !data.account?.recovery_email) {
