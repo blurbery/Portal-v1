@@ -1,0 +1,11 @@
+services:
+  portal-discord-bot:
+    build: .
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    volumes:
+      - ./bot-config.json:/app/bot-config.json:ro
+    security_opt:
+      - no-new-privileges:true
