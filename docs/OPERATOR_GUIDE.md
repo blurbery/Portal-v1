@@ -7,7 +7,7 @@ This guide explains what the public Portal build does, how its parts connect, an
 ```
 Browser
   -> Express server (server.js)
-      -> Supabase (encrypted settings, account records, announcements)
+      -> PostgreSQL (encrypted settings, account records, announcements)
       -> configured media providers (Emby, Silo, Jellyfin, Plex)
       -> optional Discord OAuth and bot
       -> optional library/request providers
@@ -23,8 +23,8 @@ The browser talks to the server through the `/api/*` routes. Provider credential
 | Core | Portal name, URL, links, session settings | `.env`, Admin → General Settings |
 | Media servers | Configure provider endpoints and link an existing service account | `.env`, Admin → Streaming Services |
 | Account | View profile, recovery details, and linked media servers | Dashboard → Account |
-| Announcements | Publish messages to members | Supabase settings and Admin |
-| Users | Review and manage member/sub-user records | Supabase account tables and Admin |
+| Announcements | Publish messages to members | PostgreSQL settings and Admin |
+| Users | Review and manage member/sub-user records | PostgreSQL account tables and Admin |
 | Discord bot | Optional slash commands and member integration | `public/discord-bot-template/` and generated bot settings |
 | Libraries | Optional books, comics, audiobooks, and request integrations | `.env` and Admin → Library |
 | Docker | Isolated runtime for the public build | `Dockerfile`, `docker-compose.yml` |
@@ -35,17 +35,17 @@ The browser talks to the server through the `/api/*` routes. Provider credential
 2. The portal checks provider configuration through `GET /api/provider-status`.
 3. The administrator signs in with an existing provider account.
 4. The server verifies those credentials with the selected provider.
-5. The link is stored encrypted in Supabase `portal_settings`.
+5. The link is stored encrypted in PostgreSQL `portal_settings`.
 6. Account → Linked Media Servers reads the linked records and displays only what is actually connected.
 
 A provider must be configured before it appears in “Add a service”. The public UI does not create provider accounts or copy provider credentials into the repository.
 
 ## Configuration order
 
-1. Create a Supabase project and run `portal_settings.sql`.
+1. Create a PostgreSQL project and run `portal_settings.sql`.
 2. Copy `.env.example` to `.env`.
 3. Set the local admin username, password hash, password salt, session secret, and encryption key.
-4. Set the installation's `PORTAL_NAME`, `PORTAL_URL`, and `SUPABASE_URL`/server-side key.
+4. Set the installation's `PORTAL_NAME`, `PORTAL_URL`, and `DATABASE_URL`/server-side key.
 5. Configure only the media providers this operator owns.
 6. Start the server or Docker compose service.
 7. Sign in as the portal admin.
@@ -61,7 +61,7 @@ The bootstrap admin account is local to the Portal server:
 - `PORTAL_ADMIN_PASSWORD_SALT`
 - `PORTAL_ADMIN_PASSWORD_HASH`
 
-Supabase stores Portal data and encrypted installation settings; it is not required to be the login identity provider for the local bootstrap admin. Discord sign-in is optional and must be configured separately.
+PostgreSQL stores Portal data and encrypted installation settings; it is not required to be the login identity provider for the local bootstrap admin. Discord sign-in is optional and must be configured separately.
 
 ## First-launch admin setup
 
@@ -79,10 +79,10 @@ After signing in, use Administration to configure the Portal's provider settings
 
 ## What must exist before first launch
 
-The server needs its own Supabase connection before it can start reliably because Supabase is the Portal's settings and account store:
+The server needs its own PostgreSQL connection before it can start reliably because PostgreSQL is the Portal's settings and account store:
 
-- `SUPABASE_URL`
-- `SUPABASE_KEY` (server-side key, kept only in `.env`)
+- `DATABASE_URL`
+- `DATABASE_URL` (server-side key, kept only in `.env`)
 - `CONFIG_ENCRYPTION_KEY`
 - `SESSION_SECRET`
 - the schema from `portal_settings.sql`
