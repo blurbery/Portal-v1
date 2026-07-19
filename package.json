@@ -5,7 +5,7 @@
   "description": "Provider-neutral Portal member portal build.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "bash scripts/start-public-build.sh",
     "check": "node --check server.js"
   },
   "engines": { "node": ">=20" },
@@ -21,4 +21,3 @@
     "ws": "^8.18.0"
   }
 }
-
