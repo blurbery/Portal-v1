@@ -11,7 +11,9 @@ These must be set before the portal starts because they are required to boot and
 
 ```dotenv
 DATABASE_URL=
-DATABASE_URL=
+DATABASE_SSL=false
+DATABASE_POOL_MAX=10
+PORTAL_DB_PASSWORD=
 SESSION_SECRET=
 CONFIG_ENCRYPTION_KEY=
 # Set the dedicated portal administrator during deployment.
