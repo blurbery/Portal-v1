@@ -18,3 +18,5 @@
    `docker compose logs --tail=100 -f portal-discord-bot`
 
 Keep the bot .env on the VPS only. The Portal and bot may share PostgreSQL only when the bot DATABASE_URL is intentionally configured for that database.
+
+The generated Compose file joins the existing `portal-v1-postgres_default` Docker network so the bot can reach the Portal database as `db`. Deploy the bot on the same Docker host as the public Portal.
