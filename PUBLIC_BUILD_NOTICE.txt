@@ -1,0 +1,10 @@
+THIS FILE IDENTIFIES THE PROVIDER-NEUTRAL PORTAL-V1 PUBLIC BUILD.
+
+Build identity: portal-v1-public
+Build scope: public-safe, provider-neutral distribution
+Docker service: portal-v1-public
+Host port: 3100
+
+Keep this installation separate from every private portal. Do not copy private
+environment files, databases, provider credentials, integrations, or production
+files into this build.
