@@ -2402,6 +2402,8 @@ function configResponse() {
   const installDefaults = {
     AUTH_EMBY_CONNECT_URL: embyConnectCallbackUrl(),
     DISCORD_ALLOWED_ROLE_IDS: PORTAL_ROLE_DEFAULTS.allowed.join(', '),
+    VPS_NAME: process.env.VPS_NAME || 'Portal public PostgreSQL VPS',
+    VPS_SSH_PORT: process.env.VPS_SSH_PORT || '22',
   };
   return PORTAL_CONFIG_FIELDS.map(field => ({
     ...field,
