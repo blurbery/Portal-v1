@@ -25,7 +25,8 @@ begin
     'library_requests',
     'my_books',
     'shelfmark_downloads',
-    'reading_progress'
+    'reading_progress',
+    'discord_bot_memberships'
   ] loop
     execute format('create table if not exists %I (like portal_records including all)', table_name);
   end loop;
