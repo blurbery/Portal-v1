@@ -4086,10 +4086,17 @@ node --env-file=.env index.js</pre><p class="smtp-config-note">Run the bot besid
   detail.querySelector('.portal-admin-save')?.replaceChildren(document.createTextNode('Save all bot settings'));
   detail.querySelectorAll('[data-bot-deploy-target]').forEach(input => { input.addEventListener('change', () => setDiscordBotDeployTarget(input.value)); });
   setDiscordBotDeployTarget('vps');
+  addDiscordBotDockerFlow(detail);
   syncDiscordBotTemplate(saved, identity, deployment);
   document.getElementById('portalAdminIndex').style.display = 'none';
   document.getElementById('portalAdminDetail').style.display = 'block';
   attachAdminDetailTrail('Discord Bot');
+}
+
+function addDiscordBotDockerFlow(detail) {
+  if (!detail || detail.querySelector('#discordBotDockerFlow')) return;
+  const flow = `<section class="settings-group-card wide" id="discordBotDockerFlow"><h3>Download → deploy → register → run</h3><p>This is the complete order for the downloaded bot folder. The <code>register</code> command is required: it publishes the selected slash commands to Discord before the bot starts.</p><ol class="storage-guide-list"><li>Save all settings on this card, then click <strong>Download complete bot folder (.tar.gz)</strong>.</li><li>Upload the archive to the bot VPS and extract it: <code>tar -xzf portal-discord-bot-bundle.tar.gz</code>, then <code>cd portal-discord-bot</code>.</li><li>Create the private host environment: <code>cp env.example .env</code>, fill in the Discord token, Application ID, guild ID, database URL and any selected media-server keys, then run <code>chmod 600 .env</code>.</li><li>Build and start the Docker container: <code>docker compose up -d --build</code>.</li><li>Register the slash commands: <code>docker compose run --rm portal-discord-bot node index.js register</code>.</li><li>Check the running bot: <code>docker compose logs --tail=100 -f portal-discord-bot</code>.</li></ol><div class="smtp-config-note"><strong>When Portal settings change:</strong> download a fresh bundle, replace the bot folder, rebuild it and run the register command again. The generated <code>bot-config.json</code> carries the current provider, pricing, identity and lifetime settings; secrets remain only in <code>.env</code>.</div></section>`;
+  detail.querySelector('#discordBotRegistrationSteps')?.insertAdjacentElement('afterend', (() => { const wrapper = document.createElement('div'); wrapper.innerHTML = flow; return wrapper.firstElementChild; })());
 }
 
 function updateDiscordBotInviteLink() {

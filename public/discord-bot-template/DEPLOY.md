@@ -1,22 +1,25 @@
 # Discord bot Docker deployment
 
+This folder is generated from the public Portal Discord Bot card. Use the steps in this order.
+
 1. Extract the downloaded bundle on the bot VPS and enter the folder:
    `tar -xzf portal-discord-bot-bundle.tar.gz && cd portal-discord-bot`
 
 2. Copy the host environment template and fill in the secret values:
    `cp env.example .env && chmod 600 .env`
+   Add the Discord token, Application ID, guild ID, the intended PostgreSQL `DATABASE_URL`, and only the provider keys listed in `env.example`.
 
 3. Keep the generated `bot-config.json` in this same folder. It contains no tokens or API keys.
 
-4. Start the bot with Docker Compose:
+4. Build and start the bot:
    `docker compose up -d --build`
 
-5. Register the configured slash commands:
+5. Register the configured slash commands. This step is required:
    `docker compose run --rm portal-discord-bot node index.js register`
 
 6. Check the bot:
    `docker compose logs --tail=100 -f portal-discord-bot`
 
-Keep the bot .env on the VPS only. The Portal and bot may share PostgreSQL only when the bot DATABASE_URL is intentionally configured for that database.
+The generated Compose file joins the existing `portal-v1-postgres_default` Docker network. Deploy the bot on the same Docker host as the public Portal when using `DATABASE_URL=...@db`. Keep the bot `.env` on the VPS only.
 
-The generated Compose file joins the existing `portal-v1-postgres_default` Docker network so the bot can reach the Portal database as `db`. Deploy the bot on the same Docker host as the public Portal.
+When Portal provider, pricing, command, account, Lifetime-parent/sub-user, or database-contract behavior changes: save the Portal Discord Bot card, download a fresh complete bundle, replace the bot folder, rebuild it, and run the registration command again. Do not manually edit generated `bot-config.json` to bypass the Portal card.
