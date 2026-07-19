@@ -32,6 +32,10 @@ services:
       NODE_ENV: production
       PORT: 3000
       PORTAL_BUILD_ID: portal-v1-public
+      VPS_NAME: ${VPS_NAME:-Portal public PostgreSQL VPS}
+      VPS_HOST: ${VPS_HOST:-}
+      VPS_SSH_PORT: ${VPS_SSH_PORT:-22}
+      VPS_SSH_USER: ${VPS_SSH_USER:-}
       DATABASE_URL: postgres://portal:${PORTAL_DB_PASSWORD:-change-this-password}@db:5432/portal
     ports:
       - "3100:3000"
