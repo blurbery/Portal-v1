@@ -74,8 +74,9 @@ class QueryBuilder {
     }
     return clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
   }
-  rowExpression() {
-    return `r.data || jsonb_build_object('id', r.id, 'created_at', r.created_at, 'updated_at', r.updated_at)`;
+  rowExpression(alias = 'r') {
+    const prefix = alias ? `${alias}.` : '';
+    return `${prefix}data || jsonb_build_object('id', ${prefix}id, 'created_at', ${prefix}created_at, 'updated_at', ${prefix}updated_at)`;
   }
   async execute() {
     const params = []; const table = quoteIdentifier(this.table);
@@ -94,7 +95,7 @@ class QueryBuilder {
       if (this.operation === 'insert') {
         const inserted = [];
         for (const record of records) {
-          const result = await this.pool.query(`INSERT INTO ${table} (data) VALUES ($1::jsonb) RETURNING ${this.rowExpression()} AS row`, [JSON.stringify(record)]);
+          const result = await this.pool.query(`INSERT INTO ${table} (data) VALUES ($1::jsonb) RETURNING ${this.rowExpression('')} AS row`, [JSON.stringify(record)]);
           inserted.push(result.rows[0].row);
         }
         return { data: this.returnRows ? (Array.isArray(this.payload) ? inserted : inserted[0]) : null, error: null };
@@ -107,7 +108,7 @@ class QueryBuilder {
           const where = match.length ? `WHERE ${match.join(' AND ')}` : 'WHERE false';
           const found = await this.pool.query(`SELECT r.id FROM ${table} r ${where} LIMIT 1`, params2);
           if (found.rows[0]) {
-            const result = await this.pool.query(`UPDATE ${table} r SET data = r.data || $1::jsonb, updated_at = now() WHERE r.id = $${params2.length + 1} RETURNING ${this.rowExpression()} AS row`, [JSON.stringify(record), found.rows[0].id]);
+            const result = await this.pool.query(`UPDATE ${table} r SET data = r.data || $1::jsonb, updated_at = now() WHERE r.id = $${params2.length + 1} RETURNING ${this.rowExpression('')} AS row`, [JSON.stringify(record), found.rows[0].id]);
             saved.push(result.rows[0].row);
           } else {
             const result = await this.pool.query(`INSERT INTO ${table} (data) VALUES ($1::jsonb) RETURNING ${this.rowExpression()} AS row`, [JSON.stringify(record)]);
