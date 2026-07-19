@@ -72,8 +72,8 @@ node --env-file=.env index.js
 
 The `.env` file must contain the real values locally or in the host environment, but must never be committed. If environment variables are already configured by Railway, run `npm run register` as a Railway one-off command instead.
 
-Railway: connect the private GitHub repository, add the variables under Service → Variables, set the pre-deploy command to `npm run register`, and set the start command to `npm start`. Supabase SQL must be run once before the bot starts.
+Railway: connect the private GitHub repository, add the variables under Service → Variables, set the pre-deploy command to `npm run register`, and set the start command to `npm start`. PostgreSQL SQL must be run once before the bot starts.
 
-For Supabase + Railway, run the portal’s Discord Bot Integration SQL, add the variables in Railway → Service → Variables, and connect the private GitHub repository. For another host, keep `.env` in the host secret store or beside the bot with permissions `600`. Supabase remains the shared account store.
+For PostgreSQL + Railway, run the portal’s Discord Bot Integration SQL, add the variables in Railway → Service → Variables, and connect the private GitHub repository. For another host, keep `.env` in the host secret store or beside the bot with permissions `600`. PostgreSQL remains the shared account store.
 
 Never commit `.env`, bot tokens, service-role keys, provider API keys, private IDs, or private adapter code.
