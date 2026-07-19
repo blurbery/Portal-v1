@@ -1494,8 +1494,7 @@
           <div class="v3-sr-only" id="progressWrap" style="display:none"><span id="progressLabel"></span><div id="progressFill"></div></div>
           <div class="v3-sr-only" id="lifetimeBar" style="display:none"></div>
         </button>
-        <div class="v3-iptv-services" id="iptvCards" data-service-card="iptv"></div>
-        <button class="v3-service v3-library-service" id="v3LibraryCard" data-service-card="library" onclick="showSection('libraryEbooks')">
+                <button class="v3-service v3-library-service" id="v3LibraryCard" data-service-card="library" onclick="showSection('libraryEbooks')">
           <span class="v3-service-icon v3-purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
           <span class="v3-service-copy"><strong>Library</strong><span>eBooks, audiobooks and comics</span></span>
           <span class="v3-service-state">Open</span>
@@ -2445,7 +2444,6 @@ function applyPortalCapabilities(data) {
   const supplied = data?.capabilities || {};
   const hasEmby = supplied.emby ?? data?.services?.hasEmby ?? !!account.emby_user_id;
   const hasSilo = supplied.silo ?? data?.services?.hasSilo ?? !!data?.silo;
-  const hasIptv = account.is_sub ? false : (detectedIptv ?? supplied.iptv ?? data?.services?.hasIptv ?? false);
   const features = data?.features || {};
   portalCapabilities = {
     library: supplied.library ?? (hasEmby && features.library !== false),
@@ -2467,14 +2465,12 @@ function applyPortalCapabilities(data) {
 
   const readingGroup = document.getElementById('readingGroup');
   const embyGroup = document.getElementById('embyGroup');
-  const iptvGroup = document.getElementById('iptvGroup');
   const libraryCard = document.getElementById('v3LibraryCard');
   const embyChillioGuide = document.getElementById('embyChillioGuide');
   const lifetimeUsersButton = document.getElementById('embyLifetimeUsersButton');
   const streamingGroup = document.getElementById('v3StreamingGroup');
   const streamingEmby = document.getElementById('v3StreamingEmby');
   const streamingSilo = document.getElementById('v3StreamingSilo');
-  const streamingIptv = document.getElementById('v3StreamingIptv');
   const streamingApps = document.getElementById('v3StreamingApps');
   const administrationLink = document.getElementById('v3AdministrationLink');
   const requestsGroup = document.getElementById('requestsGroup');
@@ -3455,7 +3451,6 @@ async function submitAdminServiceLogin() {
   const error = document.getElementById('adminServiceLoginError');
   if (!username || !password) { error.textContent = 'Enter both a username and password.'; error.style.display = 'block'; return; }
   try {
-    const panel = service === 'iptv' ? document.getElementById('adminServiceLoginIptvPanel')?.value || '' : '';
     const endpoint = accountData?.adminLogin ? '/api/admin/services/link' : '/api/member/services/link';
     const response = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({service, username, password, panel}) });
     const data = await response.json();
@@ -5769,14 +5764,15 @@ async function saveAccountEmail(kind, button) {
   button.disabled = false; button.textContent = 'Save';
 }
 
-async function unlinkAccountService(service, serviceKey = '') {
-  const isAdmin = accountData?.adminLogin === true;
-  const label = service === 'iptv' && serviceKey ? 'this IPTV service' : service.toUpperCase();
+async function unlinkAccountService(service) {
+  if (accountData?.adminLogin !== true) {
+    showToast('Only the portal administrator can manage linked services.', 'error');
+    return;
+  }
+  const label = service.toUpperCase();
   if (!confirm(`Unlink ${label} from the portal?`)) return;
   try {
-    const url = isAdmin
-      ? `/api/admin/services/${encodeURIComponent(service)}`
-      : `/api/member/services/iptv/${encodeURIComponent(serviceKey)}`;
+    const url = `/api/admin/services/${encodeURIComponent(service)}`;
     const res = await fetch(url, { method:'DELETE' });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || 'Could not unlink service');
@@ -9221,9 +9217,9 @@ async function pollMainEmbyStatus() {
   function cleanLegacyUi() {
     document.querySelectorAll('[id*="iptv" i], [class*="iptv" i], [href*="iptv" i]').forEach(el => el.remove());
     document.querySelectorAll('body *').forEach(el => {
-      if (el.children.length === 0 && /Apex Nova/i.test(el.textContent || '')) el.textContent = el.textContent.replace(/Apex Nova/gi, 'Portal');
+      if (el.children.length === 0 && /Portal/i.test(el.textContent || '')) el.textContent = el.textContent.replace(/Portal/gi, 'Portal');
       ['alt','title','aria-label'].forEach(attr => {
-        if (el.hasAttribute(attr)) el.setAttribute(attr, el.getAttribute(attr).replace(/Apex Nova/gi, 'Portal'));
+        if (el.hasAttribute(attr)) el.setAttribute(attr, el.getAttribute(attr).replace(/Portal/gi, 'Portal'));
       });
     });
   }
