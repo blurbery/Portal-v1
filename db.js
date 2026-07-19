@@ -11,6 +11,10 @@ function quoteIdentifier(value) {
   return `"${value}"`;
 }
 
+function quoteLiteral(value) {
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
 function normaliseTable(table) {
   if (!TABLES.has(table)) throw new Error(`Unknown Portal table: ${table}`);
   return table;
@@ -44,7 +48,17 @@ class QueryBuilder {
   lte(column, value) { return this.filter(column, '<=', value); }
   ilike(column, value) { return this.filter(column, 'ILIKE', value); }
   is(column, value) { return this.filter(column, value === null ? 'IS NULL' : 'IS NOT NULL', value); }
-  in(column, values) { this.filters.push({ column, operator: 'IN', value: values }); return this; }
+  in(column, values) { this.filters.push({ column, operator: 'IN', value: Array.isArray(values) ? values : [] }); return this; }
+  not(column, operator, value) {
+    const op = String(operator || '').toLowerCase();
+    const inverse = {
+      eq: '<>', neq: '=', gt: '<=', gte: '<', lt: '>=', lte: '>',
+      like: 'NOT LIKE', ilike: 'NOT ILIKE', in: 'NOT IN',
+    }[op] || (op === 'is' ? (value === null ? 'IS NOT NULL' : 'IS NULL') : null);
+    if (!inverse) throw new Error(`Unsupported negated filter: ${operator}`);
+    if (inverse === 'IS NULL' || inverse === 'IS NOT NULL') return this.filter(column, inverse, value);
+    return this.filter(column, inverse, op === 'in' ? (Array.isArray(value) ? value : []) : value);
+  }
   filter(column, operator, value) { this.filters.push({ column, operator, value }); return this; }
   order(column, options = {}) { this.orders.push({ column, ascending: options.ascending !== false }); return this; }
   limit(value) { this.limitValue = Number(value); return this; }
@@ -57,16 +71,21 @@ class QueryBuilder {
   fieldExpression(column) {
     const name = quoteIdentifier(column);
     return column === 'id' || column === 'created_at' || column === 'updated_at'
-      ? `r.${name}` : `(r.data->>${JSON.stringify(column)})`;
+      ? `r.${name}` : `(r.data->>${quoteLiteral(column)})`;
   }
   buildWhere(params) {
     const clauses = [];
     for (const item of this.filters) {
       const field = this.fieldExpression(item.column);
       if (item.operator === 'IS NULL' || item.operator === 'IS NOT NULL') clauses.push(`${field} ${item.operator}`);
-      else if (item.operator === 'IN') {
-        const marks = item.value.map(value => { params.push(String(value)); return `$${params.length}`; });
-        clauses.push(`${field} IN (${marks.join(',')})`);
+      else if (item.operator === 'IN' || item.operator === 'NOT IN') {
+        const values = Array.isArray(item.value) ? item.value : [];
+        if (!values.length) {
+          clauses.push(item.operator === 'IN' ? 'FALSE' : 'TRUE');
+          continue;
+        }
+        const marks = values.map(value => { params.push(String(value)); return String.fromCharCode(36) + params.length; });
+        clauses.push(`${field} ${item.operator} (${marks.join(',')})`);
       } else {
         params.push(item.value == null ? null : String(item.value));
         clauses.push(item.operator === 'ILIKE' ? `${field} ILIKE $${params.length}` : `${field} ${item.operator} $${params.length}`);

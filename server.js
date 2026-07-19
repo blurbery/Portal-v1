@@ -3576,18 +3576,38 @@ let lastHealthError = null;
 // Availability alerts use the direct Emby origin, not Discord/PostgreSQL
 // announcements. A proxy hiccup must persist across several checks before it
 // is treated as a real outage.
-const EMBY_HEALTH_URLS = [
-  process.env.EMBY_HEALTH_URL,
-  '${process.env.EMBY_DIRECT_URL || process.env.EMBY_URL || ""}/emby/System/Ping',
-  '${process.env.EMBY_DIRECT_URL || process.env.EMBY_URL || ""}/emby/System/Info/Public',
-  '${process.env.EMBY_DIRECT_URL || process.env.EMBY_URL || ""}/System/Info/Public'
-].filter((url, index, urls) => url && urls.indexOf(url) === index);
+function buildEmbyHealthUrls() {
+  const configured = String(process.env.EMBY_HEALTH_URL || '').trim();
+  const base = String(process.env.EMBY_DIRECT_URL || process.env.EMBY_URL || '').trim().replace(/\/+$/, '');
+  const urls = configured
+    ? [configured]
+    : base
+      ? [
+          `${base}/emby/System/Ping`,
+          `${base}/emby/System/Info/Public`,
+          `${base}/System/Info/Public`,
+        ]
+      : [];
+  return urls.filter((url, index, all) => url && all.indexOf(url) === index);
+}
+const EMBY_HEALTH_URLS = buildEmbyHealthUrls();
 const HEALTH_TIMEOUT_MS = 8000;
 const HEALTH_INTERVAL_MS = 30000;
 const HEALTH_FAILURES_TO_ALERT = 3;
 const HEALTH_SUCCESSES_TO_RECOVER = 2;
 
+app.get('/api/health', async (req, res) => {
+  try {
+    await db.pool.query('SELECT 1');
+    res.status(200).json({ status: 'ok', database: 'ok' });
+  } catch (error) {
+    console.error('[health endpoint]', error.message);
+    res.status(503).json({ status: 'degraded', database: 'unavailable' });
+  }
+});
+
 async function checkDirectEmbyHealth() {
+  if (!EMBY_HEALTH_URLS.length) return { online: true, skipped: true };
   const errors = [];
   for (const url of EMBY_HEALTH_URLS) {
     try {
@@ -3629,7 +3649,9 @@ async function monitorServer() {
       healthInitialized = true;
       serverOnline = true;
       healthSuccessStreak = 0;
-      console.log(`[health] Emby reachable via ${health.url} (HTTP ${health.status})`);
+      console.log(health.skipped
+        ? '[health] Emby health checks skipped: no endpoint configured'
+        : `[health] Emby reachable via ${health.url} (HTTP ${health.status})`);
       return;
     }
 
