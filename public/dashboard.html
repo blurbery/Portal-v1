@@ -6,20 +6,20 @@
 <script>
 // Run before any CSS renders to avoid flash of wrong theme
 (function(){
-  var t = localStorage.getItem('apexTheme');
+  var t = localStorage.getItem('portalTheme');
   // Only honour explicitly set values; default is always dark
-  if (t !== 'light') { t = 'dark'; localStorage.setItem('apexTheme', 'dark'); }
+  if (t !== 'light') { t = 'dark'; localStorage.setItem('portalTheme', 'dark'); }
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<title>Dashboard | Apex Nova v1</title>
+<title>Dashboard | Portal</title>
   <link rel="icon" type="image/png" href="/logo.png">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a0a0f" id="themeColorMeta">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Apex Nova v1">
+  <meta name="apple-mobile-web-app-title" content="Portal">
   <meta name="mobile-web-app-capable" content="yes">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -1286,8 +1286,8 @@
 </head>
 <body>
 <nav>
-  <div class="nav-brand"><button class="hamburger" id="sidebarToggleBtn" onclick="toggleSidebar()" aria-label="Open sidebar" title="Open menu"><span></span><span></span><span></span></button><a href="/dashboard"><img src="/logo.png" alt="Apex Nova v1" class="nav-logo" /></a><span class="nav-brand-text">Apex Nova v1</span></div>
-  <div class="v3-nav-context">Apex Nova v1 / <strong id="v3PageTitle">Home</strong></div>
+  <div class="nav-brand"><button class="hamburger" id="sidebarToggleBtn" onclick="toggleSidebar()" aria-label="Open sidebar" title="Open menu"><span></span><span></span><span></span></button><a href="/dashboard"><img src="/logo.png" alt="Portal" class="nav-logo" /></a><span class="nav-brand-text">Portal</span></div>
+  <div class="v3-nav-context">Portal / <strong id="v3PageTitle">Home</strong></div>
   <div class="nav-right">
     <div class="status-pill">
       <span class="status-dot online" id="statusDot"></span>
@@ -1334,9 +1334,9 @@
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 <div class="layout">
   <aside class="sidebar" id="sidebar">
-    <a class="v3-sidebar-brand" href="/dashboard" aria-label="Apex Nova v1 home">
+    <a class="v3-sidebar-brand" href="/dashboard" aria-label="Portal home">
       <img src="/logo.png" alt="">
-      <span><strong>Apex Nova v1</strong><small>Member portal</small></span>
+      <span><strong>Portal</strong><small>Member portal</small></span>
     </a>
     <div class="sidebar-section">
       <div class="sidebar-label">Menu</div>
@@ -1387,7 +1387,6 @@
         <div class="sidebar-submenu" id="v3StreamingMenu">
           <a class="sidebar-subitem" id="v3StreamingSilo" onclick="showSection('siloProfile'); closeSidebar();"><span class="sidebar-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 7v10l8 4 8-4V7l-8-4Z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg></span>Silo</a>
           <a class="sidebar-subitem" id="v3StreamingEmby" onclick="showSection('profile'); closeSidebar();"><span class="sidebar-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="m10 8 6 4-6 4Z"/></svg></span>Emby</a>
-          <a class="sidebar-subitem" id="v3StreamingIptv" onclick="showSection('iptv'); closeSidebar();"><span class="sidebar-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg></span>IPTV</a>
         </div>
       </div>
 
@@ -1436,36 +1435,7 @@
         </div>
       </div>
 
-      <!-- IPTV GROUP (only shown if user has IPTV) -->
-      <div class="sidebar-group" id="iptvGroup" style="display:none">
-        <button class="sidebar-item sidebar-group-toggle" onclick="toggleGroup('iptvMenu', this)">
-          <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg></span>
-          <span style="flex:1;text-align:left">IPTV</span>
-          <span class="group-caret">▸</span>
-        </button>
-        <div class="sidebar-submenu" id="iptvMenu">
-          <a class="sidebar-subitem" onclick="showSection('iptv'); closeSidebar();" id="navIptvProfile">
-            <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> Profile
-          </a>
-          <div class="sidebar-subgroup" id="iptvAppsSubgroup">
-            <button class="sidebar-subitem sidebar-subgroup-toggle" onclick="toggleAppsMenu(this)">
-              <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></span>
-              <span style="flex:1;text-align:left">Apps</span>
-              <span class="subgroup-caret">▸</span>
-            </button>
-            <div class="sidebar-submenu2" id="iptvAppsSubmenu">
-              <a class="sidebar-subitem2" href="#" onclick="showSection('iptvApple'); closeSidebar(); return false;" id="navIptvApple">
-                <span class="sidebar-icon"><svg width="14" height="14" viewBox="0 0 814 1000" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.3 269-317.3 70.8 0 129.9 46.5 174.2 46.5 42.2 0 108.2-49.3 190.3-49.3zm-218.3-97.8c31.3-38 53.7-90.7 53.7-143.4 0-7.7-.6-15.4-1.9-21.8-50.6 1.9-110.2 33.8-145.8 76.8-28 32.6-54.9 85.3-54.9 138.7 0 8.3 1.3 16.6 1.9 19.2 3.2.6 8.3 1.3 13.4 1.3 45.5 0 102.5-30.1 133.6-70.8z"/></svg></span> Apple
-              </a>
-              <a class="sidebar-subitem2" href="#" onclick="showSection('iptvAndroid'); closeSidebar(); return false;" id="navIptvAndroid">
-                <span class="sidebar-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M17.523 15.341a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm-11.046 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM17.8 10.5l1.578-2.732a.332.332 0 0 0-.573-.332L17.22 10.24a9.965 9.965 0 0 0-10.44 0L5.195 7.436a.332.332 0 0 0-.573.332L6.2 10.5C3.754 11.967 2.11 14.56 2 17.5h20c-.11-2.94-1.754-5.533-4.2-7z"/></svg></span> Android
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="sidebarSocials" class="sidebar-footer sidebar-socials">
+          <div id="sidebarSocials" class="sidebar-footer sidebar-socials">
       <button type="button" class="sidebar-item" id="v3AdministrationLink" style="display:none;margin:0 0 .65rem" onclick="showSection('administration'); closeSidebar();">
         <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z"/><path d="M9 12l2 2 4-4"/></svg></span>
         <span>Administration</span>
@@ -1524,8 +1494,7 @@
           <div class="v3-sr-only" id="progressWrap" style="display:none"><span id="progressLabel"></span><div id="progressFill"></div></div>
           <div class="v3-sr-only" id="lifetimeBar" style="display:none"></div>
         </button>
-        <div class="v3-iptv-services" id="iptvCards" data-service-card="iptv"></div>
-        <button class="v3-service v3-library-service" id="v3LibraryCard" data-service-card="library" onclick="showSection('libraryEbooks')">
+                <button class="v3-service v3-library-service" id="v3LibraryCard" data-service-card="library" onclick="showSection('libraryEbooks')">
           <span class="v3-service-icon v3-purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
           <span class="v3-service-copy"><strong>Library</strong><span>eBooks, audiobooks and comics</span></span>
           <span class="v3-service-state">Open</span>
@@ -1567,10 +1536,7 @@
         <div class="admin-service-choice" role="tablist" aria-label="Choose service">
           <button type="button" class="active" data-service-choice="emby" onclick="chooseAdminService('emby')"><span class="admin-service-choice-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20"/></svg></span>Emby</button>
           <button type="button" data-service-choice="silo" onclick="chooseAdminService('silo')"><span class="admin-service-choice-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v10l8 4 8-4V7l-8-4Z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg></span>Silo</button>
-          <button type="button" data-service-choice="iptv" onclick="chooseAdminService('iptv')"><span class="admin-service-choice-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg></span>IPTV</button>
         </div>
-        <select id="adminServiceLoginService" style="display:none"><option value="emby">Emby</option><option value="silo">Silo</option><option value="iptv">IPTV</option></select>
-        <div id="adminIptvPicker" class="admin-service-iptv-picker" style="display:none"><label class="admin-service-field"><span>IPTV Service</span><select id="adminServiceLoginIptvPanel" class="input-sm"><option value="Onyx">Onyx</option><option value="Phoenix">Phoenix</option></select></label><p class="admin-service-field-note">Choose the service where this IPTV login was created. We’ll securely check your details before linking it to your portal.</p></div>
         <label class="admin-service-field"><span>Username</span><input id="adminServiceLoginUsername" class="input-sm" autocomplete="username" placeholder="Enter service username"></label>
         <label class="admin-service-field"><span>Password</span><input id="adminServiceLoginPassword" class="input-sm" type="password" autocomplete="current-password" placeholder="Enter service password"></label>
         <div id="adminServiceLoginError" style="display:none;color:var(--danger);font-size:.78rem;margin-top:.7rem"></div>
@@ -1584,7 +1550,7 @@
         <button class="v3-page-back" type="button" onclick="showSection('profile')">← Back to Emby profile</button>
         <div style="margin-bottom:1.5rem">
           <h2 style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0 0 0.25rem">Apple Apps</h2>
-          <p style="color:var(--muted);font-size:0.875rem;margin:0">Recommended apps for streaming Apex Nova v1 on your Apple devices.</p>
+          <p style="color:var(--muted);font-size:0.875rem;margin:0">Recommended apps for streaming Portal on your Apple devices.</p>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">
 
@@ -1727,7 +1693,7 @@
         <button class="v3-page-back" type="button" onclick="showSection('profile')">← Back to Emby profile</button>
         <div style="margin-bottom:1.5rem">
           <h2 style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0 0 0.25rem">Android Apps</h2>
-          <p style="color:var(--muted);font-size:0.875rem;margin:0">Recommended apps for streaming Apex Nova v1 on your Android devices.</p>
+          <p style="color:var(--muted);font-size:0.875rem;margin:0">Recommended apps for streaming Portal on your Android devices.</p>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">
 
@@ -1886,7 +1852,7 @@
       <div style="max-width:800px;margin:0 auto;padding:1.5rem 0 0">
         <div style="margin-bottom:1.1rem">
           <h2 style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0 0 0.25rem">eBooks</h2>
-          <p style="color:var(--muted);font-size:0.875rem;margin:0">Browse books directly in Apex Nova v1, or request new ones.</p>
+          <p style="color:var(--muted);font-size:0.875rem;margin:0">Browse books directly in Portal, or request new ones.</p>
         </div>
         <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1rem">
           <button id="ebookViewBtnBooks" onclick="switchEbookView('books')" style="padding:0.55rem 1rem;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0">Books</button>
@@ -1908,7 +1874,7 @@
       <div style="max-width:800px;margin:0 auto;padding:1.5rem 0 0">
         <div style="margin-bottom:1.1rem">
           <h2 style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0 0 0.25rem">Audiobooks</h2>
-          <p style="color:var(--muted);font-size:0.875rem;margin:0">Browse audiobooks directly in Apex Nova v1, or request new ones.</p>
+          <p style="color:var(--muted);font-size:0.875rem;margin:0">Browse audiobooks directly in Portal, or request new ones.</p>
         </div>
         <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1rem">
           <button id="audiobookViewBtnBooks" onclick="switchAudiobookView('books')" style="padding:0.55rem 1rem;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0">Audiobooks</button>
@@ -1928,7 +1894,7 @@
       <div style="max-width:900px;margin:0 auto;padding:1.5rem 0 0">
         <div style="margin-bottom:1rem">
           <h2 style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0 0 0.25rem">Comics</h2>
-          <p style="color:var(--muted);font-size:0.875rem;margin:0">Browse issues directly in Apex Nova v1, or switch to series view.</p>
+          <p style="color:var(--muted);font-size:0.875rem;margin:0">Browse issues directly in Portal, or switch to series view.</p>
         </div>
         <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;border-bottom:1px solid var(--border)">
           <button id="comicViewBtnIssues" onclick="switchComicView('issues')" style="padding:0.55rem 1rem;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0">Issues</button>
@@ -2019,14 +1985,14 @@
             <span style="opacity:0.7">▦</span>
             <span class="card-title" style="margin-bottom:0">Comics Apps</span>
           </div>
-          <p style="font-size:0.83rem;color:var(--muted);line-height:1.6;margin-bottom:1rem">Use your normal Apex Nova v1 username and password. Leave the port blank if the app asks for one. This mirrors Book Warehouse live, so comics are not bulk-downloaded onto the VPS.</p>
+          <p style="font-size:0.83rem;color:var(--muted);line-height:1.6;margin-bottom:1rem">Use your normal Portal username and password. Leave the port blank if the app asks for one. This mirrors Book Warehouse live, so comics are not bulk-downloaded onto the VPS.</p>
 
           <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);font-weight:600;margin-bottom:0.4rem">Panels / OPDS URL</div>
           <div style="display:flex;gap:0.5rem;align-items:center">
             <input id="settingsOpdsUrl" class="input-sm" readonly value="/opds" style="flex:1;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.8rem" />
             <button class="btn-sm" onclick="copyOpdsUrl()">Copy</button>
           </div>
-          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5;margin-top:0.75rem">Use this for Panels OPDS mode. Add an OPDS server, paste this URL, sign in with your Apex Nova v1 username and password, and choose Issues or Series if the app shows categories.</div>
+          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5;margin-top:0.75rem">Use this for Panels OPDS mode. Add an OPDS server, paste this URL, sign in with your Portal username and password, and choose Issues or Series if the app shows categories.</div>
         </div>
 
         <!-- Recovery Email -->
@@ -2112,238 +2078,6 @@
         <div id="downtimeHistoryList"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:0.85rem">Loading…</div></div>
       </div>
     </div>
-
-    <!-- ===== IPTV APPLE APPS SECTION ===== -->
-    <div id="iptvAppleSection" class="section-pane" style="display:none">
-      <div style="max-width:900px;margin:0 auto;padding:1.5rem 1rem">
-        <button class="v3-page-back" type="button" onclick="showSection('iptv')">← Back to IPTV profile</button>
-        <div style="margin-bottom:1.5rem">
-          <h2 style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0 0 0.25rem">IPTV Apps — Apple</h2>
-          <p style="color:var(--muted);font-size:0.875rem;margin:0">Recommended IPTV players for your Apple devices.</p>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">
-
-          <!-- SWIPTV -->
-          <div class="app-card" onclick="openAppGuide('swiptv-iptv')">
-            <div class="app-card-inner">
-              <div class="app-icon-wrap">
-                <img class="app-icon" src="/api/app-icon/1658538188"
-                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="SWIPTV">
-                <div class="app-icon-fallback" style="display:none;background:linear-gradient(135deg,#0f1b3a,#2563eb)">S</div>
-              </div>
-              <div class="app-card-info">
-                <div class="app-card-name">SWIPTV</div>
-                <div class="app-card-tags">
-                  <span class="app-tag">iOS</span><span class="app-tag">tvOS</span><span class="app-tag">iPadOS</span><span class="app-tag">macOS</span>
-                </div>
-              </div>
-              <div class="app-card-arrow">›</div>
-            </div>
-            <div class="app-card-footer">
-              <div class="app-card-footer-btns"><a class="app-dl-btn app-dl-btn-store" href="https://apps.apple.com/us/app/swiptv-iptv-player/id1658538188" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> App Store</a></div>
-              <button class="app-guide-btn" onclick="event.stopPropagation(); openAppGuide('swiptv-iptv')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Setup Guide</button>
-            </div>
-          </div>
-
-          <!-- UHF -->
-          <div class="app-card" onclick="openAppGuide('uhf-iptv')">
-            <div class="app-card-inner">
-              <div class="app-icon-wrap">
-                <img class="app-icon" src="/api/app-icon/6443751726"
-                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="UHF">
-                <div class="app-icon-fallback" style="display:none;background:linear-gradient(135deg,#1a1a2e,#e94560)">U</div>
-              </div>
-              <div class="app-card-info">
-                <div class="app-card-name">UHF</div>
-                <div class="app-card-tags">
-                  <span class="app-tag">iOS</span><span class="app-tag">tvOS</span><span class="app-tag">iPadOS</span><span class="app-tag">macOS</span>
-                </div>
-              </div>
-              <div class="app-card-arrow">›</div>
-            </div>
-            <div class="app-card-footer">
-              <div class="app-card-footer-btns"><a class="app-dl-btn app-dl-btn-store" href="https://apps.apple.com/us/app/uhf-love-your-iptv/id6443751726" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> App Store</a></div>
-              <button class="app-guide-btn" onclick="event.stopPropagation(); openAppGuide('uhf-iptv')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Setup Guide</button>
-            </div>
-          </div>
-
-          <!-- Chillio -->
-          <div class="app-card" onclick="openAppGuide('chillio-iptv')">
-            <div class="app-card-inner">
-              <div class="app-icon-wrap">
-                <img class="app-icon" src="/api/app-icon/6478813450"
-                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="Chillio">
-                <div class="app-icon-fallback" style="display:none;background:linear-gradient(135deg,#0d1b2a,#00b4d8)">C</div>
-              </div>
-              <div class="app-card-info">
-                <div class="app-card-name">Chillio</div>
-                <div class="app-card-tags">
-                  <span class="app-tag">iOS</span><span class="app-tag">tvOS</span><span class="app-tag">iPadOS</span><span class="app-tag">macOS</span>
-                </div>
-              </div>
-              <div class="app-card-arrow">›</div>
-            </div>
-            <div class="app-card-footer">
-              <div class="app-card-footer-btns"><a class="app-dl-btn app-dl-btn-store" href="https://apps.apple.com/us/app/chillio-iptv-smart-player/id6478813450" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> App Store</a></div>
-              <button class="app-guide-btn" onclick="event.stopPropagation(); openAppGuide('chillio-iptv')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Setup Guide</button>
-            </div>
-          </div>
-
-          <!-- iMPlayer -->
-          <div class="app-card" onclick="openAppGuide('implayer-iptv')">
-            <div class="app-card-inner">
-              <div class="app-icon-wrap">
-                <img class="app-icon" src="/api/app-icon/6695725513"
-                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="iMPlayer">
-                <div class="app-icon-fallback" style="display:none;background:linear-gradient(135deg,#1a0533,#7b2d8b)">i</div>
-              </div>
-              <div class="app-card-info">
-                <div class="app-card-name">iMPlayer</div>
-                <div class="app-card-tags">
-                  <span class="app-tag">iOS</span><span class="app-tag">tvOS</span><span class="app-tag">iPadOS</span>
-                </div>
-              </div>
-              <div class="app-card-arrow">›</div>
-            </div>
-            <div class="app-card-footer">
-              <div class="app-card-footer-btns"><a class="app-dl-btn app-dl-btn-store" href="https://apps.apple.com/us/app/implayer-iptv-player/id6695725513" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> App Store</a></div>
-              <button class="app-guide-btn" onclick="event.stopPropagation(); openAppGuide('implayer-iptv')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Setup Guide</button>
-            </div>
-          </div>
-
-          <!-- IPTVX -->
-          <div class="app-card" onclick="openAppGuide('iptvx-iptv')">
-            <div class="app-card-inner">
-              <div class="app-icon-wrap">
-                <img class="app-icon" src="/api/app-icon/1451470024"
-                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="IPTVX">
-                <div class="app-icon-fallback" style="display:none;background:linear-gradient(135deg,#0a0a0a,#ff4500)">X</div>
-              </div>
-              <div class="app-card-info">
-                <div class="app-card-name">IPTVX</div>
-                <div class="app-card-tags">
-                  <span class="app-tag">iOS</span><span class="app-tag">tvOS</span><span class="app-tag">iPadOS</span><span class="app-tag">macOS</span>
-                </div>
-              </div>
-              <div class="app-card-arrow">›</div>
-            </div>
-            <div class="app-card-footer">
-              <div class="app-card-footer-btns"><a class="app-dl-btn app-dl-btn-store" href="https://apps.apple.com/us/app/iptvx/id1451470024" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> App Store</a></div>
-              <button class="app-guide-btn" onclick="event.stopPropagation(); openAppGuide('iptvx-iptv')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Setup Guide</button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div><!-- /iptvAppleSection -->
-
-    <!-- ===== IPTV ANDROID APPS SECTION ===== -->
-    <div id="iptvAndroidSection" class="section-pane" style="display:none">
-      <div style="max-width:900px;margin:0 auto;padding:1.5rem 1rem">
-        <button class="v3-page-back" type="button" onclick="showSection('iptv')">← Back to IPTV profile</button>
-        <div style="margin-bottom:1.5rem">
-          <h2 style="font-size:1.3rem;font-weight:700;color:var(--text);margin:0 0 0.25rem">IPTV Apps — Android</h2>
-          <p style="color:var(--muted);font-size:0.875rem;margin:0">Recommended IPTV players for your Android devices.</p>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">
-
-          <!-- TiviMate -->
-          <div class="app-card" onclick="openAppGuide('tivimate-iptv')">
-            <div class="app-card-inner">
-              <div class="app-icon-wrap">
-                <img class="app-icon" src="/tivimate-icon.png"
-                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="TiviMate">
-                <div class="app-icon-fallback" style="display:none;background:linear-gradient(135deg,#1a1a1a,#ff6b00)">T</div>
-              </div>
-              <div class="app-card-info">
-                <div class="app-card-name">TiviMate</div>
-                <div class="app-card-tags">
-                  <span class="app-tag">Android TV</span>
-                </div>
-              </div>
-              <div class="app-card-arrow">›</div>
-            </div>
-            <div class="app-card-footer">
-              <div class="app-card-footer-btns">
-                <a class="app-dl-btn app-dl-btn-store" href="https://play.google.com/store/apps/details?id=ar.tvplayer.tv" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Google Play</a>
-                <a class="app-dl-btn app-dl-btn-store" href="https://tivimate.com" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Website</a>
-              </div>
-              <button class="app-guide-btn" onclick="event.stopPropagation(); openAppGuide('tivimate-iptv')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Setup Guide</button>
-            </div>
-          </div>
-
-          <!-- iMPlayer -->
-          <div class="app-card" onclick="openAppGuide('implayer-android-iptv')">
-            <div class="app-card-inner">
-              <div class="app-icon-wrap">
-                <img class="app-icon" src="/api/app-icon/6695725513"
-                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="iMPlayer">
-                <div class="app-icon-fallback" style="display:none;background:linear-gradient(135deg,#1a0533,#7b2d8b)">i</div>
-              </div>
-              <div class="app-card-info">
-                <div class="app-card-name">iMPlayer</div>
-                <div class="app-card-tags">
-                  <span class="app-tag">Phone</span><span class="app-tag">Tablet</span><span class="app-tag">Android TV</span>
-                </div>
-              </div>
-              <div class="app-card-arrow">›</div>
-            </div>
-            <div class="app-card-footer">
-              <div class="app-card-footer-btns">
-                <a class="app-dl-btn app-dl-btn-store" href="https://play.google.com/store/apps/details?id=com.myiptvonline.implayerm" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Phone / Tablet</a>
-                <a class="app-dl-btn app-dl-btn-store" href="https://play.google.com/store/apps/details?id=com.myiptvonline.implayer" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Android TV</a>
-              </div>
-              <button class="app-guide-btn" onclick="event.stopPropagation(); openAppGuide('implayer-android-iptv')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Setup Guide</button>
-            </div>
-          </div>
-
-          <!-- Sparkle -->
-          <div class="app-card" onclick="openAppGuide('sparkle-iptv')">
-            <div class="app-card-inner">
-              <div class="app-icon-wrap">
-                <img class="app-icon" src="/api/static-icon?url=https://www.sparkleplayer.com/images/icon.png"
-                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="Sparkle">
-                <div class="app-icon-fallback" style="display:none;background:linear-gradient(135deg,#0d1117,#58a6ff)">S</div>
-              </div>
-              <div class="app-card-info">
-                <div class="app-card-name">Sparkle</div>
-                <div class="app-card-tags">
-                  <span class="app-tag">Android TV</span>
-                </div>
-              </div>
-              <div class="app-card-arrow">›</div>
-            </div>
-            <div class="app-card-footer">
-              <div class="app-card-footer-btns"><a class="app-dl-btn app-dl-btn-store" href="https://play.google.com/store/apps/details?id=se.hedekonsult.sparkle.assistant" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Google Play</a></div>
-              <button class="app-guide-btn" onclick="event.stopPropagation(); openAppGuide('sparkle-iptv')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Setup Guide</button>
-            </div>
-          </div>
-
-          <!-- Chillio -->
-          <div class="app-card" onclick="openAppGuide('chillio-android-iptv')">
-            <div class="app-card-inner">
-              <div class="app-icon-wrap">
-                <img class="app-icon" src="/api/app-icon/6478813450"
-                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="Chillio">
-                <div class="app-icon-fallback" style="display:none;background:linear-gradient(135deg,#0d1b2a,#00b4d8)">C</div>
-              </div>
-              <div class="app-card-info">
-                <div class="app-card-name">Chillio</div>
-                <div class="app-card-tags">
-                  <span class="app-tag">Android TV</span>
-                </div>
-              </div>
-              <div class="app-card-arrow">›</div>
-            </div>
-            <div class="app-card-footer">
-              <div class="app-card-footer-btns"><a class="app-dl-btn app-dl-btn-store" href="https://play.google.com/store/apps/details?id=app.lumoslabs.chillio" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Google Play</a></div>
-              <button class="app-guide-btn" onclick="event.stopPropagation(); openAppGuide('chillio-android-iptv')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Setup Guide</button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div><!-- /iptvAndroidSection -->
 
     <!-- ===== SILO: PROFILE SECTION ===== -->
     <div id="siloProfileSection" class="section-pane" style="display:none">
@@ -2503,7 +2237,7 @@
           </button>
         </div>
         <div class="profile-card-body">
-          <p style="font-size:0.83rem;color:var(--muted);line-height:1.6;margin-bottom:0.85rem">Watch Apex Nova v1 in the <strong style="color:var(--text)">Chillio</strong> app with one tap. Your personal link follows your subscription automatically.</p>
+          <p style="font-size:0.83rem;color:var(--muted);line-height:1.6;margin-bottom:0.85rem">Watch Portal in the <strong style="color:var(--text)">Chillio</strong> app with one tap. Your personal link follows your subscription automatically.</p>
           <ol style="font-size:0.8rem;color:var(--muted);line-height:1.7;margin:0 0 0.85rem;padding-left:1.1rem">
             <li>Hit Generate ChillLink below</li>
             <li>Open Chillio → Add Account → ChillLink</li>
@@ -2607,11 +2341,7 @@
     </div>
     </div><!-- /embyUsersSection -->
 
-    <!-- ===== IPTV: MY LINES SECTION ===== -->
-    <div id="iptvSection" class="section-pane" style="display:none">
-      <div id="iptvDetailCards"></div>
-    </div>
-  </div>
+      </div>
 </main>
   </div>
 </div>
@@ -2679,7 +2409,7 @@
 let accountData = null;
 let kindleSenderPoll = null;
 let renameTarget = null;
-let portalCapabilities = { library:false, emby:false, silo:false, iptv:false, manageUsers:false, manageLibraries:false, isSubUser:false };
+let portalCapabilities = { library:false, emby:false, silo:false, manageUsers:false, manageLibraries:false, isSubUser:false };
 let v3SearchMode = 'search';
 let v3SearchType = 'ebook';
 // Keep one release number: members see it plainly; the dedicated portal-admin
@@ -2709,18 +2439,16 @@ window.fetch = async (...args) => {
   }
 };
 
-function applyPortalCapabilities(data, detectedIptv = null) {
+function applyPortalCapabilities(data) {
   const account = data?.account || {};
   const supplied = data?.capabilities || {};
   const hasEmby = supplied.emby ?? data?.services?.hasEmby ?? !!account.emby_user_id;
   const hasSilo = supplied.silo ?? data?.services?.hasSilo ?? !!data?.silo;
-  const hasIptv = account.is_sub ? false : (detectedIptv ?? supplied.iptv ?? data?.services?.hasIptv ?? false);
   const features = data?.features || {};
   portalCapabilities = {
     library: supplied.library ?? (hasEmby && features.library !== false),
     emby: hasEmby,
     silo: hasSilo,
-    iptv: hasIptv,
     requests: supplied.requests ?? !!features.requests,
     ebooks: features.ebooks !== false,
     audiobooks: features.audiobooks !== false,
@@ -2737,14 +2465,12 @@ function applyPortalCapabilities(data, detectedIptv = null) {
 
   const readingGroup = document.getElementById('readingGroup');
   const embyGroup = document.getElementById('embyGroup');
-  const iptvGroup = document.getElementById('iptvGroup');
   const libraryCard = document.getElementById('v3LibraryCard');
   const embyChillioGuide = document.getElementById('embyChillioGuide');
   const lifetimeUsersButton = document.getElementById('embyLifetimeUsersButton');
   const streamingGroup = document.getElementById('v3StreamingGroup');
   const streamingEmby = document.getElementById('v3StreamingEmby');
   const streamingSilo = document.getElementById('v3StreamingSilo');
-  const streamingIptv = document.getElementById('v3StreamingIptv');
   const streamingApps = document.getElementById('v3StreamingApps');
   const administrationLink = document.getElementById('v3AdministrationLink');
   const requestsGroup = document.getElementById('requestsGroup');
@@ -2755,15 +2481,15 @@ function applyPortalCapabilities(data, detectedIptv = null) {
   const featureNav = { navLibraryEbooks: portalCapabilities.ebooks, navLibraryAudiobooks: portalCapabilities.audiobooks, navLibraryComics: portalCapabilities.comics, navRequestMovies: portalCapabilities.requestMovies, navRequestShows: portalCapabilities.requestShows, navRequestMy: portalCapabilities.requestMy, navRequestIssues: portalCapabilities.requestIssues };
   Object.entries(featureNav).forEach(([id, visible]) => { const el = document.getElementById(id); if (el) el.style.display = visible ? 'flex' : 'none'; });
   if (embyGroup) embyGroup.style.display = portalCapabilities.emby ? 'block' : 'none';
-  if (iptvGroup) iptvGroup.style.display = portalCapabilities.iptv ? 'block' : 'none';
+  if (iptvGroup) iptvGroup.style.display = false ? 'block' : 'none';
   if (libraryCard) libraryCard.style.display = portalCapabilities.library ? 'flex' : 'none';
   if (embyChillioGuide) embyChillioGuide.style.display = portalCapabilities.manageUsers ? 'none' : 'inline-flex';
   if (lifetimeUsersButton) lifetimeUsersButton.style.display = portalCapabilities.manageUsers ? 'inline-flex' : 'none';
-  if (streamingGroup) streamingGroup.style.display = (portalCapabilities.silo || portalCapabilities.emby || portalCapabilities.iptv) ? 'block' : 'none';
+  if (streamingGroup) streamingGroup.style.display = (portalCapabilities.silo || portalCapabilities.emby ) ? 'block' : 'none';
   if (streamingSilo) streamingSilo.style.display = portalCapabilities.silo ? 'flex' : 'none';
   if (streamingEmby) streamingEmby.style.display = portalCapabilities.emby ? 'flex' : 'none';
-  if (streamingIptv) streamingIptv.style.display = portalCapabilities.iptv ? 'flex' : 'none';
-  if (streamingApps) streamingApps.style.display = (portalCapabilities.emby || portalCapabilities.iptv) ? 'flex' : 'none';
+  if (streamingIptv) streamingIptv.style.display = false ? 'flex' : 'none';
+  if (streamingApps) streamingApps.style.display = (portalCapabilities.emby ) ? 'flex' : 'none';
   if (bottomSearch) bottomSearch.style.display = portalCapabilities.library ? 'flex' : 'none';
   if (bottomBooks) bottomBooks.style.display = portalCapabilities.library ? 'flex' : 'none';
   ['requestMoviesLink','requestShowsLink'].forEach(id => { const el = document.getElementById(id); if (el && portalCapabilities.seerrUrl) el.href = portalCapabilities.seerrUrl; });
@@ -2790,7 +2516,7 @@ function updateV3ServiceStrip() {
 }
 
 function openV3Apps() {
-  showSection(portalCapabilities.emby ? 'apple' : 'iptvApple');
+  showSection('apple');
 }
 
 function openV3Search(mode = 'search') {
@@ -3177,14 +2903,11 @@ async function loadAccount() {
     applyPortalCapabilities(data);
     renderDashboard(data);
     loadV3HomeContent();
-    // Sub users never see IPTV — it belongs to the main account
-    if (!data.account?.is_sub) {
-      loadIptv(data.services?.hasEmby ?? true);
-    } else {
-      renderQuickLinks(data.services?.hasEmby ?? true, false);
-    }
+    // Service cards are rendered from the account response. The public build
+    // does not call a separate legacy provider endpoint here.
+    renderQuickLinks(Boolean(data.services?.hasEmby), false);
     // Prompt Emby users to set recovery email if not set
-    // Show recovery email prompt once for Emby users (not IPTV-only) who haven't set one
+    // Show recovery email prompt once for Emby users (not media-server-only) who haven't set one
     if (data.services?.hasEmby && data.account?.emby_user_id && !data.account?.recovery_email) {
       const uid = data.account.emby_user_id;
       const dismissed = localStorage.getItem('recoveryEmailDismissed_' + uid);
@@ -3192,16 +2915,13 @@ async function loadAccount() {
     }
     // Restore section from URL hash on load/refresh
     const hash = window.location.hash.replace('#', '');
-    const validSections = ['home','profile','siloProfile','embyContinue','users','administrationUsers','administrationVps','requestMovies','requestShows','reportIssues','iptv','apple','android','account','administration','administrationSettings','libraries',
-      'iptvApple','iptvAndroid','downtime','libraryEbooks','libraryAudiobooks',
+    const validSections = ['home','profile','siloProfile','embyContinue','users','administrationUsers','requestMovies','requestShows','reportIssues','apple','android','account','administration','administrationSettings','libraries',
+      'downtime','libraryEbooks','libraryAudiobooks',
       'libraryComics','myRequests','settings','speedtest'];
     if (hash && validSections.includes(hash)) {
       showSection(hash);
     } else if (window.location.hash === '#users') {
       showSection('users');
-    } else if (window.location.hash === '#iptv' && !data.account?.is_sub) {
-      showSection('iptv');
-    }
   } catch (e) {
     console.error('[portal] Failed to load account', e);
     showToast('Failed to load account', 'error');
@@ -3215,43 +2935,7 @@ async function loadPortalBranding() {
   } catch (_) { /* Default branding remains available if the request fails. */ }
 }
 
-async function loadIptv(hasEmby = true) {
-  try {
-    const res = await fetch('/api/iptv');
-    const data = await res.json();
-    const lines = data.lines || [];
-    renderIptvHomeCards(lines);
-    if (!lines.length && accountData?.adminLogin && accountData.adminServices?.iptv) renderAdminIptvLinkedCard();
-    renderIptvDetailCards(lines);
-    // A linked administrator IPTV account should expose the IPTV area even
-    // while its synced lines are being refreshed from Supabase.
-    const hasIptv = lines.length > 0 || !!(accountData?.services?.hasIptv);
-    applyPortalCapabilities(accountData, hasIptv);
-    if (hasIptv) {
-      const iptvGroup = document.getElementById('iptvGroup');
-      if (iptvGroup) {
-        iptvGroup.style.display = 'block';
-        applyStoredSidebarState('iptvGroup', false);
-        applyStoredSidebarState('iptvAppsSubgroup', false);
-      }
-    }
-    renderQuickLinks(hasEmby, hasIptv);
-    // IPTV cards arrive after the account response. Re-apply the saved layout
-    // now that the strip has its final set of cards, for every primary user.
-    if (!accountData?.account?.is_sub) refreshAdminServiceStrip();
-  } catch (e) {
-    renderQuickLinks(hasEmby, false);
-    if (!accountData?.account?.is_sub) refreshAdminServiceStrip();
-  }
-}
-
-function renderAdminIptvLinkedCard() {
-  const wrap = document.getElementById('iptvCards');
-  if (!wrap || wrap.children.length) return;
-  wrap.innerHTML = `<button type="button" class="v3-service v3-iptv-service" onclick="showSection('iptv')"><span class="v3-service-icon v3-blue">▣</span><span class="v3-service-copy"><strong>IPTV</strong><span>Linked account</span></span><span class="v3-service-state plan-badge badge-active">Linked</span></button>`;
-}
-
-function renderQuickLinks(hasEmby, hasIptv) {
+function renderQuickLinks(hasEmby) {
   const wrap = document.getElementById('quickLinks');
   if (!wrap) return;
   const links = [];
@@ -3267,224 +2951,11 @@ function renderQuickLinks(hasEmby, hasIptv) {
     links.push({ href: '#', onclick: "showSection('libraries')", icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`, label: 'Manage Libraries' });
     links.push({ onclick: "showSection('profile')", icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`, label: 'Emby Profile' });
   }
-  if (hasIptv) {
-    links.push({ onclick: "showSection('iptv')", icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>`, label: 'IPTV Profile' });
-  }
   wrap.innerHTML = links.map(l =>
     `<a ${l.href ? `href="${l.href}"` : 'href="#"'} ${l.target ? `target="${l.target}"` : ''} ${l.onclick ? `onclick="${l.onclick}; return false;"` : ''} class="quick-link">
       <span class="quick-link-icon">${l.icon}</span> ${l.label}
     </a>`
   ).join('');
-}
-
-function getPanelColour(panel) {
-  const p = (panel || '').toLowerCase();
-  if (p.includes('onyx')) return { cls: 'iptv-card-onyx', badge: 'rgba(59,130,246,0.2)', text: 'rgb(59,130,246)', border: 'rgba(59,130,246,0.4)' };
-  if (p.includes('phoenix')) return { cls: 'iptv-card-phoenix', badge: 'rgba(249,115,22,0.2)', text: 'rgb(249,115,22)', border: 'rgba(249,115,22,0.4)' };
-  return { cls: 'iptv-card-default', badge: 'rgba(34,197,94,0.2)', text: 'var(--success)', border: 'rgba(34,197,94,0.4)' };
-}
-
-function iptvEsc(value) {
-  return String(value ?? '').replace(/[&<>"']/g, ch => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  }[ch]));
-}
-
-function iptvAttr(value) {
-  return iptvEsc(value).replace(/`/g, '&#96;');
-}
-
-function iptvCopyIcon(size = 14) {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-}
-
-function iptvEyeIcon(size = 14) {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
-}
-
-function iptvStatusFor(line) {
-  if (line.timeRemaining?.expired) return { label: 'Expired', cls: 'expired' };
-  if (line.enabled) return { label: 'Active', cls: 'active' };
-  return { label: 'Disabled', cls: 'disabled' };
-}
-
-function iptvCleanDns(dns) {
-  return String(dns || '').replace(/\/$/, '');
-}
-
-function iptvM3uUrl(line) {
-  const dns = iptvCleanDns(line.dns);
-  if (!dns || !line.username || !line.password) return '';
-  return `${dns}/get.php?username=${encodeURIComponent(line.username)}&password=${encodeURIComponent(line.password)}&type=m3u_plus`;
-}
-
-function iptvEpgUrl(line) {
-  const dns = iptvCleanDns(line.dns);
-  if (!dns || !line.username || !line.password) return '';
-  return `${dns}/xmltv.php?username=${encodeURIComponent(line.username)}&password=${encodeURIComponent(line.password)}`;
-}
-
-function iptvXtreamText(line) {
-  return [
-    `Server: ${iptvCleanDns(line.dns) || '-'}`,
-    `Username: ${line.username || '-'}`,
-    `Password: ${line.password || '-'}`
-  ].join('\n');
-}
-
-function iptvExpiryInfo(line) {
-  if (!line.expires_at) return { value: 'Never', sub: 'No expiry set' };
-  const d = new Date(line.expires_at);
-  const date = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-  if (line.timeRemaining?.expired) return { value: 'Expired', sub: date };
-  const days = line.timeRemaining?.days;
-  return { value: Number.isFinite(days) ? `${days}d` : date, sub: Number.isFinite(days) ? `until ${date}` : 'expiry date' };
-}
-
-function copyFromData(btn) {
-  const value = btn?.dataset?.copy || '';
-  if (!value) { showToast('Nothing to copy', 'error'); return; }
-  copy(value);
-}
-
-function toggleIptvSecret(btn) {
-  const valueEl = btn?.closest('.iptv-field')?.querySelector('.iptv-field-value');
-  if (!valueEl) return;
-  const isVisible = valueEl.dataset.visible === 'true';
-  valueEl.dataset.visible = isVisible ? 'false' : 'true';
-  valueEl.textContent = isVisible ? '••••••••••' : (valueEl.dataset.secret || '');
-  valueEl.classList.toggle('secret', isVisible);
-}
-
-function renderIptvHomeCards(lines) {
-  const wrap = document.getElementById('iptvCards');
-  if (!lines.length) { wrap.innerHTML = ''; updateV3ServiceStrip(); return; }
-  wrap.innerHTML = lines.map(line => {
-    const expired = !!line.timeRemaining?.expired;
-    const active = !expired && !!line.enabled;
-    const state = expired ? 'Expired' : active ? 'Active' : 'Disabled';
-    const days = Number.isFinite(line.timeRemaining?.days) ? `${line.timeRemaining.days}d` : 'No expiry';
-    const owner = line.friend_name ? ` · ${iptvEsc(line.friend_name)}` : '';
-    return `<button class="v3-service v3-iptv-service" onclick="showSection('iptv')">
-      <span class="v3-service-icon v3-blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg></span>
-      <span class="v3-service-copy"><strong>IPTV</strong><span>${iptvEsc(line.panel || 'Service')} · ${line.connections ?? 1} connections${owner}</span></span>
-      <span class="v3-service-state ${active ? 'is-active' : 'is-inactive'}">${state === 'Active' ? days : state}</span>
-    </button>`;
-  }).join('');
-  requestAnimationFrame(updateV3ServiceStrip);
-}
-
-function renderIptvDetailCards(lines) {
-  const wrap = document.getElementById('iptvDetailCards');
-  if (!wrap) return;
-  if (!lines.length) {
-    wrap.innerHTML = `<div class="iptv-control"><div class="iptv-empty">No IPTV lines found.</div></div>`;
-    return;
-  }
-  const detailUserName = document.getElementById('navUsername')?.textContent || 'Me';
-  const myLines = lines.filter(l => !l.friend_name);
-  const friendLines = lines.filter(l => l.friend_name);
-  const activeCount = lines.filter(l => l.enabled && !l.timeRemaining?.expired).length;
-  const activeSummary = `${activeCount} active line${activeCount === 1 ? '' : 's'}`;
-  const panels = [...new Set(lines.map(l => l.panel).filter(Boolean))].join(', ') || 'IPTV';
-
-  function field(label, value, options = {}) {
-    const raw = value || '';
-    const canCopy = !!raw;
-    const display = options.secret ? '••••••••••' : (raw || '—');
-    return `
-      <div class="iptv-field">
-        <div class="iptv-field-label">${label}</div>
-        <div class="iptv-field-value${options.secret ? ' secret' : ''}" ${options.secret ? `data-secret="${iptvAttr(raw)}" data-visible="false"` : ''}>${iptvEsc(display)}</div>
-        <div style="display:flex;gap:0.35rem">
-          ${options.secret ? `<button class="iptv-mini-btn" onclick="toggleIptvSecret(this)" title="Show password">${iptvEyeIcon()}</button>` : ''}
-          ${canCopy ? `<button class="iptv-mini-btn" data-copy="${iptvAttr(raw)}" onclick="copyFromData(this)" title="Copy ${label.toLowerCase()}">${iptvCopyIcon()}</button>` : ''}
-        </div>
-      </div>`;
-  }
-
-  function lineCard(line, index) {
-    const status = iptvStatusFor(line);
-    const expiry = iptvExpiryInfo(line);
-    const dns = iptvCleanDns(line.dns);
-    const m3u = iptvM3uUrl(line);
-    const epg = iptvEpgUrl(line);
-    const xtream = iptvXtreamText(line);
-    const owner = line.friend_name || detailUserName;
-    return `
-      <article class="iptv-line-card ${status.cls === 'expired' ? 'is-expired' : ''}">
-        <div class="iptv-line-head">
-          <div style="min-width:0">
-            <div class="iptv-line-name">${iptvEsc(line.panel || 'IPTV Line')}</div>
-            <div class="iptv-line-owner">${iptvEsc(owner)}${line.friend_name ? ' line' : ' account'}</div>
-          </div>
-          <div class="iptv-pill-row">
-            <span class="iptv-pill ${status.cls}">${iptvEsc(status.label)}</span>
-            ${line.is_trial ? '<span class="iptv-pill trial">Trial</span>' : ''}
-            ${line.friend_name ? '<span class="iptv-pill">Friend</span>' : ''}
-          </div>
-        </div>
-        <div class="iptv-line-stats">
-          <div class="iptv-line-stat">
-            <div class="iptv-line-stat-label">Connections</div>
-            <div class="iptv-line-stat-value">${iptvEsc(line.connections ?? '—')}</div>
-          </div>
-          <div class="iptv-line-stat">
-            <div class="iptv-line-stat-label">Expires</div>
-            <div class="iptv-line-stat-value">${iptvEsc(expiry.value)}${expiry.sub ? ` · ${iptvEsc(expiry.sub)}` : ''}</div>
-          </div>
-          <div class="iptv-line-stat">
-            <div class="iptv-line-stat-label">Panel</div>
-            <div class="iptv-line-stat-value">${iptvEsc(line.panel || '—')}</div>
-          </div>
-        </div>
-        <div class="iptv-fields">
-          ${field('Server', dns)}
-          ${field('Username', line.username)}
-          ${field('Password', line.password, { secret: true })}
-        </div>
-        <div class="iptv-line-actions">
-          <button class="iptv-line-action" data-copy="${iptvAttr(xtream)}" onclick="copyFromData(this)">${iptvCopyIcon()} Xtream</button>
-          <button class="iptv-line-action" data-copy="${iptvAttr(m3u)}" onclick="copyFromData(this)" ${m3u ? '' : 'disabled'}>${iptvCopyIcon()} M3U</button>
-          <button class="iptv-line-action" data-copy="${iptvAttr(epg)}" onclick="copyFromData(this)" ${epg ? '' : 'disabled'}>${iptvCopyIcon()} EPG</button>
-        </div>
-      </article>`;
-  }
-
-  function groupHtml(title, subtitle, groupLines, offset = 0) {
-    if (!groupLines.length) return '';
-    return `
-      <div class="iptv-section-title">
-        <div>
-          <h3>${iptvEsc(title)}</h3>
-          <p>${iptvEsc(subtitle)}</p>
-        </div>
-      </div>
-      <div class="iptv-line-grid">
-        ${groupLines.map((line, i) => lineCard(line, offset + i)).join('')}
-      </div>`;
-  }
-
-  wrap.innerHTML = `
-    <div class="iptv-control">
-      <section class="iptv-control-hero">
-        <div class="iptv-control-intro">
-          <div class="iptv-control-kicker">IPTV Profile</div>
-          <h2 class="iptv-control-title">${iptvEsc(panels)}</h2>
-          <p class="iptv-control-sub">${iptvEsc(activeSummary)}. Copy Xtream, M3U or EPG details from your line below.</p>
-        </div>
-        <div class="iptv-control-actions">
-          <button class="iptv-control-action" onclick="showSection('iptvApple')">Apple apps</button>
-          <button class="iptv-control-action" onclick="showSection('iptvAndroid')">Android apps</button>
-        </div>
-      </section>
-      ${groupHtml('Your Lines', panels, myLines, 0)}
-      ${groupHtml('Shared Lines', 'Friend and extra IPTV lines attached to your account.', friendLines, myLines.length)}
-    </div>`;
 }
 
 function setupAdminServiceOrdering() {
@@ -3499,7 +2970,7 @@ function setupAdminServiceOrdering() {
       (key !== 'iptv' || item.querySelector('.v3-service')) && getComputedStyle(item).display !== 'none';
   });
   const saved = JSON.parse(localStorage.getItem(serviceCardOrderStorageKey()) || '[]');
-  const order = saved.length ? saved : ['emby','silo','iptv','library'];
+  const order = saved.length ? saved : ['emby','silo','library'];
   const rank = key => { const index = order.indexOf(key); return index < 0 ? 999 : index; };
   const saveOrder = () => localStorage.setItem(serviceCardOrderStorageKey(), JSON.stringify(
     Array.from(strip.children).map(identify).filter(key => key && key !== 'add' && key !== 'empty')
@@ -3707,7 +3178,7 @@ function refreshAdminServiceStrip() {
   const strip = document.getElementById('v3ServiceStrip');
   if (!strip || accountData?.account?.is_sub) return;
   const linkedServices = accountData?.adminServices || accountData?.linkedServices || {};
-  const linkedCount = ['emby','silo','iptv'].filter(service => linkedServices?.[service]).length;
+  const linkedCount = ['emby','silo'].filter(service => linkedServices?.[service]).length;
   const empty = document.getElementById('adminServiceEmptyCard');
   const add = document.getElementById('adminAddServiceCard');
   const onboarding = document.getElementById('adminServiceOnboarding');
@@ -3739,12 +3210,12 @@ function renderDashboard(data) {
 
   const adminOnboarding = document.getElementById('adminServiceOnboarding');
   const adminLinkCards = document.getElementById('adminServiceLinkCards');
-  const linkedServiceCount = ['emby','silo','iptv'].filter(service => data.adminServices?.[service]).length;
+  const linkedServiceCount = ['emby','silo'].filter(service => data.adminServices?.[service]).length;
   if (adminOnboarding) adminOnboarding.style.display = data.adminLogin && linkedServiceCount === 0 ? 'block' : 'none';
   const addServiceCard = document.getElementById('adminAddServiceCard');
   if (addServiceCard) addServiceCard.style.display = !data.account?.is_sub ? 'flex' : 'none';
   if (adminLinkCards && data.adminLogin) {
-    adminLinkCards.innerHTML = ['emby','silo','iptv'].map(service => {
+    adminLinkCards.innerHTML = ['emby','silo'].map(service => {
       const linked = data.adminServices?.[service];
       const label = service === 'iptv' ? 'IPTV' : service[0].toUpperCase() + service.slice(1);
       return `<div style="padding:.85rem;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.02)"><div style="display:flex;justify-content:space-between;gap:.5rem"><strong>${label}</strong><span style="color:${linked ? 'var(--success)' : 'var(--muted)'}">${linked ? 'Linked' : 'Not linked'}</span></div><p style="margin:.35rem 0 .7rem;color:var(--muted);font-size:.78rem">${linked ? v3Escape(linked.username) : `Connect your ${label} account`}</p><button type="button" class="btn-sm" onclick="openAdminServiceLogin('${service}')">${linked ? 'Change login' : 'Link account'}</button></div>`;
@@ -3757,7 +3228,7 @@ function renderDashboard(data) {
     // Stored pic (Emby-synced URL or custom upload) — always takes priority for Emby users
     avatarSrc = profilePic;
   } else if (!hasEmby && discord?.avatar && discord?.id) {
-    // IPTV-only users: use Discord avatar as default
+    // media-server-only users: use Discord avatar as default
     avatarSrc = `https://cdn.discordapp.com/avatars/${discord.id}/${discord.avatar}.png?size=64`;
   }
 
@@ -3958,7 +3429,7 @@ function openAdminServiceLogin(service = 'emby') {
   const modal = document.getElementById('adminServiceLoginModal');
   if (!modal || accountData?.account?.is_sub) return;
   const select = document.getElementById('adminServiceLoginService');
-  if (select) select.value = ['emby','silo','iptv'].includes(service) ? service : 'emby';
+  if (select) select.value = ['emby','silo'].includes(service) ? service : 'emby';
   document.getElementById('adminServiceLoginUsername').value = '';
   document.getElementById('adminServiceLoginPassword').value = '';
   const panel = document.getElementById('adminServiceLoginIptvPanel');
@@ -3980,7 +3451,6 @@ async function submitAdminServiceLogin() {
   const error = document.getElementById('adminServiceLoginError');
   if (!username || !password) { error.textContent = 'Enter both a username and password.'; error.style.display = 'block'; return; }
   try {
-    const panel = service === 'iptv' ? document.getElementById('adminServiceLoginIptvPanel')?.value || '' : '';
     const endpoint = accountData?.adminLogin ? '/api/admin/services/link' : '/api/member/services/link';
     const response = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({service, username, password, panel}) });
     const data = await response.json();
@@ -4236,7 +3706,7 @@ async function loadAdminUsers(filter = 'all', clickedButton = null) {
       sections.push(`<section><h3 style="margin:0 0 .25rem;color:var(--text)">IPTV <span style="color:var(--muted);font-size:.8rem;font-weight:500">${accounts.length} linked account${accounts.length === 1 ? '' : 's'}</span></h3><p style="margin:0 0 .75rem;color:var(--muted);font-size:.8rem">Cards use the portal note/Discord username. Open a card to inspect provider line details; IPTV accounts are not edited from the card.</p><div class="admin-user-card-grid">${accounts.flatMap(account => { const accountLines = lines.filter(line => String(line.discord_user_id) === String(account.discord_user_id)); return accountLines.length ? accountLines.map(line => adminCredentialRow({service:'IPTV', user:account, line, displayUsername:account.username || account.discord_username || account.discord_user_id || 'IPTV account', hideEdit:true}, 'IPTV', false, true)) : [adminCredentialRow({service:'IPTV', user:account, displayUsername:account.username || account.discord_username || account.discord_user_id || 'IPTV account', hideEdit:true}, 'IPTV', false, true)]; }).join('')}</div></section>`);
     }
     const content = sections.filter(Boolean).join('');
-    const knownService = ['emby','silo','iptv','plex','jellyfin'].includes(filter);
+    const knownService = ['emby','silo','plex','jellyfin'].includes(filter);
     target.innerHTML = content || (knownService ? `<div class="status-empty">No ${v3Escape(filter[0].toUpperCase() + filter.slice(1))} accounts are linked yet. Use Create user above, or link the account through Discord.</div>` : '<div class="status-empty">No users found.</div>');
   } catch (e) { target.innerHTML = `<div class="status-empty" style="color:var(--danger)">${v3Escape(e.message)}</div>`; }
 }
@@ -4250,7 +3720,7 @@ function adminUserServiceEnabled(service) {
 function renderAdminUserTabs(active = 'emby') {
   const target = document.getElementById('adminUserTabs');
   if (!target) return;
-  const services = ['emby','silo','iptv','jellyfin','plex'].filter(adminUserServiceEnabled);
+  const services = ['emby','silo','jellyfin','plex'].filter(adminUserServiceEnabled);
   target.innerHTML = services.map(service => {
     const label = service === 'iptv' ? 'IPTV' : service[0].toUpperCase() + service.slice(1);
     return `<button class="btn-sm admin-user-tab${active === service ? ' active' : ''}" data-service="${service}" onclick="loadAdminUsers('${service}',this)">${label}</button>`;
@@ -4339,45 +3809,7 @@ async function saveAdminUserEdit() {
   let endpoint = '/api/admin/user/edit';
   if (service === 'Emby') payload.emby_user_id = source.emby_user_id;
   if (service === 'Silo') { endpoint = '/api/admin/silo/edit'; payload.silo_user_id = source.silo_user_id; }
-  if (service === 'IPTV') { endpoint = '/api/admin/iptv/edit'; payload.discord_user_id = record.user.discord_user_id; payload.line_id = source.line_id; payload.panel = source.panel; payload.account_username = document.getElementById('adminEditAccountUsername')?.value.trim(); }
   try { const res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); const data = await res.json(); if (!res.ok || data.error) throw new Error(data.error || 'Unable to save account'); showToast('Account updated', 'success'); adminUsersCache = null; closeAdminUserEditor(); loadAdminUsers(String(service).toLowerCase()); } catch (e) { showToast(e.message, 'error'); }
-}
-
-async function loadAdminVpsStatus() {
-  const summary = document.getElementById('adminVpsSummary');
-  const details = document.getElementById('adminVpsDetails');
-  if (summary) summary.textContent = 'Checking…';
-  try {
-    const res = await fetch('/api/admin/vps-status');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Unable to read VPS status');
-    const disk = data.disks?.[0];
-    if (summary) summary.textContent = `${data.hostname || 'VPS'} · Updated ${new Date(data.checkedAt || Date.now()).toLocaleTimeString()}`;
-    const bytes = value => { const n=Number(value||0); return n >= 1073741824 ? `${(n/1073741824).toFixed(1)} GB` : `${Math.round(n/1048576)} MB`; };
-    if (details) details.innerHTML = `<article class="vps-metric"><div class="vps-metric-label">CPU Usage</div><div class="vps-metric-value">${Math.round(data.cpu?.usedPct || 0)}%</div><div class="vps-metric-sub">${data.cpu?.cores || '—'} Cores · Load ${(data.cpu?.loadavg?.[0] || 0).toFixed(2)}</div></article><article class="vps-metric"><div class="vps-metric-label">RAM Usage</div><div class="vps-metric-value">${Math.round(data.memory?.usedPct || 0)}%</div><div class="vps-metric-sub">${bytes(data.memory?.used)} Of ${bytes(data.memory?.total)}</div></article><article class="vps-metric"><div class="vps-metric-label">Disk Usage</div><div class="vps-metric-value">${Math.round(disk?.usedPct || 0)}%</div><div class="vps-metric-sub">${v3Escape(disk?.mount || '/')} · ${v3Escape(data.hostname || 'VPS')}</div></article><article class="vps-metric"><div class="vps-metric-label">Security</div><div class="vps-metric-value" style="font-size:1.2rem;color:${data.security?.ok ? 'var(--success)' : 'var(--danger)'}">${data.security?.ok ? 'Protected' : 'Review'}</div><div class="vps-metric-sub">${v3Escape(data.platform || 'Linux')}</div></article>`;
-  } catch (e) { if (summary) summary.textContent = 'Status unavailable'; if (details) details.textContent = e.message; }
-}
-
-async function loadAdminRemoteVpsStatus() {
-  const target = document.getElementById('adminRemoteVpsSummary');
-  if (target) target.textContent = 'Connecting…';
-  try {
-    const res = await fetch('/api/admin/vps-remote-status');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Unable to connect');
-    if (target) target.textContent = `${data.hostname || 'VPS'} · ${data.uptime || 'Connected'} · ${data.memory || ''}`;
-    const details = document.getElementById('adminVpsDetails');
-    if (details) details.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem"><span><strong style="color:var(--text)">Remote host</strong><br>${v3Escape(data.hostname || '—')}</span><span><strong style="color:var(--text)">Platform</strong><br>${v3Escape(data.platform || '—')}</span><span><strong style="color:var(--text)">Uptime</strong><br>${v3Escape(data.uptime || '—')}</span><span><strong style="color:var(--text)">Disk</strong><br>${v3Escape(data.disk || '—')}</span></div>`;
-  } catch (e) { if (target) target.textContent = e.message; }
-}
-
-function openVpsAdminSettings() {
-  showSection('administration');
-  const waitForConfig = (attempt = 0) => {
-    if (portalAdminConfig) return openAdminDetail('VPS');
-    if (attempt < 20) setTimeout(() => waitForConfig(attempt + 1), 100);
-  };
-  waitForConfig();
 }
 
 async function submitPortalIssue() {
@@ -4429,19 +3861,6 @@ function renderAdminUsersDetail() {
   document.getElementById('portalAdminDetail').style.display = 'block';
   attachAdminDetailTrail('Users');
   loadAdminUsers('emby');
-}
-
-function renderVpsConfigurationDetail() {
-  const fields = (portalAdminConfig.fields || []).filter(field => field.category === 'VPS');
-  const detail = document.getElementById('portalAdminDetailContent');
-  detail.innerHTML = `<div class="portal-admin-detail-head"><h2>VPS Configuration</h2><p>Monitor the server currently running your portal, then save the connection details only if you want this portal installation to monitor a configured VPS.</p></div><section class="card" style="padding:1.15rem;margin-bottom:1rem"><div class="vps-status-panel"><strong style="color:var(--text)">Live Server Monitor</strong><span id="adminVpsSummary" style="display:block;margin-top:.3rem">Loading live metrics…</span></div><div id="adminVpsDetails" class="vps-metric-grid"></div><div id="adminRemoteVpsSummary" class="vps-status-panel">Checking configured VPS connection…</div></section><section class="card" style="padding:1.15rem"><h3 style="margin:0 0 .3rem">VPS Connection Setup</h3><p style="margin:0 0 1rem;color:var(--muted);font-size:.85rem;line-height:1.55">Use a dedicated restricted SSH account and key for monitoring. Do not paste your personal SSH key here.</p><div class="portal-admin-fields">${fields.map(field => `<div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>${field.label}</strong><span>${adminFieldHelp(field.key)}</span></div><div class="portal-admin-field-control">${field.type === 'textarea' ? `<textarea data-portal-admin-key="${field.key}" rows="6" placeholder="${field.secret && field.configured ? 'Saved — use Show to view' : ''}" autocomplete="new-password">${!field.secret ? v3Escape(field.value || '') : ''}</textarea>` : `<input data-portal-admin-key="${field.key}" type="${field.secret ? 'password' : field.type}" value="${!field.secret ? v3Escape(field.value || '') : ''}" placeholder="${field.secret && field.configured ? 'Saved — use Show to view' : ''}" autocomplete="new-password">`}${field.secret && field.configured ? `<button type="button" class="portal-admin-reveal" data-admin-reveal="${field.key}" onclick="revealAdminSecret(this)">Show</button>` : ''}</div></div>`).join('')}</div><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveAdminDetail('VPS')">Save VPS Configuration</button></div></section><section class="card" style="padding:1.15rem;margin-top:1rem"><h3 style="margin:0 0 .35rem">Portal Storage</h3><p style="margin:0;color:var(--muted);font-size:.85rem;line-height:1.55">This installation uses Supabase for portal storage. Its SQL guides and table information are kept in <strong>Supabase Configuration</strong>; no extra database connection is required for VPS monitoring.</p></section>`;
-  detail.insertAdjacentHTML('beforeend', `<section class="card" style="padding:1.15rem;margin-top:1rem"><h3 style="margin:0 0 .35rem">Optional Discord Bot Hosting</h3><p style="margin:0;color:var(--muted);font-size:.85rem;line-height:1.55">The sanitized Discord Bot template can run on this VPS beside the portal. Keep the bot and portal as separate PM2 processes or containers, use separate environment files, and never commit Discord tokens, media-server credentials or Supabase service keys.</p><div class="smtp-config-note" style="margin-top:.8rem"><strong>Recommended profile:</strong> Node.js 22+, PM2 or Docker, dedicated service user, automatic restart, log rotation, encrypted off-server backups.</div><button type="button" class="btn-sm" style="margin-top:.8rem" onclick="openPortalStorageGuide('vpsHosting')">Open VPS Bot Hosting Guide →</button></section>`);
-  document.getElementById('portalAdminIndex').style.display = 'none';
-  document.getElementById('portalAdminDetail').style.display = 'block';
-  attachAdminDetailTrail('VPS Configuration');
-  loadAdminVpsStatus();
-  loadAdminRemoteVpsStatus();
-  if (!window._adminVpsRefreshTimer) window._adminVpsRefreshTimer = setInterval(() => { loadAdminVpsStatus(); loadAdminRemoteVpsStatus(); }, 30000);
 }
 
 function mediaServerIcon(server) {
@@ -4916,7 +4335,7 @@ function openAdminDetail(cardKey) {
     const logo = fields.PORTAL_LOGO_URL?.value || '/logo.png';
     const favicon = fields.PORTAL_FAVICON_URL?.value || logo;
     const baseUrl = String(fields.PORTAL_URL?.value || window.location.origin).replace(/\/$/, '');
-    detail.innerHTML = `<div class="portal-admin-detail-head"><h2>General Settings</h2><p>Set the public identity for your portal. Changes apply to the navigation, browser tab and member-facing portal pages.</p></div><section class="settings-group-card wide"><h3>Branding</h3><p>Choose the server name members see, then upload a logo and favicon. Use a square image for the best result. Images stay on your VPS and are never stored in the browser.</p><div class="branding-settings-grid"><label class="smtp-config-field branding-name-field"><span>Server Name</span><input id="portalBrandName" value="${v3Escape(fields.PORTAL_NAME?.value || 'Apex Nova v1')}" maxlength="80" placeholder="My Media Server"><small>Shown in the portal navigation and browser title.</small></label><label class="smtp-config-field branding-name-field"><span>Welcome Message</span><input id="portalWelcomeMessage" value="${v3Escape(fields.PORTAL_WELCOME_MESSAGE?.value || 'Everything you use, ready in one place.')}" maxlength="160" placeholder="Everything you use, ready in one place."><small>Shown beneath the personalised greeting on the Home page.</small></label><label class="smtp-config-field branding-name-field"><span>Base URL (Portal URL)</span><input id="portalBaseUrl" type="url" value="${v3Escape(baseUrl)}" placeholder="https://portal.yourdomain.com"><small>This is your portal address. In Discord Developer Portal, add <strong>${v3Escape(baseUrl)}/auth/callback</strong> as the Redirect URI.</small></label><div class="branding-upload-card"><img id="portalLogoPreview" src="${v3Escape(logo)}" alt="Current server logo"><div><strong>Server Logo</strong><small>PNG, JPG, WebP, SVG or ICO · max 1 MB</small><input id="portalLogoUpload" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon" hidden onchange="uploadBrandingImage('logo')"><button type="button" class="btn-sm" onclick="document.getElementById('portalLogoUpload').click()">Upload Logo</button></div></div><div class="branding-upload-card"><img id="portalFaviconPreview" src="${v3Escape(favicon)}" alt="Current favicon"><div><strong>Favicon</strong><small>Small browser-tab icon · max 1 MB</small><input id="portalFaviconUpload" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon" hidden onchange="uploadBrandingImage('favicon')"><button type="button" class="btn-sm" onclick="document.getElementById('portalFaviconUpload').click()">Upload Favicon</button></div></div></div></section><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveBrandingSettings()">Save Branding</button></div>`;
+    detail.innerHTML = `<div class="portal-admin-detail-head"><h2>General Settings</h2><p>Set the public identity for your portal. Changes apply to the navigation, browser tab and member-facing portal pages.</p></div><section class="settings-group-card wide"><h3>Branding</h3><p>Choose the server name members see, then upload a logo and favicon. Use a square image for the best result. Images stay on your VPS and are never stored in the browser.</p><div class="branding-settings-grid"><label class="smtp-config-field branding-name-field"><span>Server Name</span><input id="portalBrandName" value="${v3Escape(fields.PORTAL_NAME?.value || 'Portal')}" maxlength="80" placeholder="My Media Server"><small>Shown in the portal navigation and browser title.</small></label><label class="smtp-config-field branding-name-field"><span>Welcome Message</span><input id="portalWelcomeMessage" value="${v3Escape(fields.PORTAL_WELCOME_MESSAGE?.value || 'Everything you use, ready in one place.')}" maxlength="160" placeholder="Everything you use, ready in one place."><small>Shown beneath the personalised greeting on the Home page.</small></label><label class="smtp-config-field branding-name-field"><span>Base URL (Portal URL)</span><input id="portalBaseUrl" type="url" value="${v3Escape(baseUrl)}" placeholder="https://portal.yourdomain.com"><small>This is your portal address. In Discord Developer Portal, add <strong>${v3Escape(baseUrl)}/auth/callback</strong> as the Redirect URI.</small></label><div class="branding-upload-card"><img id="portalLogoPreview" src="${v3Escape(logo)}" alt="Current server logo"><div><strong>Server Logo</strong><small>PNG, JPG, WebP, SVG or ICO · max 1 MB</small><input id="portalLogoUpload" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon" hidden onchange="uploadBrandingImage('logo')"><button type="button" class="btn-sm" onclick="document.getElementById('portalLogoUpload').click()">Upload Logo</button></div></div><div class="branding-upload-card"><img id="portalFaviconPreview" src="${v3Escape(favicon)}" alt="Current favicon"><div><strong>Favicon</strong><small>Small browser-tab icon · max 1 MB</small><input id="portalFaviconUpload" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon" hidden onchange="uploadBrandingImage('favicon')"><button type="button" class="btn-sm" onclick="document.getElementById('portalFaviconUpload').click()">Upload Favicon</button></div></div></div></section><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveBrandingSettings()">Save Branding</button></div>`;
     document.getElementById('portalAdminIndex').style.display = 'none';
     document.getElementById('portalAdminDetail').style.display = 'block';
     attachAdminDetailTrail('General Settings');
@@ -4954,7 +4373,6 @@ function openAdminDetail(cardKey) {
   }
   if (cardKey === 'Linked services') {
     const detail = document.getElementById('portalAdminDetailContent');
-    detail.innerHTML = `<div class="portal-admin-detail-head"><h2>My linked services</h2><p>Link the accounts you actually use. The portal checks Emby and Silo credentials before saving them, then applies that account’s membership, stream limit, library access and announcement visibility to your administrator dashboard. IPTV providers vary, so IPTV credentials are saved for your linked account without assuming a particular panel API.</p></div><div class="card" style="padding:1rem;margin-bottom:1rem"><h3 style="margin:0 0 .35rem">Add or replace a service login</h3><p style="color:var(--muted);font-size:.85rem;line-height:1.55">These are service logins, not the portal administrator login. They are encrypted in Supabase and are never accepted as an admin password.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem"><label>Service<select id="adminLinkedService" class="input-sm"><option value="emby">Emby</option><option value="silo">Silo</option><option value="iptv">IPTV</option></select></label><label>Username<input id="adminLinkedUsername" class="input-sm" autocomplete="off"></label><label>Password<input id="adminLinkedPassword" class="input-sm" type="password" autocomplete="new-password"></label></div><div style="display:flex;justify-content:flex-end;margin-top:.85rem"><button class="portal-admin-save" onclick="saveAdminLinkedService()">Save linked service</button></div><div id="adminLinkedServiceMessage" style="margin-top:.65rem;color:var(--muted);font-size:.82rem"></div></div><div class="card" style="padding:1rem"><h3 style="margin:0 0 .65rem">Currently linked</h3><div id="adminLinkedServiceList" style="display:grid;gap:.55rem"><span style="color:var(--muted)">Loading linked services…</span></div></div>`;
     document.getElementById('portalAdminIndex').style.display = 'none';
     document.getElementById('portalAdminDetail').style.display = 'block';
     attachAdminDetailTrail('My linked services');
@@ -5019,7 +4437,7 @@ function openAdminDetail(cardKey) {
 
 function applyPortalBranding(branding) {
   if (!branding) return;
-  const name = String(branding.name || 'Apex Nova v1');
+  const name = String(branding.name || 'Portal');
   const logo = String(branding.logoUrl || '/logo.png');
   const favicon = String(branding.faviconUrl || logo);
   window.portalBrandName = name;
@@ -5027,7 +4445,7 @@ function applyPortalBranding(branding) {
   document.querySelectorAll('.nav-brand-text, .v3-sidebar-brand strong').forEach(el => { el.textContent = name; });
   document.querySelectorAll('.nav-logo, .v3-sidebar-brand img').forEach(el => { el.src = logo; el.alt = name; });
   document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]').forEach(el => { el.href = favicon; });
-  document.title = document.title.replace(/Apex Nova v1/g, name);
+  document.title = document.title.replace(/Portal/g, name);
   const greetingSubtitle = document.getElementById('greetingSubtitle');
   if (greetingSubtitle) greetingSubtitle.textContent = window.portalWelcomeMessage;
 }
@@ -5120,7 +4538,7 @@ function renderAdminLinkedServices() {
   const target = document.getElementById('adminLinkedServiceList');
   if (!target) return;
   const services = accountData?.adminServices || {};
-  target.innerHTML = ['emby','silo','iptv'].map(service => {
+  target.innerHTML = ['emby','silo'].map(service => {
     const item = services[service];
     const label = service === 'iptv' ? 'IPTV' : service[0].toUpperCase() + service.slice(1);
     return `<div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem;border:1px solid var(--border);border-radius:10px"><span><strong>${label}</strong><small style="display:block;color:var(--muted)">${item ? v3Escape(item.username) : 'Not linked'}</small></span>${item ? `<span style="display:flex;align-items:center;gap:.65rem"><span style="color:var(--success)">Linked</span><button class="btn-sm" type="button" onclick="unlinkAdminLinkedService('${service}')">Unlink</button></span>` : '<span style="color:var(--muted)">Available</span>'}</div>`;
@@ -5285,7 +4703,7 @@ function showSection(section) {
     if ((librarySections.includes(section) && !portalCapabilities.library) ||
         (embySections.includes(section) && !portalCapabilities.emby) ||
         (siloSections.includes(section) && !portalCapabilities.silo) ||
-        (iptvSections.includes(section) && !portalCapabilities.iptv) ||
+        (iptvSections.includes(section) && !false) ||
         (requestSections.includes(section) && !portalCapabilities.requests) ||
         (section === 'requestMovies' && !portalCapabilities.requestMovies) ||
         (section === 'requestShows' && !portalCapabilities.requestShows) ||
@@ -5312,12 +4730,12 @@ function showSection(section) {
     libraryComics: 'Comics',
     myRequests: 'My Books', settings: 'Settings', speedtest: 'Speed Test',
   };
-  document.title = (titles[section] ? titles[section] + ' | ' : '') + (window.portalBrandName || 'Apex Nova v1');
+  document.title = (titles[section] ? titles[section] + ' | ' : '') + (window.portalBrandName || 'Portal');
   const v3PageTitle = document.getElementById('v3PageTitle');
   if (v3PageTitle) v3PageTitle.textContent = titles[section] || 'Home';
   document.querySelectorAll('.v3-bottom-nav button').forEach(btn => {
     const target = btn.dataset.bottomSection;
-    btn.classList.toggle('active', target === section || (target === 'account' && ['profile','iptv','settings'].includes(section)));
+    btn.classList.toggle('active', target === section || (target === 'account' && ['profile','settings'].includes(section)));
   });
   // Show greeting only on home
   const greetingWrap = document.getElementById('greetingWrap');
@@ -5376,7 +4794,7 @@ function showSection(section) {
   if (section === 'home') {
     home.style.display = 'block';
     navHome.classList.add('active');
-    document.title = 'Dashboard | ' + (window.portalBrandName || 'Apex Nova v1');
+    document.title = 'Dashboard | ' + (window.portalBrandName || 'Portal');
   } else if (section === 'requestMovies') {
     if (requestMovies) requestMovies.style.display = 'block';
     const nav = document.getElementById('navRequestMovies'); if (nav) nav.classList.add('active');
@@ -5454,30 +4872,30 @@ function showSection(section) {
     if (stSection) {
       stSection.style.display = 'block';
       if (navSpeedtest) navSpeedtest.classList.add('active');
-      document.title = 'Speed Test | Apex Nova v1';
+      document.title = 'Speed Test | Portal';
       initSpeedTest();
     }
   } else if (section === 'libraryEbooks') {
     const s = document.getElementById('libraryEbooksSection');
-    if (s) { s.style.display = 'block'; document.title = 'eBooks | Apex Nova v1'; }
+    if (s) { s.style.display = 'block'; document.title = 'eBooks | Portal'; }
     if (navLibraryEbooks) navLibraryEbooks.classList.add('active');
     expandAppsSubmenu('readingMenu', 'readingGroup');
     switchEbookView(window._ebookCurrentView || 'books');
   } else if (section === 'libraryAudiobooks') {
     const s = document.getElementById('libraryAudiobooksSection');
-    if (s) { s.style.display = 'block'; document.title = 'Audiobooks | Apex Nova v1'; }
+    if (s) { s.style.display = 'block'; document.title = 'Audiobooks | Portal'; }
     if (navLibraryAudiobooks) navLibraryAudiobooks.classList.add('active');
     expandAppsSubmenu('readingMenu', 'readingGroup');
     switchAudiobookView(window._audiobookCurrentView || 'books');
   } else if (section === 'libraryComics') {
     const s = document.getElementById('libraryComicsSection');
-    if (s) { s.style.display = 'block'; document.title = 'Comics | Apex Nova v1'; }
+    if (s) { s.style.display = 'block'; document.title = 'Comics | Portal'; }
     if (navLibraryComics) navLibraryComics.classList.add('active');
     expandAppsSubmenu('readingMenu', 'readingGroup');
     switchComicView('issues');
   } else if (section === 'myRequests') {
     const s = document.getElementById('myRequestsSection');
-    if (s) { s.style.display = 'block'; document.title = 'My Requests | Apex Nova v1'; }
+    if (s) { s.style.display = 'block'; document.title = 'My Requests | Portal'; }
     const requestMy = document.getElementById('navRequestMy'); if (requestMy) requestMy.classList.add('active');
     expandAppsSubmenu('requestsMenu', 'requestsGroup');
     if (navMyRequests) navMyRequests.classList.add('active');
@@ -5485,7 +4903,7 @@ function showSection(section) {
     loadMyRequests();
   } else if (section === 'settings') {
     const s = document.getElementById('settingsSection');
-    if (s) { s.style.display = 'block'; document.title = 'Settings | Apex Nova v1'; }
+    if (s) { s.style.display = 'block'; document.title = 'Settings | Portal'; }
     const opdsEl = document.getElementById('settingsOpdsUrl');
     if (opdsEl) opdsEl.value = `${window.location.origin}/opds`;
     // Populate current values
@@ -6110,7 +5528,7 @@ const APP_GUIDES = {
       'Sign in using your Emby Connect account (email + password) — Infuse connects automatically.',
       'Alternatively tap "Other Emby" and enter the server URL manually: https://example.invalid',
       'If asked for a port, enter <strong>443</strong>.',
-      'Enter your Apex Nova v1 username and password, then tap "Connect".',
+      'Enter your Portal username and password, then tap "Connect".',
       'Your full library syncs — tap "Library" on the home screen to start browsing.',
     ],
     tip: 'Library Mode (enabled under Advanced when adding the server) pre-caches artwork for faster browsing. Direct Mode is quicker to set up and works great for most users.',
@@ -6123,7 +5541,7 @@ const APP_GUIDES = {
       'Scroll down and tap "Video Server", then select "Emby".',
       'In the Server Address field enter: https://example.invalid',
       'Leave the port blank — HTTPS uses 443 automatically. If a port field appears, enter <strong>443</strong>.',
-      'Enter your Apex Nova v1 username and password, then tap "Add".',
+      'Enter your Portal username and password, then tap "Add".',
       'VidHub connects and loads all your libraries — tap any library to start browsing.',
       'Go to Settings → Playback and set the bitrate to the <strong>maximum</strong> for the best quality.',
       'iCloud sync is available to carry your setup across your Apple devices automatically.',
@@ -6136,10 +5554,10 @@ const APP_GUIDES = {
     steps: [
       'Open Moonfin and tap "Add Server" on the welcome screen.',
       'Tap "Sign in with Emby Connect" and enter your Emby Connect email and password.',
-      'Moonfin discovers your Apex Nova v1 server automatically — tap it to connect.',
+      'Moonfin discovers your Portal server automatically — tap it to connect.',
       'Alternatively tap "Add Server Manually" and enter: https://example.invalid',
       'If asked for a port, enter <strong>443</strong>.',
-      'Enter your Apex Nova v1 username and password, then tap "Connect".',
+      'Enter your Portal username and password, then tap "Connect".',
       'Your libraries appear on the home screen — browse Movies, Shows, and more.',
       'Enable the Moonfin plugin on the server for settings sync across all your devices.',
     ],
@@ -6151,13 +5569,13 @@ const APP_GUIDES = {
     steps: [
       'Open the Emby app and tap "Connect to Emby Server".',
       'Tap "Sign in with Emby Connect" and enter your Emby Connect email and password.',
-      'Your Apex Nova v1 server appears automatically — tap it to connect.',
+      'Your Portal server appears automatically — tap it to connect.',
       'Alternatively tap "Add Server Manually" and enter: https://example.invalid',
       'If asked for a port, enter <strong>443</strong>.',
-      'Enter your Apex Nova v1 username and password, then tap "Sign In".',
+      'Enter your Portal username and password, then tap "Sign In".',
       'Your full library loads — browse Movies, TV Shows, and Live TV from the home screen.',
     ],
-    tip: 'The official Emby app for Apple TV requires a one-time purchase (Emby for TV). For best quality, go to Settings → Playback and set the streaming quality and audio to the maximum. Your Apex Nova v1 credentials work across all Emby apps on iPhone, iPad, Mac, and Apple TV.',
+    tip: 'The official Emby app for Apple TV requires a one-time purchase (Emby for TV). For best quality, go to Settings → Playback and set the streaming quality and audio to the maximum. Your Portal credentials work across all Emby apps on iPhone, iPad, Mac, and Apple TV.',
   },
   // ===== EMBY ANDROID =====
   'vidhub-android': {
@@ -6168,7 +5586,7 @@ const APP_GUIDES = {
       'Tap "Video Server" then select "Emby".',
       'In the Server Address field enter: https://example.invalid',
       'Leave the port blank — or enter <strong>443</strong> if prompted.',
-      'Enter your Apex Nova v1 username and password, then tap "Add".',
+      'Enter your Portal username and password, then tap "Add".',
       'VidHub loads all your libraries — tap any library to browse and play.',
       'Go to Settings → Playback and set the bitrate to the <strong>maximum</strong> for best quality.',
       'For Android TV use a Bluetooth keyboard or voice input to type the server URL easily.',
@@ -6181,10 +5599,10 @@ const APP_GUIDES = {
     steps: [
       'Open Moonfin and tap "Add Server".',
       'Tap "Sign in with Emby Connect" and enter your Emby Connect credentials.',
-      'Your Apex Nova v1 server appears automatically — tap it to sign in.',
+      'Your Portal server appears automatically — tap it to sign in.',
       'Or tap "Add Server Manually" and enter: https://example.invalid',
       'If asked for a port, enter <strong>443</strong>.',
-      'Enter your Apex Nova v1 username and password, then tap "Connect".',
+      'Enter your Portal username and password, then tap "Connect".',
       'Browse your full library from the Moonfin home screen.',
     ],
     tip: 'Moonfin on Android TV is fully remote-navigation optimised. Use the D-pad to browse and the select button to play — no touchscreen needed.',
@@ -6195,10 +5613,10 @@ const APP_GUIDES = {
     steps: [
       'Open the Emby app and tap "Connect to Emby Server".',
       'Tap "Sign in with Emby Connect" and log in with your Emby Connect email and password.',
-      'Your Apex Nova v1 server appears in the list — tap it to connect.',
+      'Your Portal server appears in the list — tap it to connect.',
       'Or tap "Manually Add Server" and enter: https://example.invalid',
       'If asked for a port, enter <strong>443</strong>.',
-      'Enter your Apex Nova v1 username and password, then tap "Sign In".',
+      'Enter your Portal username and password, then tap "Sign In".',
       'Your full library is ready — browse Movies, TV Shows, and Live TV.',
     ],
     tip: 'The Emby for TV app on Android TV has a 10-foot TV-optimised interface with full remote support. For best quality, go to Settings → Playback and set streaming quality and audio to the maximum. The standard Android app is better for phones and tablets.',
@@ -6346,14 +5764,15 @@ async function saveAccountEmail(kind, button) {
   button.disabled = false; button.textContent = 'Save';
 }
 
-async function unlinkAccountService(service, serviceKey = '') {
-  const isAdmin = accountData?.adminLogin === true;
-  const label = service === 'iptv' && serviceKey ? 'this IPTV service' : service.toUpperCase();
+async function unlinkAccountService(service) {
+  if (accountData?.adminLogin !== true) {
+    showToast('Only the portal administrator can manage linked services.', 'error');
+    return;
+  }
+  const label = service.toUpperCase();
   if (!confirm(`Unlink ${label} from the portal?`)) return;
   try {
-    const url = isAdmin
-      ? `/api/admin/services/${encodeURIComponent(service)}`
-      : `/api/member/services/iptv/${encodeURIComponent(serviceKey)}`;
+    const url = `/api/admin/services/${encodeURIComponent(service)}`;
     const res = await fetch(url, { method:'DELETE' });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || 'Could not unlink service');
@@ -6627,7 +6046,7 @@ function openAppGuide(app) {
         <div class="guide-method-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> M3U Playlist</div>
         <ul class="guide-steps">${stepsHtml(guide.m3u)}</ul>
       </div>
-      <div class="guide-tip"><strong>Tip:</strong> Xtream Codes is recommended — credentials are stable, EPG loads automatically, and VOD/series categories work better than M3U. Your Server URL, Username and Password are in your Apex Nova v1 welcome email.</div>
+      <div class="guide-tip"><strong>Tip:</strong> Xtream Codes is recommended — credentials are stable, EPG loads automatically, and VOD/series categories work better than M3U. Your Server URL, Username and Password are in your Portal welcome email.</div>
     `;
   }
 
@@ -6828,7 +6247,7 @@ function toggleTheme() {
   const isLight = document.documentElement.dataset.theme === 'light';
   const newTheme = isLight ? 'dark' : 'light';
   document.documentElement.dataset.theme = newTheme;
-  localStorage.setItem('apexTheme', newTheme);
+  localStorage.setItem('portalTheme', newTheme);
   document.getElementById('themeIconDark').style.display = newTheme === 'light' ? 'block' : 'none';
   document.getElementById('themeIconLight').style.display = newTheme === 'light' ? 'none' : 'block';
   const meta = document.getElementById('themeColorMeta');
@@ -6837,7 +6256,7 @@ function toggleTheme() {
   syncSpeedTestTheme();
 }
 (function() {
-  const saved = localStorage.getItem('apexTheme') || 'dark';
+  const saved = localStorage.getItem('portalTheme') || 'dark';
   document.documentElement.dataset.theme = saved;
   const dark = document.getElementById('themeIconDark');
   const light = document.getElementById('themeIconLight');
@@ -6854,7 +6273,7 @@ async function initPushNotifications() {
     if (pushToggleBtn) {
       pushToggleBtn.style.display = 'inline-flex';
       pushToggleBtn.style.opacity = '0.55';
-      pushToggleBtn.title = 'Push notifications need a supported browser. On iPhone/iPad, add Apex Nova v1 to Home Screen first.';
+      pushToggleBtn.title = 'Push notifications need a supported browser. On iPhone/iPad, add Portal to Home Screen first.';
     }
     return;
   }
@@ -6889,7 +6308,7 @@ async function savePushSubscription(subscription, test = false) {
 
 async function togglePushSubscription() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') {
-    showToast('Push notifications need a supported browser. On iPhone/iPad, add Apex Nova v1 to Home Screen first.', 'error');
+    showToast('Push notifications need a supported browser. On iPhone/iPad, add Portal to Home Screen first.', 'error');
     return;
   }
   const btn = document.getElementById('pushToggleBtn');
@@ -8274,7 +7693,8 @@ async function openReaderForBook(title, type, source_id, btn) {
   const readerWin = window.open('', '_blank');
   if (!readerWin) { showToast('Allow popups for this site to use the reader', 'error'); return; }
   const preparingLabel = type === 'comic' ? 'comic' : 'book';
-  readerWin.document.write(`<html><body style="background:#0a0a0f;color:#888;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>⏳ Preparing ${preparingLabel}…</p></body></html>`);
+  readerWin.document.write(`<html><body style="background:#0a0a0f;color:#888;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>⏳ Preparing ${preparingLabel}…</p>
+`);
 
   const hasProgress = await fetch(`/api/reader/progress/${encodeURIComponent(title)}`).then(r=>r.json()).then(d=>!!(d.progress?.cfi || d.progress?.page)).catch(()=>false);
   const readLabel = hasProgress ? '📖 Read Again' : '📖 Read in Portal';
@@ -9701,7 +9121,7 @@ async function pollMainEmbyStatus() {
         <div style="font-size:0.78rem;color:var(--muted)">Used to reset your password if you get locked out</div>
       </div>
     </div>
-    <p data-recovery-desc style="font-size:0.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.5">Add a recovery email so you can reset your Apex Nova v1 password at any time. This email is only used for account recovery — it's never shared.</p>
+    <p data-recovery-desc style="font-size:0.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.5">Add a recovery email so you can reset your Portal password at any time. This email is only used for account recovery — it's never shared.</p>
     <input type="email" id="recoveryEmailInput" placeholder="your@email.com" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.9rem;font-family:inherit;outline:none;margin-bottom:0.75rem;box-sizing:border-box" />
     <div id="recoveryEmailError" style="display:none;color:#f87171;font-size:0.78rem;margin-bottom:0.5rem"></div>
     <div style="display:flex;gap:0.6rem">
@@ -9787,6 +9207,87 @@ async function pollMainEmbyStatus() {
   </div>
 </div>
 
+<script>
+/* Public-build UI guard: only configured, linked media services are shown. */
+(function () {
+  const supported = ['emby', 'silo'];
+  const labels = { emby: 'Emby', silo: 'Silo' };
+  const icon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>';
+  const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  function cleanLegacyUi() {
+    document.querySelectorAll('[id*="iptv" i], [class*="iptv" i], [href*="iptv" i]').forEach(el => el.remove());
+    document.querySelectorAll('body *').forEach(el => {
+      if (el.children.length === 0 && /Portal/i.test(el.textContent || '')) el.textContent = el.textContent.replace(/Portal/gi, 'Portal');
+      ['alt','title','aria-label'].forEach(attr => {
+        if (el.hasAttribute(attr)) el.setAttribute(attr, el.getAttribute(attr).replace(/Portal/gi, 'Portal'));
+      });
+    });
+  }
+  async function configuredServices() {
+    try {
+      const response = await fetch('/api/provider-status', { cache: 'no-store' });
+      const data = await response.json();
+      return supported.filter(key => data.providers?.[key]?.configured);
+    } catch (_) { return []; }
+  }
+  function linkedServices() {
+    const source = accountData?.linkedServices || accountData?.adminServices || {};
+    return supported.filter(key => source[key]?.linked || source[key]?.username);
+  }
+  window.updateAdminServiceLoginCopy = function () {
+    const service = document.getElementById('adminServiceLoginService')?.value || '';
+    const description = document.getElementById('adminServiceLoginDescription');
+    if (description) description.textContent = service && labels[service]
+      ? 'Enter the credentials for the configured media server you want to connect.'
+      : 'Configure a media server first, then connect its existing account here.';
+    document.querySelectorAll('[data-service-choice]').forEach(button => button.classList.toggle('active', button.dataset.serviceChoice === service));
+  };
+  window.openAdminServiceLogin = async function (service) {
+    const modal = document.getElementById('adminServiceLoginModal');
+    if (!modal || accountData?.account?.is_sub) return;
+    const choices = (await configuredServices()).filter(key => !linkedServices().includes(key));
+    const choiceWrap = modal.querySelector('.admin-service-choice');
+    const select = document.getElementById('adminServiceLoginService');
+    if (choiceWrap) choiceWrap.innerHTML = choices.length ? choices.map(key => '<button type="button" data-service-choice="'+key+'" onclick="chooseAdminService(\''+key+'\')"><span class="admin-service-choice-icon">'+icon+'</span>'+labels[key]+'</button>').join('') : '<p style="color:var(--muted);font-size:.84rem">No media servers are configured yet.</p>';
+    if (select) {
+      select.innerHTML = choices.map(key => '<option value="'+key+'">'+labels[key]+'</option>').join('');
+      select.value = choices.includes(service) ? service : (choices[0] || '');
+    }
+    document.getElementById('adminServiceLoginUsername').value = '';
+    document.getElementById('adminServiceLoginPassword').value = '';
+    const error = document.getElementById('adminServiceLoginError');
+    if (error) { error.textContent = choices.length ? '' : 'Configure Emby or Silo in the media-server settings before linking an account.'; error.style.display = choices.length ? 'none' : 'block'; }
+    window.updateAdminServiceLoginCopy();
+    modal.classList.add('open');
+  };
+  window.openAccountInfo = function (kind) {
+    if (kind !== 'linked') { return; }
+    const panel = document.getElementById('accountInfoPanel'), grid = document.getElementById('accountOverviewCards');
+    if (!panel || !grid) return;
+    const linked = linkedServices();
+    const source = accountData?.linkedServices || accountData?.adminServices || {};
+    const rows = linked.length
+      ? linked.map(key => '<div class="account-linked-service"><div><strong>'+labels[key]+'</strong><small>'+esc(source[key]?.username || 'Connected')+'</small></div><div style="display:flex;align-items:center;gap:.55rem"><span style="color:var(--success)">Linked</span><button class="btn-sm" onclick="unlinkAccountService(\''+key+'\')">Unlink</button></div></div>').join('')
+      : '<div class="account-linked-service"><div><strong>No media servers linked</strong><small>Connect a configured server to this administrator account.</small></div></div>';
+    grid.style.display = 'none';
+    panel.style.display = 'block';
+    panel.innerHTML = '<button class="btn-sm" onclick="renderAccountPage()">← Back to account</button><div style="margin-top:1.1rem"><h3>Linked Media Servers</h3><p>Only servers configured for this Portal installation appear here.</p><div style="display:grid;gap:.7rem">'+rows+'</div><div style="margin-top:1rem"><button class="btn-sm" onclick="openAdminServiceLogin()">＋ Add a service</button></div></div>';
+  };
+  window.renderAccountPage = (function (original) {
+    return function () {
+      original?.();
+      const cards = document.getElementById('accountOverviewCards');
+      const linkedCard = cards?.querySelector('[onclick*="linked"]');
+      if (linkedCard) {
+        const p = linkedCard.querySelector('p');
+        if (p) p.textContent = 'View the media servers connected to this account.';
+      }
+    };
+  })(window.renderAccountPage);
+  cleanLegacyUi();
+  new MutationObserver(cleanLegacyUi).observe(document.body, { childList: true, subtree: true });
+})();
+</script>
 </body>
 </html>
 <!-- This marker helps us find end of file -->
