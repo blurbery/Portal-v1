@@ -2802,6 +2802,68 @@ app.get('/admin', requireAdmin, (req, res) => {
   res.redirect('/dashboard#administration');
 });
 
+function discordBotTarHeader(name, size) {
+  const header = Buffer.alloc(512);
+  const write = (offset, length, value) => header.write(String(value), offset, length, 'utf8');
+  write(0, 100, name);
+  write(100, 8, '0000644');
+  write(108, 8, '0000000');
+  write(116, 8, '0000000');
+  write(124, 12, String(size.toString(8).padStart(11, '0')) + ' ');
+  write(136, 12, '00000000000 ');
+  header[156] = 48;
+  write(257, 6, 'ustar');
+  write(263, 2, '00');
+  const checksum = [...header].reduce((sum, byte, index) => sum + (index >= 148 && index < 156 ? 32 : byte), 0);
+  write(148, 8, String(checksum.toString(8).padStart(6, '0')) + ' ');
+  return header;
+}
+function discordBotTarGz(entries) {
+  const chunks = [];
+  for (const [name, value] of Object.entries(entries)) {
+    const data = Buffer.isBuffer(value) ? value : Buffer.from(String(value), 'utf8');
+    chunks.push(discordBotTarHeader(name, data.length), data);
+    const padding = (512 - (data.length % 512)) % 512;
+    if (padding) chunks.push(Buffer.alloc(padding));
+  }
+  chunks.push(Buffer.alloc(1024));
+  return zlib.gzipSync(Buffer.concat(chunks), { level: 9 });
+}
+app.post('/api/admin/discord-bot/bundle', requireAdmin, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const pricing = body.pricing && typeof body.pricing === 'object' ? body.pricing : {};
+    const identity = body.identity && typeof body.identity === 'object' ? body.identity : {};
+    const deployment = body.deployment && typeof body.deployment === 'object' ? body.deployment : {};
+    const providerDefs = {
+      emby: ['EMBY_URL', 'EMBY_API_KEY', 'EMBY_ROLE_IDS'],
+      silo: ['SILO_URL', 'SILO_API_KEY', 'SILO_ROLE_IDS'],
+      jellyfin: ['JELLYFIN_URL', 'JELLYFIN_API_KEY', 'JELLYFIN_ROLE_IDS'],
+      plex: ['PLEX_URL', 'PLEX_TOKEN', 'PLEX_ROLE_IDS'],
+    };
+    const selected = Object.keys(providerDefs).filter(key => pricing.providers?.[key]?.enabled !== false && PORTAL_CONFIG_FIELDS.some(field => field.key === providerDefs[key][0] && (process.env[field.key] || portalSettings.has(field.key))));
+    const required = [...new Set(['DISCORD_TOKEN', 'CLIENT_ID', 'DISCORD_GUILD_ID', 'DATABASE_URL', 'PRICING_JSON', ...selected.flatMap(key => providerDefs[key])])];
+    const envExample = [
+      '# Copy to .env on the bot VPS. Never commit the completed .env.',
+      ...required.map(key => key === 'DATABASE_URL' ? 'DATABASE_URL=postgres://portal:REPLACE_ON_HOST@db:5432/portal' : key === 'PRICING_JSON' ? 'PRICING_JSON=' : key + '=REPLACE_ON_HOST'),
+      '',
+    ].join('\n');
+    const safeDeployment = { target: 'vps', githubRepo: String(deployment.githubRepo || '').slice(0, 300), githubBranch: String(deployment.githubBranch || 'main').slice(0, 120), vpsDirectory: String(deployment.vpsDirectory || '/opt/portal-discord-bot').replace(/[\r\n]/g, ' ').slice(0, 300) };
+    const manifest = { version: 1, generatedAt: new Date().toISOString(), warning: 'Non-secret configuration manifest. Add tokens and provider API keys only as host environment variables.', mediaServers: Object.fromEntries(selected.map(key => [key, { configured: true, enabled: pricing.providers?.[key]?.enabled !== false, requiredEnv: providerDefs[key] }])), pricing, identity, deployment: safeDeployment, commands: ['pricing', 'ticketpanel', 'ticketclose', ...selected.flatMap(key => { const prefix = { emby:'emb', silo:'silo', jellyfin:'jelly', plex:'plex' }[key]; return DISCORD_BOT_COMMAND_GUIDE.map(([suffix]) => prefix + suffix); })], requiredEnvironment: required };
+    const templateRoot = path.join(__dirname, 'public', 'discord-bot-template');
+    const names = ['index.js', 'db.js', 'package.json', 'README.md', 'CUSTOMIZATIONS.md', 'DEPLOY.md', 'Dockerfile', 'docker-compose.yml', 'discord_bot_memberships.sql', 'announcements.sql'];
+    const entries = { 'portal-discord-bot/bot-config.json': JSON.stringify(manifest, null, 2), 'portal-discord-bot/env.example': envExample };
+    for (const name of names) entries['portal-discord-bot/' + name] = fs.readFileSync(path.join(templateRoot, name));
+    const archive = discordBotTarGz(entries);
+    res.setHeader('Content-Type', 'application/gzip');
+    res.setHeader('Content-Disposition', 'attachment; filename="portal-discord-bot-bundle.tar.gz"');
+    res.send(archive);
+  } catch (error) {
+    console.error('[admin/discord-bot/bundle]', error.message);
+    res.status(500).json({ error: 'Unable to build the Discord bot bundle.' });
+  }
+});
+
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
   const configured = {
     emby: Boolean(process.env.EMBY_URL && process.env.EMBY_API_KEY),
