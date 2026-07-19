@@ -592,6 +592,13 @@ async function savePortalDesignatedAdmin(record) {
   if (error) throw error;
 }
 
+function withTimeout(promise, fallback, timeoutMs = 3000) {
+  return Promise.race([
+    promise,
+    new Promise(resolve => setTimeout(() => resolve(fallback), timeoutMs)),
+  ]);
+}
+
 async function getAdminLinkedServices() {
   const keys = ['ADMIN_SERVICE_EMBY_USERNAME','ADMIN_SERVICE_EMBY_PASSWORD','ADMIN_SERVICE_EMBY_USER_ID','ADMIN_SERVICE_SILO_USERNAME','ADMIN_SERVICE_SILO_PASSWORD','ADMIN_SERVICE_SILO_USER_ID'];
   const { data, error } = await db.from('portal_settings').select('key_name,value_encrypted').in('key_name', keys);
@@ -1010,8 +1017,8 @@ app.get('/api/account', requireAuth, async (req, res) => {
   // accounts.  It is deliberately separate from the normal member lookup so
   // Emby/Silo credentials can never grant administration access.
   if (req.session.user.admin_login === true) {
-    const linked = await getAdminLinkedServices();
-    const records = await getAdminLinkedServiceRecords(linked);
+    const linked = await withTimeout(getAdminLinkedServices(), {}, 3000);
+    const records = await withTimeout(getAdminLinkedServiceRecords(linked), { emby: null, silo: null }, 3000);
     const emby = records.emby;
     const silo = records.silo;
     const hasLinkedEmby = Boolean(linked.emby);
