@@ -1,0 +1,22 @@
+services:
+  portal-v1-public:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: portal-v1-public
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      PORTAL_BUILD_ID: portal-v1-public
+    ports:
+      - "3100:3000"
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      com.portal.build: public-safe
+      com.portal.name: Portal-v1
+      com.portal.installation: portal-v1-public
