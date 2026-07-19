@@ -1,0 +1,3 @@
+PORTAL_BUILD_ID=portal-v1-public
+PORTAL_BUILD_SCOPE=provider-neutral-public-safe
+DO_NOT_MIX_WITH_PRIVATE_BUILD=true
