@@ -9229,9 +9229,12 @@ async function pollMainEmbyStatus() {
   function cleanLegacyUi() {
     document.querySelectorAll('[id*="iptv" i], [class*="iptv" i], [href*="iptv" i]').forEach(el => el.remove());
     document.querySelectorAll('body *').forEach(el => {
-      if (el.children.length === 0 && /Portal/i.test(el.textContent || '')) el.textContent = el.textContent.replace(/Portal/gi, 'Portal');
       ['alt','title','aria-label'].forEach(attr => {
-        if (el.hasAttribute(attr)) el.setAttribute(attr, el.getAttribute(attr).replace(/Portal/gi, 'Portal'));
+        if (el.hasAttribute(attr)) {
+          const current = el.getAttribute(attr);
+          const next = current.replace(/Portal/gi, 'Portal');
+          if (next !== current) el.setAttribute(attr, next);
+        }
       });
     });
   }
