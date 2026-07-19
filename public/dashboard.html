@@ -4057,7 +4057,7 @@ function renderDiscordBotDetail() {
   const commandProviders = providers.filter(([key]) => { const item = saved.providers?.[key]; return !item || item.enabled !== false; });
   const commandRows = commandProviders.flatMap(([key, name]) => DISCORD_BOT_COMMAND_GUIDE.map(([suffix, description]) => `<tr><td style="padding:.55rem"><code>/${commandPrefixes[key]}${suffix}</code></td><td style="padding:.55rem">${name}</td><td style="padding:.55rem">${description}</td></tr>`)).join('');
   const commandGuide = `<details class="settings-group-card wide" id="discordBotCommandGuide" style="padding:0"><summary style="cursor:pointer;list-style:none;padding:1.1rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem"><span><strong style="font-size:1.05rem">View commands</strong><small style="display:block;color:var(--muted);margin-top:.25rem">Only commands for configured and enabled media servers are shown.</small></span><span aria-hidden="true" style="color:var(--accent2);font-size:1.25rem">⌄</span></summary><div style="padding:0 1.2rem 1.2rem"><p>These are the commands the bot owner and staff use. Account-changing commands should be restricted to trusted staff roles.</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px"><thead><tr><th style="text-align:left;color:var(--muted);padding:.55rem">Command</th><th style="text-align:left;color:var(--muted);padding:.55rem">Service</th><th style="text-align:left;color:var(--muted);padding:.55rem">What it does</th></tr></thead><tbody><tr><td style="padding:.55rem"><code>/pricing</code></td><td style="padding:.55rem">All configured services</td><td style="padding:.55rem">Shows only non-blank prices from the portal pricing matrix.</td></tr><tr><td style="padding:.55rem"><code>/ticketpanel</code></td><td style="padding:.55rem">Discord</td><td style="padding:.55rem">Posts the ticket panel so members can open a private ticket.</td></tr><tr><td style="padding:.55rem"><code>/ticketclose</code></td><td style="padding:.55rem">Discord</td><td style="padding:.55rem">Closes the current ticket channel.</td></tr>${commandRows}</tbody></table></div><div class="smtp-config-note" style="margin-top:.8rem"><strong>After changing commands or provider selections:</strong> run <code>npm run register</code> with the bot token and Application ID, then restart the bot. Trial always means 5 days and 2 streams; Lifetime always uses 10 streams.</div></div></details>`;
-  const pricingExport = `<section class="settings-group-card wide"><h3>Generated provider configuration</h3><p>Copy this non-secret JSON into the bot host as <code>PRICING_JSON</code>, or download the complete <code>bot-config.json</code> manifest. It controls enabled provider commands, ticket categories and pricing. API keys and tokens are never included.</p><pre id="discordBotPricingExport" class="storage-guide-code">${v3Escape(JSON.stringify(saved && Object.keys(saved).length ? saved : { version: 3, providers: {} }, null, 2))}</pre><div style="display:flex;gap:.45rem;flex-wrap:wrap"><button type="button" class="btn-sm" onclick="copyDiscordBotPricingJson()">Copy PRICING_JSON value</button><button type="button" class="btn-sm" onclick="downloadDiscordBotConfig()">Download configured bot-config.json</button></div><div class="smtp-config-note" style="margin-top:.8rem"><strong>Deployment checklist — complete every step</strong><ol class="storage-guide-list"><li>Save this Discord Bot card after all provider choices, prices, role IDs and deployment settings are complete.</li><li>Download the updated <code>bot-config.json</code> and copy it into the bot repository root.</li><li>Copy the project files into a new private GitHub repository; never overwrite your existing private bot.</li><li>Add every required environment variable on the VPS. Never put tokens/API keys in GitHub.</li><li>Run <code>npm install</code>, <code>npm run register</code> and <code>npm start</code> on the VPS.</li><li>After changing a media server or pricing, download a fresh manifest and re-register the slash commands.</li></ol></div></section>`;
+  const pricingExport = `<section class="settings-group-card wide"><h3>Generated provider configuration</h3><p>Copy this non-secret JSON into the bot host as <code>PRICING_JSON</code>, or download the complete <code>bot-config.json</code> manifest. It controls enabled provider commands, ticket categories and pricing. API keys and tokens are never included.</p><pre id="discordBotPricingExport" class="storage-guide-code">${v3Escape(JSON.stringify(saved && Object.keys(saved).length ? saved : { version: 3, providers: {} }, null, 2))}</pre><div style="display:flex;gap:.45rem;flex-wrap:wrap"><button type="button" class="btn-sm" onclick="copyDiscordBotPricingJson()">Copy PRICING_JSON value</button><button type="button" class="btn-sm" onclick="downloadDiscordBotConfig()">Download configured bot-config.json</button><button type="button" class="btn-sm" onclick="downloadDiscordBotDockerBundle()">Download Docker deployment files</button></div><div class="smtp-config-note" style="margin-top:.8rem"><strong>Deployment checklist — complete every step</strong><ol class="storage-guide-list"><li>Save this Discord Bot card after all provider choices, prices, role IDs and deployment settings are complete.</li><li>Download the updated <code>bot-config.json</code> and copy it into the bot repository root.</li><li>Copy the project files into a new private GitHub repository; never overwrite your existing private bot.</li><li>Add every required environment variable on the VPS. Never put tokens/API keys in GitHub.</li><li>Run <code>npm install</code>, <code>npm run register</code> and <code>npm start</code> on the VPS.</li><li>After changing a media server or pricing, download a fresh manifest and re-register the slash commands.</li></ol></div></section>`;
   const botProjectFiles = `<div class="smtp-config-note" style="margin:.9rem 0 1rem"><strong>Download only after saving this card</strong><p style="margin:.35rem 0 .7rem">The sanitized project files are the fixed safe code base. Your selections are written into the generated <code>bot-config.json</code> manifest. Save the Discord Bot card first, download a fresh manifest, then copy the files and manifest into a new private GitHub repository.</p><div style="display:flex;gap:.45rem;flex-wrap:wrap"><a class="btn-sm" href="/discord-bot-template/README.md" target="_blank" rel="noopener">README / setup steps ↗</a><a class="btn-sm" href="/discord-bot-template/index.js" target="_blank" rel="noopener">index.js ↗</a><a class="btn-sm" href="/discord-bot-template/package.json" target="_blank" rel="noopener">package.json ↗</a><a class="btn-sm" href="/discord-bot-template/env.example" target="_blank" rel="noopener">env.example ↗</a><a class="btn-sm" href="/discord-bot-template/discord_bot_memberships.sql" target="_blank" rel="noopener">Membership SQL ↗</a><a class="btn-sm" href="/discord-bot-template/announcements.sql" target="_blank" rel="noopener">Announcements SQL ↗</a><a class="btn-sm" href="/discord-bot-template/CUSTOMIZATIONS.md" target="_blank" rel="noopener">Safe future-change rules ↗</a></div></div>`;
   const registrationSection = `<section class="settings-group-card wide" id="discordBotRegistrationSteps"><h3>Final registration &amp; launch</h3><p>Complete your choices first, then save this card and download the fresh generated manifest before registering commands. This is the final step that publishes the selected slash commands to Discord.</p>${botProjectFiles}<div class="portal-auth-tabs" style="display:grid;grid-template-columns:1fr;margin:.9rem 0"><button type="button" class="portal-auth-tab active" data-bot-registration-tab="vps" onclick="setDiscordBotDeployTarget('vps')">${adminCardIcon('vps')}<span>VPS / Docker Compose</span></button></div><div id="discordBotRegistrationVps" data-bot-registration-panel="vps"><strong>VPS / Docker Compose</strong><pre class="storage-guide-code">cd /path/to/private-bot-repository
 cp env.example .env
@@ -4124,6 +4124,49 @@ function downloadDiscordBotConfig() {
   const manifest = { version: 1, generatedAt: new Date().toISOString(), warning: 'Non-secret configuration manifest. Add tokens and provider API keys only as host environment variables.', mediaServers, pricing, identity, deployment, commands: ['pricing', 'ticketpanel', 'ticketclose', ...Object.keys(mediaServers).flatMap(key => { const prefix = { emby:'emb', silo:'silo', jellyfin:'jelly', plex:'plex' }[key]; return DISCORD_BOT_COMMAND_GUIDE.map(([suffix]) => `${prefix}${suffix}`); })], requiredEnvironment: ['DISCORD_TOKEN', 'CLIENT_ID', 'PRICING_JSON', ...Object.values(mediaServers).flatMap(item => item.requiredEnv)], completionChecklist: ['Copy this file into the bot repository root as bot-config.json.', 'Add the required host environment variables.', 'Run npm install.', 'Run npm run register.', 'Run npm start.'] };
   const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
   const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'bot-config.json'; link.click(); URL.revokeObjectURL(link.href);
+}
+
+function downloadDiscordBotDockerBundle() {
+  const field = key => (portalAdminConfig?.fields || []).find(item => item.key === key) || { value: '' };
+  let pricing = {}, deployment = {};
+  try { pricing = JSON.parse(field('DISCORD_BOT_PRICING').value || '{}'); } catch (_) {}
+  try { deployment = JSON.parse(field('DISCORD_BOT_DEPLOYMENT').value || '{}'); } catch (_) {}
+  const providerDefs = {
+    emby: ['EMBY_URL', 'EMBY_API_KEY', 'EMBY_ROLE_IDS'],
+    silo: ['SILO_URL', 'SILO_API_KEY', 'SILO_ROLE_IDS'],
+    jellyfin: ['JELLYFIN_URL', 'JELLYFIN_API_KEY', 'JELLYFIN_ROLE_IDS'],
+    plex: ['PLEX_URL', 'PLEX_TOKEN', 'PLEX_ROLE_IDS'],
+  };
+  const selected = Object.keys(providerDefs).filter(key => mediaServerReady(key) && pricing.providers?.[key]?.enabled !== false);
+  const required = [...new Set(['DISCORD_TOKEN', 'CLIENT_ID', 'DISCORD_GUILD_ID', 'DATABASE_URL', 'PRICING_JSON', ...selected.flatMap(key => providerDefs[key])])];
+  const envExample = [
+    '# Copy to .env on the bot VPS. Never commit the completed .env.',
+    ...required.map(key => key === 'DATABASE_URL' ? 'DATABASE_URL=postgres://portal:REPLACE_ON_HOST@db:5432/portal' : key === 'PRICING_JSON' ? 'PRICING_JSON=' : key + '=REPLACE_ON_HOST'),
+    '',
+  ].join('\n');
+  const appDirectory = deployment.vpsDirectory || '/opt/portal-discord-bot';
+  const compose = [
+    '# Generated for the Discord Bot card. Deploy from ' + appDirectory + '.',
+    'services:',
+    '  portal-discord-bot:',
+    '    build: .',
+    '    restart: unless-stopped',
+    '    init: true',
+    '    env_file:',
+    '      - .env',
+    '    volumes:',
+    '      - ./bot-config.json:/app/bot-config.json:ro',
+    '    security_opt:',
+    '      - no-new-privileges:true',
+    '',
+  ].join('\n');
+  const save = (name, text) => {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
+  };
+  save('docker-compose.yml', compose);
+  save('env.example', envExample);
+  showToast('Docker Compose and env.example downloaded', 'success');
 }
 
 function setDiscordBotDeployTarget(target) {
