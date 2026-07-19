@@ -84,7 +84,7 @@ class QueryBuilder {
           clauses.push(item.operator === 'IN' ? 'FALSE' : 'TRUE');
           continue;
         }
-        const marks = values.map(value => { params.push(String(value)); return `${params.length}`; });
+        const marks = values.map(value => { params.push(String(value)); return String.fromCharCode(36) + params.length; });
         clauses.push(`${field} ${item.operator} (${marks.join(',')})`);
       } else {
         params.push(item.value == null ? null : String(item.value));
