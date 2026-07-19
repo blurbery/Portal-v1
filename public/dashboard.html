@@ -8274,7 +8274,91 @@ async function openReaderForBook(title, type, source_id, btn) {
   const readerWin = window.open('', '_blank');
   if (!readerWin) { showToast('Allow popups for this site to use the reader', 'error'); return; }
   const preparingLabel = type === 'comic' ? 'comic' : 'book';
-  readerWin.document.write(`<html><body style="background:#0a0a0f;color:#888;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>⏳ Preparing ${preparingLabel}…</p></body></html>`);
+  readerWin.document.write(`<html><body style="background:#0a0a0f;color:#888;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>⏳ Preparing ${preparingLabel}…</p>
+<script>
+/* Public-build UI guard: only configured, linked media services are shown. */
+(function () {
+  const supported = ['emby', 'silo'];
+  const labels = { emby: 'Emby', silo: 'Silo' };
+  const icon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>';
+  const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  function cleanLegacyUi() {
+    document.querySelectorAll('[id*="iptv" i], [class*="iptv" i], [href*="iptv" i]').forEach(el => el.remove());
+    document.querySelectorAll('[data-service-choice="iptv"], option[value="iptv"]').forEach(el => el.remove());
+    document.querySelectorAll('body *').forEach(el => {
+      if (el.children.length === 0 && /Apex Nova/i.test(el.textContent || '')) el.textContent = el.textContent.replace(/Apex Nova/gi, 'Portal');
+      ['alt','title','aria-label'].forEach(attr => {
+        if (el.hasAttribute(attr)) el.setAttribute(attr, el.getAttribute(attr).replace(/Apex Nova/gi, 'Portal'));
+      });
+    });
+  }
+  async function configuredServices() {
+    try {
+      const response = await fetch('/api/provider-status', { cache: 'no-store' });
+      const data = await response.json();
+      return supported.filter(key => data.providers?.[key]?.configured);
+    } catch (_) { return []; }
+  }
+  function linkedServices() {
+    const source = accountData?.linkedServices || accountData?.adminServices || {};
+    return supported.filter(key => source[key]?.linked || source[key]?.username);
+  }
+  window.updateAdminServiceLoginCopy = function () {
+    const service = document.getElementById('adminServiceLoginService')?.value || '';
+    const description = document.getElementById('adminServiceLoginDescription');
+    if (description) description.textContent = service && labels[service]
+      ? 'Enter the credentials for the configured media server you want to connect.'
+      : 'Configure a media server first, then connect its existing account here.';
+    document.querySelectorAll('[data-service-choice]').forEach(button => button.classList.toggle('active', button.dataset.serviceChoice === service));
+  };
+  window.openAdminServiceLogin = async function (service) {
+    const modal = document.getElementById('adminServiceLoginModal');
+    if (!modal || accountData?.account?.is_sub) return;
+    const choices = (await configuredServices()).filter(key => !linkedServices().includes(key));
+    const choiceWrap = modal.querySelector('.admin-service-choice');
+    const select = document.getElementById('adminServiceLoginService');
+    if (choiceWrap) choiceWrap.innerHTML = choices.length ? choices.map(key => '<button type="button" data-service-choice="'+key+'" onclick="chooseAdminService(\''+key+'\')"><span class="admin-service-choice-icon">'+icon+'</span>'+labels[key]+'</button>').join('') : '<p style="color:var(--muted);font-size:.84rem">No media servers are configured yet.</p>';
+    if (select) {
+      select.innerHTML = choices.map(key => '<option value="'+key+'">'+labels[key]+'</option>').join('');
+      select.value = choices.includes(service) ? service : (choices[0] || '');
+    }
+    document.getElementById('adminServiceLoginUsername').value = '';
+    document.getElementById('adminServiceLoginPassword').value = '';
+    const error = document.getElementById('adminServiceLoginError');
+    if (error) { error.textContent = choices.length ? '' : 'Configure Emby or Silo in the media-server settings before linking an account.'; error.style.display = choices.length ? 'none' : 'block'; }
+    window.updateAdminServiceLoginCopy();
+    modal.classList.add('open');
+  };
+  window.openAccountInfo = function (kind) {
+    if (kind !== 'linked') { return; }
+    const panel = document.getElementById('accountInfoPanel'), grid = document.getElementById('accountOverviewCards');
+    if (!panel || !grid) return;
+    const linked = linkedServices();
+    const source = accountData?.linkedServices || accountData?.adminServices || {};
+    const rows = linked.length
+      ? linked.map(key => '<div class="account-linked-service"><div><strong>'+labels[key]+'</strong><small>'+esc(source[key]?.username || 'Connected')+'</small></div><div style="display:flex;align-items:center;gap:.55rem"><span style="color:var(--success)">Linked</span><button class="btn-sm" onclick="unlinkAccountService(\''+key+'\')">Unlink</button></div></div>').join('')
+      : '<div class="account-linked-service"><div><strong>No media servers linked</strong><small>Connect a configured server to this administrator account.</small></div></div>';
+    grid.style.display = 'none';
+    panel.style.display = 'block';
+    panel.innerHTML = '<button class="btn-sm" onclick="renderAccountPage()">← Back to account</button><div style="margin-top:1.1rem"><h3>Linked Media Servers</h3><p>Only servers configured for this Portal installation appear here.</p><div style="display:grid;gap:.7rem">'+rows+'</div><div style="margin-top:1rem"><button class="btn-sm" onclick="openAdminServiceLogin()">＋ Add a service</button></div></div>';
+  };
+  window.renderAccountPage = (function (original) {
+    return function () {
+      original?.();
+      const cards = document.getElementById('accountOverviewCards');
+      const linkedCard = cards?.querySelector('[onclick*="linked"]');
+      if (linkedCard) {
+        const p = linkedCard.querySelector('p');
+        if (p) p.textContent = 'View the media servers connected to this account.';
+      }
+    };
+  })(window.renderAccountPage);
+  cleanLegacyUi();
+  new MutationObserver(cleanLegacyUi).observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+
+</body></html>`);
 
   const hasProgress = await fetch(`/api/reader/progress/${encodeURIComponent(title)}`).then(r=>r.json()).then(d=>!!(d.progress?.cfi || d.progress?.page)).catch(()=>false);
   const readLabel = hasProgress ? '📖 Read Again' : '📖 Read in Portal';
