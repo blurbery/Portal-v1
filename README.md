@@ -42,4 +42,4 @@ Each operator must create and use their own Supabase project, Discord applicatio
 - Announcements, role routing, member/sub-user session handling, and optional Seerr configuration.
 - Supabase and hosting-provider deployment instructions.
 
-See docs/SETUP.md, docs/SECURITY.md, and docs/UPDATES.md before installing.
+Read [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for the system map, configuration order, service-linking flow, and verification checklist. Also see docs/SETUP.md, docs/SECURITY.md, docs/DOCKER.md, and docs/UPDATES.md before installing.
