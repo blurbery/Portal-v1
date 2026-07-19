@@ -2893,7 +2893,16 @@ async function loadAccount() {
     const res = await fetch('/api/account', { signal: controller.signal });
     clearTimeout(timeout);
     const data = await res.json();
-    if (data.error) { showToast(data.error, 'error'); return; }
+    if (res.status === 401 || data.error === 'Not authenticated') {
+      window.location.replace('/');
+      return;
+    }
+    if (!res.ok || data.error) {
+      const loading = document.getElementById('loading');
+      if (loading) loading.innerHTML = '<div style="color:var(--danger);margin-bottom:.75rem">Unable to load your account.</div><button class="btn-sm" onclick="window.location.reload()">Try again</button>';
+      showToast(data.error || 'Unable to load your account', 'error');
+      return;
+    }
     accountData = data;
     startKindleSenderPolling();
     const administrationLink = document.getElementById('v3AdministrationLink');
