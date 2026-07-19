@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.git
+.git/*
+node_modules
+npm-debug.log*
+*.log
+portal-backups
+private
+secrets
