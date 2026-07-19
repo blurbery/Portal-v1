@@ -63,6 +63,34 @@ The bootstrap admin account is local to the Portal server:
 
 Supabase stores Portal data and encrypted installation settings; it is not required to be the login identity provider for the local bootstrap admin. Discord sign-in is optional and must be configured separately.
 
+## First-launch admin setup
+
+The first administrator is bootstrapped before the server starts. Generate a password hash with the repository's documented helper or a local Node command, then place these values in the installation's uncommitted `.env` file:
+
+```dotenv
+PORTAL_ADMIN_USERNAME=admin
+PORTAL_ADMIN_PASSWORD_SALT=<random-salt>
+PORTAL_ADMIN_PASSWORD_HASH=<scrypt-hash-for-the-password>
+```
+
+Use the username and original password at the Portal sign-in screen. The hash is one-way; do not paste the original password or hash into GitHub.
+
+After signing in, use Administration to configure the Portal's provider settings and optional integrations. The account screen is for linking existing media-server accounts after the corresponding provider has been configured.
+
+## What must exist before first launch
+
+The server needs its own Supabase connection before it can start reliably because Supabase is the Portal's settings and account store:
+
+- `SUPABASE_URL`
+- `SUPABASE_KEY` (server-side key, kept only in `.env`)
+- `CONFIG_ENCRYPTION_KEY`
+- `SESSION_SECRET`
+- the schema from `portal_settings.sql`
+
+This is the installation bootstrap connection, not a personal production connection. It cannot be entered through the Portal after login because the server needs a data store in order to serve the login and administration pages.
+
+VPS/hosting details are deployment concerns, not Portal provider settings. The public build does not need SSH, VPS credentials, or a remote-server integration. Configure the host and Docker outside the Portal, then configure Portal services from Administration after the admin login.
+
 ## Provider boundary
 
 The public build contains provider adapters and configuration slots, but every operator supplies their own provider URL, API key, account, and permissions. Blank provider settings mean that provider is unavailable. Do not paste private production values into this repository or into screenshots, issues, or pull requests.
