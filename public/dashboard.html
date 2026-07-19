@@ -4336,45 +4336,7 @@ async function saveAdminUserEdit() {
   let endpoint = '/api/admin/user/edit';
   if (service === 'Emby') payload.emby_user_id = source.emby_user_id;
   if (service === 'Silo') { endpoint = '/api/admin/silo/edit'; payload.silo_user_id = source.silo_user_id; }
-  if (service === 'IPTV') { endpoint = '/api/admin/iptv/edit'; payload.discord_user_id = record.user.discord_user_id; payload.line_id = source.line_id; payload.panel = source.panel; payload.account_username = document.getElementById('adminEditAccountUsername')?.value.trim(); }
   try { const res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); const data = await res.json(); if (!res.ok || data.error) throw new Error(data.error || 'Unable to save account'); showToast('Account updated', 'success'); adminUsersCache = null; closeAdminUserEditor(); loadAdminUsers(String(service).toLowerCase()); } catch (e) { showToast(e.message, 'error'); }
-}
-
-async function loadAdminVpsStatus() {
-  const summary = document.getElementById('adminVpsSummary');
-  const details = document.getElementById('adminVpsDetails');
-  if (summary) summary.textContent = 'Checking…';
-  try {
-    const res = await fetch('/api/admin/vps-status');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Unable to read VPS status');
-    const disk = data.disks?.[0];
-    if (summary) summary.textContent = `${data.hostname || 'VPS'} · Updated ${new Date(data.checkedAt || Date.now()).toLocaleTimeString()}`;
-    const bytes = value => { const n=Number(value||0); return n >= 1073741824 ? `${(n/1073741824).toFixed(1)} GB` : `${Math.round(n/1048576)} MB`; };
-    if (details) details.innerHTML = `<article class="vps-metric"><div class="vps-metric-label">CPU Usage</div><div class="vps-metric-value">${Math.round(data.cpu?.usedPct || 0)}%</div><div class="vps-metric-sub">${data.cpu?.cores || '—'} Cores · Load ${(data.cpu?.loadavg?.[0] || 0).toFixed(2)}</div></article><article class="vps-metric"><div class="vps-metric-label">RAM Usage</div><div class="vps-metric-value">${Math.round(data.memory?.usedPct || 0)}%</div><div class="vps-metric-sub">${bytes(data.memory?.used)} Of ${bytes(data.memory?.total)}</div></article><article class="vps-metric"><div class="vps-metric-label">Disk Usage</div><div class="vps-metric-value">${Math.round(disk?.usedPct || 0)}%</div><div class="vps-metric-sub">${v3Escape(disk?.mount || '/')} · ${v3Escape(data.hostname || 'VPS')}</div></article><article class="vps-metric"><div class="vps-metric-label">Security</div><div class="vps-metric-value" style="font-size:1.2rem;color:${data.security?.ok ? 'var(--success)' : 'var(--danger)'}">${data.security?.ok ? 'Protected' : 'Review'}</div><div class="vps-metric-sub">${v3Escape(data.platform || 'Linux')}</div></article>`;
-  } catch (e) { if (summary) summary.textContent = 'Status unavailable'; if (details) details.textContent = e.message; }
-}
-
-async function loadAdminRemoteVpsStatus() {
-  const target = document.getElementById('adminRemoteVpsSummary');
-  if (target) target.textContent = 'Connecting…';
-  try {
-    const res = await fetch('/api/admin/vps-remote-status');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Unable to connect');
-    if (target) target.textContent = `${data.hostname || 'VPS'} · ${data.uptime || 'Connected'} · ${data.memory || ''}`;
-    const details = document.getElementById('adminVpsDetails');
-    if (details) details.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem"><span><strong style="color:var(--text)">Remote host</strong><br>${v3Escape(data.hostname || '—')}</span><span><strong style="color:var(--text)">Platform</strong><br>${v3Escape(data.platform || '—')}</span><span><strong style="color:var(--text)">Uptime</strong><br>${v3Escape(data.uptime || '—')}</span><span><strong style="color:var(--text)">Disk</strong><br>${v3Escape(data.disk || '—')}</span></div>`;
-  } catch (e) { if (target) target.textContent = e.message; }
-}
-
-function openVpsAdminSettings() {
-  showSection('administration');
-  const waitForConfig = (attempt = 0) => {
-    if (portalAdminConfig) return openAdminDetail('VPS');
-    if (attempt < 20) setTimeout(() => waitForConfig(attempt + 1), 100);
-  };
-  waitForConfig();
 }
 
 async function submitPortalIssue() {
