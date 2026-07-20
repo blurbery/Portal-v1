@@ -16,3 +16,10 @@ Keep custom branding and installation settings in `.env` or encrypted PostgreSQL
 ## PostgreSQL/Docker public build
 
 The public branch uses self-hosted PostgreSQL and Docker Compose. Apply portal_schema.sql, keep secrets on the host, and use a named database volume. The Discord Bot card generates one complete provider-neutral archive; re-register after commands, providers, or pricing change.
+
+
+## Library configuration contract
+
+The public dashboard’s Library Configuration card is the supported operator path for BookWarehouse and optional metadata-provider settings. BookWarehouse URL and API key are required for the catalogue-backed library features; Hardcover, ComicVine, and Google Books are optional enrichment providers. The card’s connection test does not save values, while Save Library Configuration writes encrypted PostgreSQL settings and refreshes the server runtime.
+
+Feature switches and Permissions & Announcements remain separate controls: enabling a provider connection does not automatically expose Library to members. When changing library settings or routes, preserve the `/api/library/*` proxy boundary so provider keys remain server-side, and validate the live provider after deployment.

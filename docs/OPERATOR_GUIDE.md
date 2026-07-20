@@ -26,7 +26,7 @@ The browser talks to the server through the `/api/*` routes. Provider credential
 | Announcements | Publish messages to members | PostgreSQL settings and Admin |
 | Users | Review and manage member/sub-user records | PostgreSQL account tables and Admin |
 | Discord bot | Optional slash commands and member integration | `public/discord-bot-template/` and generated bot settings |
-| Libraries | Optional books, comics, audiobooks, and request integrations | `.env` and Admin → Library |
+| Libraries | BookWarehouse catalogue, optional metadata enrichment, and local book storage | Admin → Library Configuration, Feature switches, and Permissions & Announcements |
 | Docker | Isolated runtime for the public build | `Dockerfile`, `docker-compose.yml` |
 
 ## How service linking works
@@ -52,6 +52,18 @@ A provider must be configured before it appears in “Add a service”. The publ
 8. Open Administration → Media Servers and save provider configuration.
 9. Open Account → Linked Media Servers and connect existing provider accounts.
 10. Configure optional Discord, library, mail, or request integrations only when needed.
+
+## Library configuration
+
+The Library Configuration card controls the provider settings used by the Portal’s books, audiobooks, comics, and request flows.
+
+- **BookWarehouse Base URL and API key** are the primary connection. The server normalizes a base URL to the `/api/v1` API path and sends the key only from the server-side proxy.
+- **Test Connection** calls the BookWarehouse `/books?limit=1` endpoint using the values currently displayed in the form. It does not save changes.
+- **Save Library Configuration** writes the submitted values to encrypted PostgreSQL settings and refreshes the server runtime.
+- **Hardcover, ComicVine, and Google Books** are optional enrichment providers. They improve search and request details but are not the Portal catalogue source.
+- **Books Directory** is an optional local filesystem path for imported or downloaded files; it is not a remote provider URL.
+
+The card does not control whether members can see the library. Use Feature switches to enable Library, ebooks, audiobooks, or comics, then use Permissions & Announcements to grant access to the relevant member-service groups. A valid card test proves reachability and authentication only; operators should still verify search, covers, requests, and downloads against their own live provider.
 
 ## Authentication notes
 
@@ -82,7 +94,7 @@ After signing in, use Administration to configure the Portal's provider settings
 The server needs its own PostgreSQL connection before it can start reliably because PostgreSQL is the Portal's settings and account store:
 
 - `DATABASE_URL`
-- `DATABASE_URL` (server-side key, kept only in `.env`)
+- `PORTAL_ADMIN_USERNAME`, `PORTAL_ADMIN_PASSWORD_SALT`, and `PORTAL_ADMIN_PASSWORD_HASH`
 - `CONFIG_ENCRYPTION_KEY`
 - `SESSION_SECRET`
 - the schema from `portal_schema.sql`
@@ -106,6 +118,8 @@ After installation, verify:
 - Account → Linked Media Servers shows no rows until a service is actually linked.
 - Linking a service creates a linked row and unlinking removes it.
 - Optional integrations remain disabled when their environment variables are blank.
+- Library Configuration can successfully test the BookWarehouse URL and API key.
+- Enabled library member groups can search the configured catalogue and receive the expected access response.
 
 For a Docker-specific checklist, see [DOCKER.md](DOCKER.md). For security requirements, see [SECURITY.md](SECURITY.md). For schema setup, see [SETUP.md](SETUP.md).
 

@@ -30,6 +30,18 @@ docker compose -p portal-v1-public up -d --build
 
 The public-safe container uses the distinct service name portal-v1-public, host port 3100, and explicit public-build labels. See docs/DOCKER.md for updates and troubleshooting. Never commit .env, bot tokens, provider API keys, OAuth client secrets, service-role keys, or password hashes.
 
+## Library configuration
+
+After the first administrator login, open Administration → Library Configuration. Configure the required BookWarehouse connection first:
+
+- **BookWarehouse Base URL**: the BookWarehouse API URL for this installation. If the URL does not end in `/api/v1`, the Portal adds that path automatically.
+- **API Key**: the installation’s BookWarehouse API key. It is stored encrypted in PostgreSQL and is never returned in normal browser configuration responses.
+- **Test Connection**: checks the URL and key currently in the form without saving them.
+
+Select **Save Library Configuration** after the connection test succeeds. Hardcover, ComicVine, and Google Books are optional search-enrichment services; they improve covers, descriptions, and request metadata but do not replace BookWarehouse. **Books Directory** is an optional local path for imported or downloaded files and is not a remote provider connection.
+
+Library availability is controlled separately by the Feature switches and Permissions & Announcements cards. Enable the required Library, ebooks, audiobooks, or comics features and grant access to the relevant member services. A live provider test still requires a reachable BookWarehouse deployment and valid credentials; do not commit those values to Git.
+
 ## Operator isolation
 
 Each operator must create and use their own PostgreSQL project, Discord application, provider accounts, environment variables, and encrypted settings. Invited GitHub collaborators receive the distributable source only; never share the private portal’s .env, database, bot configuration, credentials, domains, or server details.
