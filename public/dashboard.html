@@ -7633,15 +7633,15 @@ function renderPopupContent(item, fromMyBooks, displayYear, isShelfmark, isMyBoo
           <button onclick="downloadAudiobook(this,'${bwActionId}','${safeTitle}')" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.65rem;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%">
             ⬇ Download
           </button>
-          <button onclick="openInLibrary(this,'${safeTitle}','audiobook','${bwActionId}')" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.65rem;border-radius:10px;background:rgba(108,99,255,0.12);color:var(--accent2);border:1px solid rgba(108,99,255,0.25);font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%">
-            🎧 Listen in Library
+          <button onclick="openAudioReader('${bwActionId}','${safeTitle}',this)" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.65rem;border-radius:10px;background:rgba(108,99,255,0.12);color:var(--accent2);border:1px solid rgba(108,99,255,0.25);font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%">
+            🎧 Listen in Portal
           </button>
         ` : safeType === 'ebook' && bwActionId ? `
           <button onclick="downloadBookEpub(this,'${bwActionId}','${safeTitle}')" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.65rem;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%">
             ⬇ Download
           </button>
-          <button onclick="openInLibrary(this,'${safeTitle}','ebook','${bwActionId}')" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.65rem;border-radius:10px;background:rgba(108,99,255,0.12);color:var(--accent2);border:1px solid rgba(108,99,255,0.25);font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%">
-            📖 Read in Library
+          <button onclick="openReaderForBook('${safeTitle}', 'ebook', 'bw:${bwActionId}', this)" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.65rem;border-radius:10px;background:rgba(108,99,255,0.12);color:var(--accent2);border:1px solid rgba(108,99,255,0.25);font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%">
+            📖 Read in Portal
           </button>
           <button onclick="sendBookToKindle(this,'${bwActionId}','${safeTitle}')" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.65rem;border-radius:10px;background:rgba(34,197,94,0.12);color:var(--success);border:1px solid rgba(34,197,94,0.3);font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%">
             📱 Send to Kindle
@@ -8051,11 +8051,11 @@ function downloadBookFromPopup(source_id) {
   triggerFileDownload(`/api/shelfmark/file/${source_id}`, '');
 }
 
-function openComicInLibrary(itemId) {
-  const url = itemId
-    ? `https://example.invalid/comics/${encodeURIComponent(itemId)}`
-    : 'https://example.invalid/comics';
-  window.open(url, '_blank');
+function openComicInLibrary(itemId, title) {
+  closeBookPopup();
+  showSection('libraryComics');
+  if (itemId) openComicSeriesIssues(itemId, title || '');
+  else loadComicIssues(1, title || '');
 }
 
 async function downloadComicEpub(btn, itemId, title) {
@@ -8155,38 +8155,30 @@ async function downloadComicViaShelfmark(title, btn, action) {
   }
 }
 
+async function openAudioReader(id, title, btn) {
+  if (!id) { showToast('Audiobook file not available', 'error'); return; }
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Allow popups to use the in-app player', 'error'); return; }
+  win.document.write('<p style="font-family:sans-serif;background:#0a0a0f;color:#aaa;padding:2rem">Opening audiobook…</p>');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Opening…'; }
+  win.location.href = `/audio-reader?id=${encodeURIComponent(id)}&title=${encodeURIComponent(title || 'Audiobook')}`;
+  setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '🎧 Listen in Portal'; } }, 1000);
+}
+
 async function openInLibrary(btn, title, type, bwId) {
   if (type === 'comic') {
-    closeBookPopup();
-    showSection('libraryComics');
-    if (bwId) openComicSeriesIssues(bwId, title);
-    else {
-      const q = document.getElementById('comicQuery');
-      if (q) q.value = title || '';
-      loadComicIssues(1, title || '');
-    }
+    openComicInLibrary(bwId, title);
     return;
   }
-  const orig = btn.innerHTML;
-  btn.disabled = true;
-  btn.textContent = '⏳ Opening…';
-  try {
-    // For comics without a known BW ID, search by title
-    const idParam = bwId ? `&id=${encodeURIComponent(bwId)}` : '';
-    const res = await fetch(`/api/library/book-url?title=${encodeURIComponent(title)}&type=${type}${idParam}`);
-    const d = await res.json();
-    const url = d.url || (type === 'audiobook'
-      ? `https://example.invalid/audiobooks?q=${encodeURIComponent(title)}`
-      : `https://example.invalid/search?query=${encodeURIComponent(title)}`);
-    window.open(url, '_blank');
-  } catch(e) {
-    const fallback = type === 'audiobook'
-      ? `https://example.invalid/audiobooks?q=${encodeURIComponent(title)}`
-      : `https://example.invalid/search?query=${encodeURIComponent(title)}`;
-    window.open(fallback, '_blank');
+  if (type === 'audiobook' && bwId) {
+    openAudioReader(bwId, title, btn);
+    return;
   }
-  btn.disabled = false;
-  btn.innerHTML = orig;
+  if (type === 'ebook' && bwId) {
+    openReaderForBook(title, 'ebook', `bw:${bwId}`, btn);
+    return;
+  }
+  showToast('This item is not available in the Portal library yet.', 'error');
 }
 
 async function kindleFromPopup(source_id, title) {
