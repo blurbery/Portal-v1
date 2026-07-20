@@ -163,3 +163,17 @@ Open Administration → Users after configuring the provider under Media Servers
 6. For Discord provisioning, save the Discord Bot card, download a fresh bundle, provide the same provider credentials and PostgreSQL URL on the bot host, register commands, and test a trial/paid account. Bot-created Emby/Silo records appear in the same Users tabs.
 
 Plex and Jellyfin tabs are intentionally marked as pending. They expose configuration visibility only; native account provisioning, session linking, and supported Discord-bot account creation are not complete in this public release. Do not use those tabs as proof that the provider is operational.
+
+
+## Profile recovery and Forgot Password
+
+The member flow is linked end to end for Emby-backed accounts:
+
+1. The member opens Dashboard → Account → Recovery Email and saves an address.
+2. At the sign-in page, the member selects **Forgot Password** and submits that same address.
+3. Portal creates a token valid for 30 minutes and sends it through the configured Admin & Recovery Email provider.
+4. The member opens the reset link, chooses a password of at least six characters, and submits it.
+5. Portal changes the password on Emby first; only after Emby accepts it does Portal update PostgreSQL and clear the token.
+6. The token is single-use and cannot be reused after a successful reset.
+
+The Admin mail provider may be Resend or SMTP. For SMTP, configure the Admin & Recovery Email card—not the separate Kindle SMTP card—and use port 587 with STARTTLS or port 465 with SSL/TLS as appropriate. Test the actual recovery flow with a non-production Emby account after saving the provider settings. Silo-only accounts are not included in this Emby recovery route.
