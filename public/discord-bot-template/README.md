@@ -81,3 +81,10 @@ Never commit `.env`, bot tokens, service-role keys, provider API keys, private I
 The Portal Discord Bot card generates one complete `.tar.gz` folder containing the bot source, package manifest, Docker files, PostgreSQL adapter/schema, `env.example`, `bot-config.json`, and deployment documentation. Configure providers, pricing, roles, and announcements in Portal before downloading it.
 
 The shared Discord Server/Guild ID is read from Portal Authentication & Access. Channel IDs and allowed role IDs are entered separately under Permissions & Announcements. Create `.env` on the bot host only. Run `npm run register` after the first deployment and after command, provider, or pricing changes; starting the bot alone does not publish changed slash commands.
+
+
+## Provider/account support boundary
+
+The public bot shares the Portal PostgreSQL account contract for **Emby** and **Silo**. Its create/trial/renew/delete and Lifetime-parent/sub-user commands write the same provider tables the Portal Users card reads. Use the same `DATABASE_URL`, provider credentials, and Discord user IDs across both processes.
+
+Plex and Jellyfin are not supported account-provisioning targets in this release. Do not select or deploy their generated commands as operational; their current adapter/API contract is incomplete.

@@ -178,3 +178,21 @@ Discord is the implemented OAuth provider. Its callback is `/auth/callback`, and
 Emby Connect is implemented against Emby's Connect authentication service. The member first links their Emby Connect email from the Emby profile card; the server links that address to the member's Emby account through the Emby API. On login, Portal verifies the email/password with Emby Connect, finds the matching stored `connect_email`, and creates the Portal session. The Connect password is not stored. This requires a reachable Emby server, an Emby API key, and a member account with the email link saved.
 
 WHMCS is currently only an external redirect entry point. The public build does not yet provide the callback, token exchange, user mapping, or session creation needed for native WHMCS login. Treat the WHMCS card as disabled unless an external bridge supplies that missing integration and has been tested end to end.
+
+
+## Users card and bot synchronization
+
+The Users card is a PostgreSQL-backed view of provider account tables:
+
+| Provider | Users-card provisioning | Discord-bot provisioning | Shared Portal records |
+| --- | --- | --- | --- |
+| Emby | Supported | Supported | `emby_accounts` |
+| Silo | Supported | Supported | `silo_accounts` |
+| Plex | Pending adapter | Not supported | No native public account flow |
+| Jellyfin | Pending adapter | Not supported | No native public account flow |
+
+For Emby and Silo, the Users card creates or edits the provider account and its matching PostgreSQL record. The Discord bot creates the provider account and writes the same provider record plus its Discord membership record. Both paths therefore feed the same account list, expiry/lifetime fields, stream limits, and parent/sub-user relationships.
+
+The bot is a separate process. It must use the same PostgreSQL database, the same Discord guild, and the provider credentials for the installation. After changing providers, pricing, command definitions, or the database contract, save the Bot card, download a fresh bundle, rebuild it, and run command registration again.
+
+Plex and Jellyfin can be configured for future adapters, but their Users tabs and generated bot selections do not make account creation or member sessions operational. Keep those providers disabled for member-facing and bot provisioning flows until their bridges are implemented and tested.

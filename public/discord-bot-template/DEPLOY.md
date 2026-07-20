@@ -31,3 +31,8 @@ Set the Portal name, logo, favicon, welcome message and public URL in Administra
 ## Deploy and register
 
 Extract the complete archive, create `.env` from `env.example`, and keep it out of Git. Run `npm install`, `npm run register`, and `npm start`. For Docker: `docker compose run --rm portal-discord-bot node index.js register`, then `docker compose up -d --build`. Re-register after command, provider, or pricing changes.
+
+
+## Account-flow verification
+
+After deployment, test one supported Emby or Silo trial and one paid/Lifetime account from Discord. Confirm the new account appears in Administration → Users, can be edited, and follows the expiry/parent-sub-user rules. Keep Plex/Jellyfin commands disabled because their public account bridges are not complete.
