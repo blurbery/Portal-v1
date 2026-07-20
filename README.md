@@ -104,3 +104,9 @@ When SMTP is selected, configure the SMTP host, port, security mode, username/pa
 The first Portal login is bootstrapped from `PORTAL_ADMIN_USERNAME`, `PORTAL_ADMIN_PASSWORD_SALT`, and `PORTAL_ADMIN_PASSWORD_HASH` in the host environment. After signing in, open Administration → Administrator Accounts and save the **Primary Administrator** with the username and password you want to keep. Portal stores that credential record encrypted in PostgreSQL and then stops accepting the old environment bootstrap login. Additional administrator logins are stored in the same encrypted settings record.
 
 Back up PostgreSQL and the host `.env` separately. The `.env` bootstrap values are needed to recover access if the settings database has not yet been initialized; once a primary administrator is saved, use the stored primary login. Changing the primary administrator does not change member or media-server accounts.
+
+## Users card and provider support
+
+Administration → Users is the shared management view for provider accounts stored in PostgreSQL. Emby and Silo are the supported public account-provisioning paths: accounts created from the Users card or the Discord bot are written to the same provider tables, so they appear in the same tabs and share the same parent/sub-user and expiry records. A Discord user ID is required when creating an account manually so Portal and bot identity remain linked.
+
+Plex and Jellyfin tabs may appear when their server credentials are configured, but they are configuration/adapter slots only in this release. Their native account-creation and session bridges are not complete, and the Discord bot must not be treated as a supported Plex/Jellyfin provisioning path. Do not enable those member flows until their provider bridges are implemented and tested.
