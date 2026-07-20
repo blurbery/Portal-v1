@@ -43,3 +43,6 @@ A static route audit cannot prove that an API key has the required provider perm
 - Confirm expiry reminders use the configured sender and member recovery address.
 - Submit an issue report and confirm it reaches the private support inbox.
 - Confirm the bootstrap administrator password is managed separately under Administrator Accounts.
+
+- Repeat the connection test with the selected provider: Resend domain/API validation or SMTP connection/authentication verification.
+- If SMTP is selected, verify that port/security settings match the provider (587/STARTTLS or 465/SSL).
