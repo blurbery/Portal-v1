@@ -126,3 +126,12 @@ Save the Bot card only after configuring providers, prices, stream tiers, roles,
 A Lifetime parent has no expiry and owns a fixed stream pool. A linked sub-user belongs to that same membership record, consumes part of the pool, and cannot exceed available capacity. Adding, reclaiming, or deleting a sub-user updates the parent pool; a sub-user must never become an unrelated standalone parent.
 
 Emby and Silo are active public integration paths. Plex and Jellyfin are adapter/configuration slots until their user APIs and account/session bridges are implemented and tested.
+
+
+## Library and comic-app wiring
+
+Configure the Library card only with services owned by this installation. For ebooks, Portal downloads from BookWarehouse and uses the container's Calibre `ebook-convert` binary to produce a consistent EPUB before opening the Portal reader or sending to Kindle. Audiobooks use Portal's authenticated range-enabled player and download path.
+
+For comics, Kavita is the recommended backend for the in-app comic library and external reader apps. In Kavita, create/copy the user's OPDS URL from Preferences → OPDS. Either paste that complete URL into the Portal Library card as `KAVITA_OPDS_URL`, or configure `KAVITA_URL` plus `KAVITA_API_KEY` and let Portal construct `/api/opds/<key>`. The signed-in member can retrieve the URL from `GET /api/library/kavita/opds`; never place it in public documentation or commit it to Git.
+
+After configuration, verify an ebook opens at `/reader`, an audiobook opens at `/audio-reader`, and the returned Kavita OPDS URL works in the target comic app. A Kavita OPDS URL is separate from Portal's own `/opds/*` feed.
