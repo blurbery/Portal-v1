@@ -52,7 +52,7 @@ Each operator must create and use their own PostgreSQL project, Discord applicat
 ## Included
 
 - Admin-configured portal settings stored encrypted in PostgreSQL.
-- Discord, WHMCS and Emby Connect authentication switches.
+- Discord OAuth and Emby Connect authentication switches; WHMCS is currently an external SSO-bridge entry point, not a complete Portal callback integration.
 - Configurable Emby, Silo, Jellyfin and Plex provider slots.
 - Announcements, role routing, member/sub-user session handling, and optional Seerr configuration.
 - PostgreSQL and hosting-provider deployment instructions.
