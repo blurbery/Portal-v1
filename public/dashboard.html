@@ -1180,6 +1180,43 @@
     .v3-recent-card strong { font-size:0.62rem; }
     .v3-recent-card small { font-size:0.54rem; }
   }
+  /* Public desktop build: preserve the desktop canvas when the browser is resized. */
+  html, body { min-width: 0; }
+  body { overflow-x: auto !important; }
+  nav { left: 296px !important; width: calc(100% - 296px) !important; }
+  .layout { display: block !important; padding-left: 296px !important; }
+  .sidebar { position: fixed !important; inset: 0 auto 0 0 !important; transform: none !important; width: 296px !important; height: 100vh !important; z-index: 110 !important; }
+  .sidebar-overlay, #sidebarToggleBtn { display: none !important; }
+  main, main.wide { max-width: 1420px !important; margin: 0 auto !important; padding: 2.35rem 1.5rem !important; }
+  /* A desktop browser keeps the desktop canvas even when its window is narrowed.
+     Touch devices alone receive the mobile navigation/layout below. */
+  @media (max-width: 1279px) and (hover: hover) and (pointer: fine) {
+    html, body { min-width:1716px !important; }
+    nav { height:72px !important; padding:0 2rem !important; }
+    .v3-nav-context { display:block !important; }
+    .v3-sidebar-brand { display:flex !important; }
+    nav.v3-bottom-nav { display:none !important; }
+    body { padding-bottom:0 !important; }
+    .layout { display:block !important; width:1716px !important; min-width:1716px !important; padding-left:296px !important; }
+    .sidebar { position:fixed !important; inset:0 auto 0 0 !important; transform:none !important; width:296px !important; height:100vh !important; }
+    .sidebar-overlay, #sidebarToggleBtn { display:none !important; }
+    main, main.wide { width:1420px !important; min-width:1420px !important; max-width:1420px !important; margin:0 !important; padding:2.35rem 1.5rem !important; }
+    .v3-service-strip { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+    #v3ServiceStrip { grid-auto-flow:column !important; grid-auto-columns:minmax(0,1fr) !important; }
+    .quick-links { overflow:visible !important; flex-wrap:wrap !important; }
+    .quick-link { flex:0 0 auto !important; }
+    .grid { grid-template-columns:1fr 1fr !important; }
+    .v3-continue-grid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+    .v3-recent-grid { grid-template-columns:repeat(6,minmax(0,1fr)) !important; }
+    .library-grid, .my-books-grid { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+  }
+  @media (hover: none) and (pointer: coarse) {
+    html, body { min-width:0 !important; overflow-x:hidden !important; }
+    nav { min-width:0 !important; left:0 !important; width:100% !important; }
+    .layout { width:auto !important; min-width:0 !important; padding-left:0 !important; }
+    .sidebar { width:var(--sidebar-w) !important; }
+    main, main.wide { width:auto !important; min-width:0 !important; max-width:none !important; margin:0 !important; }
+  }
 </style>
 <style>
   /* Keep the complete shell readable when the light theme is enabled. */
@@ -2105,7 +2142,7 @@
         </div>
         <div class="card silo-panel">
           <div class="silo-panel-heading"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><strong>Change Silo password</strong><span>Syncs automatically</span></div>
-          <p class="silo-password-note">Updates the live Silo account and Nova’s Supabase record together, so Discord and the portal stay in sync.</p>
+          <p class="silo-password-note">Updates the live Silo account and Nova’s PostgreSQL record together, so Discord and the portal stay in sync.</p>
           <div style="display:flex;flex-direction:column;gap:.55rem"><input type="password" class="input-sm" id="siloNewPassword" placeholder="New password" /><input type="password" class="input-sm" id="siloConfirmPassword" placeholder="Confirm password" /></div><div id="siloPwError" style="display:none;color:var(--danger);font-size:.76rem;margin-top:.5rem"></div><button class="btn-sm" style="width:100%;margin-top:.7rem" onclick="changeSiloPassword()">Update password</button><button class="btn-sm" style="width:100%;margin-top:.5rem;background:transparent;border:1px solid var(--border);color:var(--muted)" onclick="if(confirm('Generate a new Silo password? The current password will stop working.')) resetSiloPassword()">Reset &amp; generate</button>
         </div>
       </div>
@@ -2481,14 +2518,12 @@ function applyPortalCapabilities(data) {
   const featureNav = { navLibraryEbooks: portalCapabilities.ebooks, navLibraryAudiobooks: portalCapabilities.audiobooks, navLibraryComics: portalCapabilities.comics, navRequestMovies: portalCapabilities.requestMovies, navRequestShows: portalCapabilities.requestShows, navRequestMy: portalCapabilities.requestMy, navRequestIssues: portalCapabilities.requestIssues };
   Object.entries(featureNav).forEach(([id, visible]) => { const el = document.getElementById(id); if (el) el.style.display = visible ? 'flex' : 'none'; });
   if (embyGroup) embyGroup.style.display = portalCapabilities.emby ? 'block' : 'none';
-  if (iptvGroup) iptvGroup.style.display = false ? 'block' : 'none';
   if (libraryCard) libraryCard.style.display = portalCapabilities.library ? 'flex' : 'none';
   if (embyChillioGuide) embyChillioGuide.style.display = portalCapabilities.manageUsers ? 'none' : 'inline-flex';
   if (lifetimeUsersButton) lifetimeUsersButton.style.display = portalCapabilities.manageUsers ? 'inline-flex' : 'none';
   if (streamingGroup) streamingGroup.style.display = (portalCapabilities.silo || portalCapabilities.emby ) ? 'block' : 'none';
   if (streamingSilo) streamingSilo.style.display = portalCapabilities.silo ? 'flex' : 'none';
   if (streamingEmby) streamingEmby.style.display = portalCapabilities.emby ? 'flex' : 'none';
-  if (streamingIptv) streamingIptv.style.display = false ? 'flex' : 'none';
   if (streamingApps) streamingApps.style.display = (portalCapabilities.emby ) ? 'flex' : 'none';
   if (bottomSearch) bottomSearch.style.display = portalCapabilities.library ? 'flex' : 'none';
   if (bottomBooks) bottomBooks.style.display = portalCapabilities.library ? 'flex' : 'none';
@@ -2890,10 +2925,19 @@ async function loadAccount() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
-    const res = await fetch('/api/account', { signal: controller.signal });
+    const res = await fetch('/api/account', { signal: controller.signal, credentials: 'same-origin', cache: 'no-store' });
     clearTimeout(timeout);
     const data = await res.json();
-    if (data.error) { showToast(data.error, 'error'); return; }
+    if (res.status === 401 || data.error === 'Not authenticated') {
+      window.location.replace('/');
+      return;
+    }
+    if (!res.ok || data.error) {
+      const loading = document.getElementById('loading');
+      if (loading) loading.innerHTML = '<div style="color:var(--danger);margin-bottom:.75rem">Unable to load your account.</div><button class="btn-sm" onclick="window.location.reload()">Try again</button>';
+      showToast(data.error || 'Unable to load your account', 'error');
+      return;
+    }
     accountData = data;
     startKindleSenderPolling();
     const administrationLink = document.getElementById('v3AdministrationLink');
@@ -2922,8 +2966,11 @@ async function loadAccount() {
       showSection(hash);
     } else if (window.location.hash === '#users') {
       showSection('users');
+    }
   } catch (e) {
     console.error('[portal] Failed to load account', e);
+    const loading = document.getElementById('loading');
+    if (loading) loading.innerHTML = '<div style="color:var(--danger);margin-bottom:.75rem">Account request timed out or failed.</div><button class="btn-sm" onclick="window.location.reload()">Try again</button>';
     showToast('Failed to load account', 'error');
   }
 }
@@ -3467,7 +3514,7 @@ const PORTAL_ADMIN_CARD_DEFS = [
   { key:'Authentication', title:'Authentication & Access', description:'Choose which providers appear on the login screen and control password/OAuth access.', icon:'key', categories:['Authentication & Access'], custom:true, group:'Authentication & Access' },
   { key:'Users', title:'Users', description:'View and manage connected member accounts, subscriptions and sub-users.', icon:'users', categories:[], custom:true, group:'Authentication & Access' },
   { key:'Core', title:'General Settings', description:'Portal identity, public links and shared runtime settings.', icon:'settings', categories:['Core'] },
-  { key:'Media servers', title:'Streaming Services', description:'Connect Emby, Silo, Plex and Jellyfin servers.', icon:'servers', categories:['Media servers'], custom:true },
+  { key:'Media servers', title:'Media Servers', description:'Connect Emby, Silo, Plex and Jellyfin servers.', icon:'servers', categories:['Media servers'], custom:true },
   { key:'Discord', title:'Discord Bot', description:'Configure a clean media-server bot template, pricing and portal integration settings.', icon:'discord', categories:['Discord'], custom:true },
   { key:'Permissions', title:'Permissions & Announcements', description:'Choose which server memberships can use Library and receive announcements.', icon:'shield', categories:['Permissions'] },
   { key:'Library', title:'Library Configuration', description:'Connect books, comics, audiobooks and library management tools.', icon:'library', categories:['Library'] },
@@ -3476,125 +3523,15 @@ const PORTAL_ADMIN_CARD_DEFS = [
   { key:'AdminEmail', title:'Admin & Recovery Email', description:'Manage password resets, expiry reminders and private support email.', icon:'mail', categories:['Admin email'] },
   { key:'Security & ownership', title:'Administrator Accounts', description:'Manage the designated portal administrator and add additional administrator logins.', icon:'shield', categories:['Security & ownership'], custom:true },
   { key:'VPS', title:'VPS Configuration', description:'Monitor and configure the server running this portal.', icon:'vps', categories:['VPS'], custom:true },
-  { key:'Supabase', title:'Supabase Configuration', description:'Set up the portal database and review the required Supabase tables.', icon:'database', categories:['Supabase'] },
 ];
 
 const PORTAL_ADMIN_GROUPS = [
   { title:'Portal Configuration', icon:'settings', keys:['Core','Media servers','Discord','Permissions','Library','Requests & metadata'] },
-  { title:'Operations & Security', icon:'database', keys:['KindleEmail','AdminEmail','Security & ownership','VPS','Supabase'] },
+  { title:'Operations & Security', icon:'database', keys:['KindleEmail','AdminEmail','Security & ownership','VPS'] },
   { title:'Authentication & Access', icon:'shield', keys:['Authentication','Users'] },
 ];
 
-const PORTAL_STORAGE_GUIDES = {
-  settings: {
-    title: 'Portal Settings',
-    state: 'Required',
-    icon: 'settings',
-    summary: 'Stores encrypted portal configuration entered in Administration.',
-    purpose: 'This table keeps server URLs, API keys, service roles, email settings and other portal configuration encrypted at rest. It is the only database table created directly by this administration area.',
-    steps: ['Open your Supabase project.', 'Choose SQL Editor in the left sidebar, then New query.', 'Copy the SQL below, paste it into the editor, and press Run once.', 'Keep SUPABASE_URL, SUPABASE_KEY, SESSION_SECRET and CONFIG_ENCRYPTION_KEY only on the portal server — never in GitHub or browser code.'],
-    sql: `-- Portal configuration (required)
-create table if not exists public.portal_settings (
-  key_name text primary key,
-  value_encrypted text not null,
-  is_secret boolean not null default false,
-  updated_at timestamptz not null default now()
-);
-
-alter table public.portal_settings enable row level security;
-
--- The portal uses the Supabase service-role key only on the server.
--- Do not add a public browser policy for this table.`
-  },
-  issues: {
-    title: 'Portal Issue Reports',
-    state: 'Optional',
-    icon: 'mail',
-    summary: 'Stores member reports from the optional Report an Issue feature.',
-    purpose: 'Enable this only if you turn on the member issue-report page. It records the report, status and the submitting portal account so administrators can follow up.',
-    steps: ['Open Supabase SQL Editor and create a New query.', 'Run the SQL below once.', 'Enable Report Issues in Administration only when this table and your admin email delivery are ready.'],
-    sql: `-- Optional member issue reports
-create table if not exists public.portal_issue_reports (
-  id bigint generated by default as identity primary key,
-  discord_user_id text,
-  username text,
-  subject text not null,
-  details text not null,
-  status text not null default 'open',
-  created_at timestamptz not null default now()
-);
-
-alter table public.portal_issue_reports enable row level security;`
-  },
-  memberships: {
-    title: 'Media Membership Records',
-    state: 'Integration',
-    icon: 'servers',
-    summary: 'Existing Emby and Silo account records used for member access.',
-    purpose: 'These records connect a portal member to their Emby or Silo membership, expiry and sub-users. They are owned by the media-account sync layer. This guide deliberately does not create or modify them, so it cannot overwrite an existing installation.',
-    steps: ['Keep your existing Emby and Silo account tables exactly as they are.', 'Configure each media server in Streaming Services.', 'The future Nova Bot installer will provide its own checked migration for member provisioning and subscriptions.', 'Keep any private provider data outside this public media-server guide.'],
-    sql: `-- Media membership tables used by the sanitized Emby/Silo bot template\ncreate table if not exists public.emby_accounts (\n  id bigint generated by default as identity primary key,\n  discord_user_id text,\n  emby_user_id text unique not null,\n  username text not null,\n  password text,\n  is_trial boolean not null default false,\n  is_lifetime boolean not null default false,\n  connections integer,\n  total_pool integer,\n  expires_at timestamptz,\n  disabled_at timestamptz,\n  parent_emby_user_id text,\n  connect_email text,\n  recovery_email text,\n  profile_pic_url text,\n  created_at timestamptz not null default now()\n);\n\ncreate table if not exists public.silo_accounts (\n  id bigint generated by default as identity primary key,\n  discord_user_id text,\n  silo_user_id text unique not null,\n  username text not null,\n  password text,\n  is_trial boolean not null default false,\n  is_lifetime boolean not null default false,\n  connections integer,\n  total_pool integer,\n  expires_at timestamptz,\n  disabled_at timestamptz,\n  parent_silo_user_id text,\n  created_at timestamptz not null default now()\n);\n\ncreate index if not exists idx_emby_accounts_discord on public.emby_accounts(discord_user_id);\ncreate index if not exists idx_silo_accounts_discord on public.silo_accounts(discord_user_id);\ncreate index if not exists idx_emby_accounts_parent on public.emby_accounts(parent_emby_user_id);\ncreate index if not exists idx_silo_accounts_parent on public.silo_accounts(parent_silo_user_id);\n\nalter table public.emby_accounts enable row level security;\nalter table public.silo_accounts enable row level security;`
-  },
-  announcements: {
-    title: 'Announcements Feed',
-    state: 'Integration',
-    icon: 'discord',
-    summary: 'The shared feed that shows messages to eligible media members.',
-    purpose: 'Announcements are created by the connected announcement source and then filtered in the portal according to each member’s linked services. The portal reads this data; it does not need a separate admin table migration here.',
-    steps: ['Keep any existing announcements table and sync process in place.', 'Use Permissions & Announcements to choose which media memberships can see each feed.', 'We will add a dedicated bot installer later so new deployments can create and populate this safely.'],
-    sql: `-- Shared portal announcements feed\ncreate table if not exists public.announcements (\n  id text primary key,\n  channel_id text not null,\n  channel_name text,\n  author text,\n  content text,\n  embed_title text,\n  embed_desc text,\n  embed_fields jsonb,\n  image_url text,\n  role_mention text,\n  posted_at timestamptz not null default now(),\n  created_at timestamptz not null default now()\n);\n\ncreate index if not exists idx_announcements_channel_posted on public.announcements(channel_id, posted_at desc);\ncreate index if not exists idx_announcements_posted on public.announcements(posted_at desc);\nalter table public.announcements enable row level security;\n\n-- Keep public policies disabled. The bot and portal read/write this server-side.`
-  },
-  botIntegration: {
-    title: 'Discord Bot Integration',
-    state: 'Template',
-    icon: 'discord',
-    summary: 'Shared tables for a sanitized Discord bot template and portal membership sync.',
-    purpose: 'This SQL is designed for the distributable bot template. It contains no IPTV-specific tables and no provider secrets. Existing installations can run it safely because every statement is idempotent.',
-    steps: ['Open Supabase SQL Editor and create a New query.', 'Run the SQL below once.', 'Keep the bot token, media-server credentials and Supabase service key in environment variables only.', 'Configure the matching Discord role IDs in the bot setup and in Permissions & Announcements.'],
-    sql: `-- Sanitized Discord bot integration tables\ncreate table if not exists public.discord_bot_memberships (\n  id bigint generated by default as identity primary key,\n  discord_user_id text not null,\n  provider text not null,\n  provider_user_id text,\n  username text,\n  plan_key text,\n  is_trial boolean not null default false,\n  is_lifetime boolean not null default false,\n  expires_at timestamptz,\n  connections integer,\n  role_id text,\n  parent_membership_id bigint references public.discord_bot_memberships(id) on delete cascade,\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now(),\n  unique (discord_user_id, provider, provider_user_id)\n);\n\ncreate table if not exists public.announcements (\n  id text primary key,\n  channel_id text not null,\n  channel_name text,\n  author text,\n  content text,\n  embed_title text,\n  embed_desc text,\n  role_mention text,\n  posted_at timestamptz not null default now(),\n  created_at timestamptz not null default now()\n);\n\ncreate index if not exists idx_discord_bot_memberships_discord_user on public.discord_bot_memberships(discord_user_id);\ncreate index if not exists idx_discord_bot_memberships_provider on public.discord_bot_memberships(provider);\ncreate index if not exists idx_announcements_channel_posted on public.announcements(channel_id, posted_at desc);\n\nalter table public.discord_bot_memberships enable row level security;\nalter table public.announcements enable row level security;\n\n-- The bot and portal use server-side service keys. Do not create public policies\n-- for these tables unless you have separately designed authenticated policies.`
-  },
-  vpsHosting: {
-    title: 'VPS Bot Hosting',
-    state: 'Guide',
-    icon: 'vps',
-    summary: 'A safe hosting profile for running the portal and sanitized Discord bot on one VPS.',
-    purpose: 'This guide is configuration-only. It does not include SSH keys, provider credentials, Discord tokens or private API values.',
-    steps: ['Use a dedicated Linux VPS account or container for the bot.', 'Install Node.js 22 or newer and PM2, or use Docker with a locked image.', 'Set secrets as environment variables on the VPS; never commit them to the bot package.', 'Run the portal and bot as separate processes with separate logs and restart policies.', 'Back up Supabase and the bot environment configuration outside the public repository.'],
-    sql: ''
-  }
-};
-
-function storageGuideIcon(icon) { return adminCardIcon(icon); }
-function renderStorageGuideIndex() {
-  const detail = document.getElementById('portalAdminDetailContent');
-  const guides = Object.entries(PORTAL_STORAGE_GUIDES).map(([id, guide]) => ({ id, ...guide }));
-  detail.innerHTML = `<div class="portal-admin-detail-head"><h2>Supabase Configuration</h2><p>Set up the shared portal database, then use the guides below to understand the tables that support portal configuration, member access and announcements. Nothing here changes your existing database until you manually run SQL in Supabase.</p></div><div class="storage-guide-intro"><strong>Before you start:</strong> the service-role key belongs only in the VPS environment. The SQL cards below are intentionally idempotent (<code>create table if not exists</code>) so they will not erase an existing table. VPS monitoring and connection setup live in <strong>VPS Configuration</strong>.</div><div class="storage-guide-grid">${guides.map(guide => `<button type="button" class="storage-guide-card" onclick="openPortalStorageGuide('${guide.id}')"><div class="storage-guide-card-top"><span class="storage-guide-icon">${storageGuideIcon(guide.icon)}</span><span class="storage-guide-state">${guide.state}</span></div><h3>${guide.title}</h3><p>${guide.summary}</p><small>Open guide →</small></button>`).join('')}</div>`;
-  document.getElementById('portalAdminIndex').style.display = 'none';
-  document.getElementById('portalAdminDetail').style.display = 'block';
-  attachAdminDetailTrail('Supabase Configuration');
-  window.scrollTo({ top:0, behavior:'smooth' });
-}
-
-function openPortalStorageGuide(id) {
-  const detail = document.getElementById('portalAdminDetailContent');
-  const guide = PORTAL_STORAGE_GUIDES[id];
-  if (!guide) return renderStorageGuideIndex();
-  {
-    const sqlBlock = guide.sql ? `<div class="card" style="padding:1.1rem;margin-top:1rem"><h3 style="margin:0 0 .65rem">SQL to run in Supabase</h3><pre id="portalStorageSql" class="storage-guide-code">${v3Escape(guide.sql)}</pre><button class="btn-sm" style="margin-top:.8rem" onclick="copyPortalStorageGuideSql('portalStorageSql')">Copy SQL</button></div>` : `<div class="card" style="padding:1.1rem;margin-top:1rem"><h3 style="margin:0 0 .5rem">Why there is no SQL on this card</h3><p style="margin:0;color:var(--muted);line-height:1.6">This is supplied by the matching media or bot integration. Showing an assumed migration here could conflict with the tables you already use, so this page is guidance-only until the dedicated installer is ready.</p></div>`;
-    detail.innerHTML = `<div class="portal-admin-detail-head"><h2>${guide.title}</h2><p>${guide.purpose}</p></div><div class="storage-guide-intro"><strong>How to use this:</strong><ol class="storage-guide-list">${guide.steps.map(step => `<li>${step}</li>`).join('')}</ol></div>${sqlBlock}`;
-  }
-  document.getElementById('portalAdminIndex').style.display = 'none';
-  document.getElementById('portalAdminDetail').style.display = 'block';
-  attachAdminDetailTrail(guide.title, 'Supabase Configuration', () => renderStorageGuideIndex());
-  window.scrollTo({ top:0, behavior:'smooth' });
-}
-
-async function copyPortalStorageGuideSql(id) {
-  const text = document.getElementById(id)?.textContent || '';
-  if (!text) return showToast('There is no SQL to copy', 'error');
-  try { await navigator.clipboard.writeText(text); showToast('SQL copied', 'success'); } catch (error) { showToast('Select and copy the SQL manually', 'error'); }
-}
-
+// PostgreSQL schema and runtime configuration are managed by the public Docker build; no external storage provider wizard is shown here.
 function adminCardIcon(name) {
   const icons = {
     settings:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="7"/></svg>',
@@ -3733,7 +3670,7 @@ function renderAdminUserCreatePanel(service) {
   const label = service === 'iptv' ? 'IPTV' : service[0].toUpperCase() + service.slice(1);
   const supported = ['emby','silo'].includes(service);
   const parents = service === 'silo' ? (adminUsersCache?.silo || []).filter(item => item.is_lifetime && !item.parent_silo_user_id) : [];
-  target.innerHTML = `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h3 style="margin:0 0 .25rem">Create ${label} user</h3><p style="margin:0;color:var(--muted);font-size:.82rem">${supported ? 'The portal will create the service account and keep it linked to the same Supabase record used by Discord.' : 'This provider is visible when configured. Account provisioning will use its provider-specific bridge when that integration is connected.'}</p></div>${supported ? '<span style="color:var(--success);font-size:.78rem;font-weight:700">Ready to provision</span>' : '<span style="color:var(--muted);font-size:.78rem;font-weight:700">Integration pending</span>'}</div>${supported ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.75rem;margin-top:1rem"><label>Discord user ID<input id="adminCreateDiscordId" class="input-sm" autocomplete="off" placeholder="Required shared identity"></label><label>Username<input id="adminCreateUsername" class="input-sm" autocomplete="off"></label><label>Password <span style="color:var(--muted);font-weight:400">(optional)</span><input id="adminCreatePassword" class="input-sm" type="password" autocomplete="new-password" placeholder="Generate automatically"></label><label>Streams<input id="adminCreateConnections" class="input-sm" type="number" min="1" max="50" value="1"></label><label>Expiry<input id="adminCreateExpiry" class="input-sm" type="datetime-local"></label>${service === 'silo' ? `<label>Parent Silo account <span style="color:var(--muted);font-weight:400">(optional)</span><select id="adminCreateParent" class="input-sm"><option value="">Standalone account</option>${parents.map(parent => `<option value="${v3Escape(parent.silo_user_id)}">${v3Escape(parent.username)} · ${v3Escape(String(parent.total_pool || parent.connections || 1))} streams</option>`).join('')}</select></label>` : ''}</div><div style="display:flex;align-items:center;gap:.75rem;margin-top:.85rem"><label class="admin-user-toggle"><span style="margin-right:.55rem;color:var(--muted);font-size:.82rem">Lifetime / no expiry</span><input id="adminCreateLifetime" type="checkbox"><i aria-hidden="true"></i></label><button class="btn-sm" type="button" onclick="createAdminServiceUser('${service}')">Create ${label} user</button></div><div id="adminCreateMessage" style="margin-top:.65rem;color:var(--muted);font-size:.8rem"></div>` : `<div style="margin-top:1rem;padding:.85rem;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:.82rem">Configure ${label} in Streaming Services first. ${service === 'plex' ? 'Plex account sharing and per-user stream enforcement require a separate Plex bridge; the Plex server API does not expose the same per-user controls as Emby or Silo.' : 'Jellyfin provisioning will use the Jellyfin user API plus the StreamLimit plugin once its endpoint is configured.'}</div>`}`;
+  target.innerHTML = `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h3 style="margin:0 0 .25rem">Create ${label} user</h3><p style="margin:0;color:var(--muted);font-size:.82rem">${supported ? 'The portal will create the service account and keep it linked to the same PostgreSQL record used by Discord.' : 'This provider is visible when configured. Account provisioning will use its provider-specific bridge when that integration is connected.'}</p></div>${supported ? '<span style="color:var(--success);font-size:.78rem;font-weight:700">Ready to provision</span>' : '<span style="color:var(--muted);font-size:.78rem;font-weight:700">Integration pending</span>'}</div>${supported ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.75rem;margin-top:1rem"><label>Discord user ID<input id="adminCreateDiscordId" class="input-sm" autocomplete="off" placeholder="Required shared identity"></label><label>Username<input id="adminCreateUsername" class="input-sm" autocomplete="off"></label><label>Password <span style="color:var(--muted);font-weight:400">(optional)</span><input id="adminCreatePassword" class="input-sm" type="password" autocomplete="new-password" placeholder="Generate automatically"></label><label>Streams<input id="adminCreateConnections" class="input-sm" type="number" min="1" max="50" value="1"></label><label>Expiry<input id="adminCreateExpiry" class="input-sm" type="datetime-local"></label>${service === 'silo' ? `<label>Parent Silo account <span style="color:var(--muted);font-weight:400">(optional)</span><select id="adminCreateParent" class="input-sm"><option value="">Standalone account</option>${parents.map(parent => `<option value="${v3Escape(parent.silo_user_id)}">${v3Escape(parent.username)} · ${v3Escape(String(parent.total_pool || parent.connections || 1))} streams</option>`).join('')}</select></label>` : ''}</div><div style="display:flex;align-items:center;gap:.75rem;margin-top:.85rem"><label class="admin-user-toggle"><span style="margin-right:.55rem;color:var(--muted);font-size:.82rem">Lifetime / no expiry</span><input id="adminCreateLifetime" type="checkbox"><i aria-hidden="true"></i></label><button class="btn-sm" type="button" onclick="createAdminServiceUser('${service}')">Create ${label} user</button></div><div id="adminCreateMessage" style="margin-top:.65rem;color:var(--muted);font-size:.8rem"></div>` : `<div style="margin-top:1rem;padding:.85rem;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:.82rem">Configure ${label} in Media Servers first. ${service === 'plex' ? 'Plex account sharing and per-user stream enforcement require a separate Plex bridge; the Plex server API does not expose the same per-user controls as Emby or Silo.' : 'Jellyfin provisioning will use the Jellyfin user API plus the StreamLimit plugin once its endpoint is configured.'}</div>`}`;
 }
 
 function openAdminUserDetail(index) {
@@ -3897,7 +3834,7 @@ function openMediaServerSetup(server) {
   detail.innerHTML = `<section class="media-server-setup"><div class="portal-admin-detail-head"><div style="display:flex;align-items:center;gap:.8rem"><span class="media-server-logo ${config.className}">${mediaServerIcon(server)}</span><div><h2>${config.title}</h2><p>${config.description}</p></div></div></div><div class="smtp-config-note"><strong>Set Up ${config.title}</strong><ol class="media-server-steps">${config.steps.map((step,index) => `<li><span class="media-server-step-no">${index + 1}</span><span>${step}</span></li>`).join('')}</ol></div><div class="portal-admin-fields"><div class="media-server-setup-grid">${config.fields.map(key => { const item = field(key); return `<div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>${item.label}</strong><span>${adminFieldHelp(item.key)}</span></div><div class="portal-admin-field-control"><input data-media-server-key="${item.key}" data-portal-admin-key="${item.key}" type="${item.secret ? 'password' : item.type}" value="${item.secret ? '' : v3Escape(item.value || '')}" placeholder="${item.secret && item.configured ? 'Saved — use Show to view' : ''}" autocomplete="new-password">${item.secret && item.configured ? `<button type="button" class="portal-admin-reveal" data-admin-reveal="${item.key}" onclick="revealAdminSecret(this)">Show</button>` : ''}</div></div>`; }).join('')}</div></div><div class="portal-admin-detail-actions"><span style="margin-right:auto;color:${ready ? 'var(--success)' : 'var(--muted)'};font-size:.8rem;font-weight:700">${ready ? '● Connected Configuration' : '○ Setup Not Complete'}</span><button class="portal-admin-save" onclick="saveMediaServer('${server}')">Save ${config.title}</button></div></section>`;
   document.getElementById('portalAdminIndex').style.display = 'none';
   document.getElementById('portalAdminDetail').style.display = 'block';
-  attachAdminDetailTrail(config.title, 'Streaming Services', () => openAdminDetail('Media servers'));
+  attachAdminDetailTrail(config.title, 'Media Servers', () => openAdminDetail('Media servers'));
 }
 
 async function saveMediaServer(server) {
@@ -3931,10 +3868,10 @@ function renderToggleSettingsPage(cardKey) {
     .map(([server, config]) => ({ key: server.toUpperCase(), name: config.title }));
   const library = configuredMediaServers.length
     ? configuredMediaServers.map(({ key, name }) => settingsSwitch(`LIBRARY_ACCESS_${key}`, `${name} members can use Library`, `Show eBooks, audiobooks, comics and Library tools to members with ${name} access.`)).join('')
-    : '<p class="settings-empty-note">No media servers are configured yet. Configure a media server under Streaming Services to manage its Library permission.</p>';
+    : '<p class="settings-empty-note">No media servers are configured yet. Configure a media server under Media Servers to manage its Library permission.</p>';
   const announcements = configuredMediaServers.length
     ? configuredMediaServers.map(({ key, name }) => settingsSwitch(`ANNOUNCEMENTS_${key}_ENABLED`, `${name} members receive announcements`, `Show portal announcements to members with ${name} access.`)).join('')
-    : '<p class="settings-empty-note">No media servers are configured yet. Configure a media server under Streaming Services to manage its announcement permission.</p>';
+    : '<p class="settings-empty-note">No media servers are configured yet. Configure a media server under Media Servers to manage its announcement permission.</p>';
   const features = [
     ['LIBRARY_ENABLED','Library','Show the Library section when at least one library source is configured.'],
     ['EBOOKS_ENABLED','eBooks','Show eBook browsing and requests.'],
@@ -3943,7 +3880,28 @@ function renderToggleSettingsPage(cardKey) {
     ['REQUESTS_ISSUES_ENABLED','Report issues','Let members submit a private support report.']
   ];
   detail.innerHTML = `<div class="portal-admin-detail-head"><h2>${title}</h2><p>${description}</p></div><div class="settings-card-grid">${permissions ? `<section class="settings-group-card"><h3>Library Access</h3><p>Membership access is separate from the global Library feature switch.</p>${library}</section><section class="settings-group-card"><h3>Announcement Access</h3><p>Choose which server memberships are allowed to see announcements.</p>${announcements}</section><section class="settings-group-card wide"><h3>Announcement Source</h3><p>Add one or more Discord channels. Each channel must list the media-server Discord role IDs that are allowed to receive it. The announcement’s own tagged role is then matched exactly, so tagging one role does not notify the other roles.</p><div id="announcementChannelRows"></div><button class="btn-sm" type="button" style="margin-top:.85rem" onclick="addAnnouncementChannel()">＋ Add channel</button><input type="hidden" data-portal-admin-key="ANNOUNCEMENTS_CHANNELS" value=""></section>` : `<section class="settings-group-card wide"><h3>Member Areas</h3><p>These switches control what members can see. A feature remains hidden when its required service has not been configured.</p>${features.map(([key,label,help]) => settingsSwitch(key,label,help)).join('')}</section>`}</div><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveAdminDetail('${cardKey}')">Save Changes</button></div>`;
-  if (permissions) renderAnnouncementChannelRows(channelList.value, legacyChannel.value);
+  if (permissions) {
+    renderAnnouncementChannelRows(channelList.value, legacyChannel.value);
+    const valueFor = key => String((portalAdminConfig?.fields || []).find(field => field.key === key)?.value || '').trim();
+    const generalGuildId = valueFor('DISCORD_GUILD_ID');
+    const botGuildId = valueFor('DISCORD_BOT_GUILD_ID');
+    const channelCount = readAnnouncementChannels(channelList.value, legacyChannel.value).length;
+    const warnings = [];
+    if (!generalGuildId) warnings.push('Set the Discord Server ID in Administration → Authentication & Access.');
+    if (!botGuildId) warnings.push('Configure the shared Discord Server ID in Authentication & Access; the Bot card mirrors it.');
+    if (generalGuildId && botGuildId && generalGuildId !== botGuildId) warnings.push('The shared Discord Server ID is out of sync with legacy bot settings; save the Bot card to resync it.');
+    if (!channelCount) warnings.push('Add at least one announcement channel ID and its allowed media-server role IDs.');
+    const source = [...detail.querySelectorAll('section')].find(section => section.querySelector('h3')?.textContent === 'Announcement Source');
+    if (source) {
+      const note = document.createElement('div');
+      note.className = 'smtp-config-note';
+      note.style.marginTop = '1rem';
+      note.innerHTML = warnings.length
+        ? `<strong style="color:var(--warning)">⚠ Announcement setup incomplete</strong><ul class="storage-guide-list">${warnings.map(item => `<li>${item}</li>`).join('')}</ul><p style="margin:.6rem 0 0">The Portal can only filter announcements for the Discord server and channels configured here. The bot card reuses the same server ID.</p>`
+        : '<strong style="color:var(--success)">✓ Discord announcement wiring ready</strong><p style="margin:.35rem 0 0">The Portal Server ID matches the bot Server ID and announcement channel rules are configured.</p>';
+      source.appendChild(note);
+    }
+  }
   document.getElementById('portalAdminIndex').style.display = 'none';
   document.getElementById('portalAdminDetail').style.display = 'block';
   attachAdminDetailTrail(title);
@@ -4064,13 +4022,13 @@ function renderAuthenticationDetail() {
     const discordCard = providerGrid.querySelector('[data-auth-provider="discord"]');
     if (discordCard) discordCard.insertAdjacentHTML('beforeend', `<div class="portal-auth-note" style="margin-top:1rem"><strong>Discord setup for this portal</strong><br>Register this exact portal callback in Discord OAuth2 → Redirects: <code>${v3Escape((fields.PORTAL_URL?.value || window.location.origin).replace(/\/$/, ''))}/auth/callback</code>. The portal requests <code>identify</code>, <code>email</code> and <code>guilds.members.read</code> so the saved allowed-role list can be checked. After changing scopes or redirect settings, sign in again and approve the updated consent screen.</div>`);
     const embyCard = providerGrid.querySelector('[data-auth-provider="emby"]');
-    if (embyCard) embyCard.insertAdjacentHTML('beforeend', `<div class="portal-auth-note" style="margin-top:1rem"><strong>Emby Connect is off by default</strong><br>The callback URL is generated automatically from Streaming Services → Emby. When enabled, members sign in through the portal with their Emby Connect email and password. They must first link that email from their Emby profile. The portal never stores the Connect password.</div>`);
+    if (embyCard) embyCard.insertAdjacentHTML('beforeend', `<div class="portal-auth-note" style="margin-top:1rem"><strong>Emby Connect is off by default</strong><br>The callback URL is generated automatically from Media Servers → Emby. When enabled, members sign in through the portal with their Emby Connect email and password. They must first link that email from their Emby profile. The portal never stores the Connect password.</div>`);
     const embyServerUrl = String(fields.EMBY_DIRECT_URL?.value || fields.EMBY_URL?.value || '').trim().replace(/\/+$/, '').replace(/\/emby$/i, '');
     const embyCallbackInput = detail.querySelector('[data-portal-admin-key="AUTH_EMBY_CONNECT_URL"]');
     if (embyCallbackInput) {
       embyCallbackInput.value = embyServerUrl ? `${embyServerUrl}/api/auth/embyconnect/callback` : '';
       embyCallbackInput.readOnly = true;
-      embyCallbackInput.title = 'Automatically generated from Streaming Services → Emby';
+      embyCallbackInput.title = 'Automatically generated from Media Servers → Emby';
     }
     const tabs = document.createElement('div');
     tabs.className = 'portal-auth-tabs';
@@ -4114,8 +4072,6 @@ const DISCORD_BOT_CREDENTIAL_FIELDS = [
   ['DISCORD_BOT_GUILD_ID', 'Discord guild/server ID', false, 'The Discord server where the bot will operate.'],
   ['DISCORD_BOT_PUBLIC_KEY', 'Discord application public key (optional)', false, 'Only required if a future HTTP interactions/webhook endpoint verifies Discord signatures. The Gateway bot does not use it.'],
   ['DISCORD_BOT_TOKEN', 'Discord bot token', true, 'Stored encrypted and only placed in the host environment. Never commit it to GitHub.'],
-  ['DISCORD_BOT_SUPABASE_URL', 'Supabase URL', false, 'The Supabase project URL used by the bot.'],
-  ['DISCORD_BOT_SUPABASE_ANON_KEY', 'Supabase publishable/anon key', false, 'The public client key used by the bot with Supabase RLS policies. It is supplied to this bot as SUPABASE_KEY; do not use a service-role key in the downloadable template.'],
 ];
 
 function renderDiscordBotDetail() {
@@ -4137,36 +4093,39 @@ function renderDiscordBotDetail() {
     plex: ['PLEX_URL', 'PLEX_TOKEN', 'PLEX_ROLE_IDS'],
     jellyfin: ['JELLYFIN_URL', 'JELLYFIN_API_KEY', 'JELLYFIN_ROLE_IDS'],
   }[key] || []));
-  const requiredBotVars = [...new Set(['DISCORD_TOKEN', 'CLIENT_ID', 'DISCORD_GUILD_ID', 'PRICING_JSON', ...(deployment.target === 'railway' ? ['SUPABASE_URL', 'SUPABASE_KEY'] : []), ...providerEnvVars])];
+  const requiredBotVars = [...new Set(['DISCORD_TOKEN', 'CLIENT_ID', 'DISCORD_GUILD_ID', 'PRICING_JSON', ...providerEnvVars])];
   const providerMarkup = providers.length ? providers.map(([key, name, description]) => {
     const item = saved.providers?.[key] || {};
     const prices = item.prices || {};
     const matrix = `<div style="overflow-x:auto;margin-top:.8rem"><table style="width:100%;min-width:760px;border-collapse:separate;border-spacing:.35rem"><thead><tr><th style="text-align:left;color:var(--muted);font-size:.75rem">Streams</th>${DISCORD_BOT_PRICE_PLANS.map(([, month]) => `<th style="color:var(--muted);font-size:.75rem">${month} mo</th>`).join('')}</tr></thead><tbody>${DISCORD_BOT_STREAM_TIERS.map(streams => `<tr><th style="text-align:left;white-space:nowrap;font-size:.8rem">${streams} streams</th>${DISCORD_BOT_PRICE_PLANS.map(([plan]) => `<td><input data-bot-price="${key}:${streams}:${plan}" value="${v3Escape(prices[streams]?.[plan] || '')}" placeholder="—" inputmode="decimal" style="width:100%;min-width:52px"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     return `<section class="settings-group-card" data-bot-provider="${key}"><div style="display:flex;justify-content:space-between;gap:.75rem;align-items:flex-start"><div><h3>${name}</h3><p>${description}</p><small style="color:var(--success)">Configured media server</small></div><label class="portal-switch" title="Include ${name} in the bot template"><input data-bot-provider-enabled="${key}" type="checkbox" ${item.enabled !== false && (item.enabled || key === 'emby' || key === 'silo') ? 'checked' : ''}><span></span></label></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem;margin-top:.8rem"><label class="smtp-config-field"><span>Trial length (days)</span><input data-bot-trial-days="${key}" value="${v3Escape(item.trialDays || '5')}" placeholder="5" inputmode="numeric"></label><div class="smtp-config-field"><span>Trial streams</span><strong style="display:block;padding:.65rem 0;color:var(--accent2)">2 streams · free</strong></div><label class="smtp-config-field"><span>Lifetime price</span><input data-bot-lifetime-price="${key}" value="${v3Escape(item.lifetimePrice || '')}" placeholder="10 streams" inputmode="decimal"><small>Lifetime always provisions 10 streams.</small></label></div><p style="margin:.9rem 0 .2rem;color:var(--muted);font-size:.78rem">Paid subscription prices by stream tier and duration. Leave unused tiers blank; /embadd still controls the selectable stream count.</p>${matrix}</section>`;
-  }).join('') : '<section class="settings-group-card wide"><h3>No media servers configured</h3><p>Configure Emby, Silo, Plex or Jellyfin under Streaming Services first. The bot pricing builder will only show servers that have their required connection settings configured.</p></section>';
-  detail.innerHTML = `<div class="portal-admin-detail-head"><h2>Discord Bot</h2><p>Configure the ticket panel, ticket creation/close flow, media-server account creation, trial lengths, pricing and Lifetime status. IPTV, payment systems, private APIs, owner IDs and live credentials are excluded.</p></div><section class="settings-group-card wide"><h3>Bot setup</h3><p>Use these steps when creating the Discord application. The bot name and avatar are safe template values; tokens and secrets stay outside the downloaded code. The builder reuses the Discord IDs from Authentication &amp; Access and the configured media-server URLs, API keys and role IDs from Streaming Services.</p><ol class="storage-guide-list"><li>Open Discord Developer Portal → New Application.</li><li>Set the application name and bot username you want members to see.</li><li>Open Bot → Reset Token only when you are ready to install; store the token as <code>DISCORD_TOKEN</code> on the selected host.</li><li>Upload a square PNG/JPG under Bot → App Icon/Profile Picture.</li><li>Enable the required server/member intents, copy the Application ID and Guild ID, then invite the bot with the generated OAuth2 URL.</li></ol><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;margin-top:1rem"><label class="smtp-config-field"><span>Bot name</span><input data-bot-identity="name" value="${v3Escape(identity.name || '')}" placeholder="Apex Media Bot"></label><label class="smtp-config-field"><span>Bot username</span><input data-bot-identity="username" value="${v3Escape(identity.username || '')}" placeholder="apex-media-bot"></label><label class="smtp-config-field"><span>Profile picture URL (optional)</span><input data-bot-identity="avatarUrl" type="url" value="${v3Escape(identity.avatarUrl || '')}" placeholder="https://…"></label></div></section><section class="settings-group-card wide"><h3>What this bot includes</h3><p>Ticket panel, ticket creation, ticket close, Emby and Silo account provisioning, subscription plans, trials, role assignment and Lifetime membership. Jellyfin is represented as a provider adapter slot when configured. Pricing is informational only; there is no payment option in this template.</p></section><div class="settings-card-grid">${providerMarkup}</div><section class="settings-group-card wide"><h3>Choose deployment target</h3><p id="discordBotDeploySummary">Choose one target. The setup fields, links and variables below update to match it.</p><div style="display:flex;gap:.75rem;flex-wrap:wrap;margin:.8rem 0 1rem"><label class="settings-toggle-row" style="flex:1;min-width:220px"><div><strong>VPS</strong><small>Run the bot beside the portal with PM2 or Docker.</small></div><input data-bot-deploy-target="vps" type="radio" name="botDeployTarget" value="vps" ${deployment.target !== 'railway' ? 'checked' : ''}></label><label class="settings-toggle-row" style="flex:1;min-width:220px"><div><strong>Supabase + Railway</strong><small>Supabase stores data; Railway runs the bot from private GitHub.</small></div><input data-bot-deploy-target="railway" type="radio" name="botDeployTarget" value="railway" ${deployment.target === 'railway' ? 'checked' : ''}></label></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem"><label class="smtp-config-field" data-bot-deployment-only="railway"><span>Private GitHub repository URL</span><input data-bot-deployment="githubRepo" type="url" value="${v3Escape(deployment.githubRepo || '')}" placeholder="https://github.com/owner/private-repo"></label><label class="smtp-config-field" data-bot-deployment-only="railway"><span>GitHub branch</span><input data-bot-deployment="githubBranch" value="${v3Escape(deployment.githubBranch || 'main')}" placeholder="main"></label><label class="smtp-config-field" data-bot-deployment-only="railway"><span>Railway project/service</span><input data-bot-deployment="railwayService" value="${v3Escape(deployment.railwayService || '')}" placeholder="nova-discord-bot"></label><label class="smtp-config-field" data-bot-deployment-only="vps"><span>VPS app directory</span><input data-bot-deployment="vpsDirectory" value="${v3Escape(deployment.vpsDirectory || '/opt/nova-discord-bot')}" placeholder="/opt/nova-discord-bot"></label></div><div class="smtp-config-note" style="margin-top:1rem"><strong>Required host variables:</strong><pre id="discordBotRequiredVars" class="storage-guide-code" style="margin-top:.7rem">${v3Escape(requiredBotVars.map(key => `${key}=REPLACE_ON_HOST`).join('\n'))}</pre></div></section><input type="hidden" data-portal-admin-key="DISCORD_BOT_PRICING" value=""><input type="hidden" data-portal-admin-key="DISCORD_BOT_IDENTITY" value=""><input type="hidden" data-portal-admin-key="DISCORD_BOT_DEPLOYMENT" value=""><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveDiscordBotDetail()">Save Bot Template</button></div>`;
-  const startHere = `<section class="settings-group-card wide" id="discordBotStartHere"><h3>Start here — setup order</h3><p>Complete these steps from top to bottom. You can return later to change providers or pricing, but you must save and re-register after those changes.</p><ol class="storage-guide-list"><li><strong>Prepare media servers:</strong> configure Emby, Silo, Jellyfin or Plex under Streaming Services first. Only configured servers appear on this page.</li><li><strong>Create the Discord bot:</strong> make the application, set its name/avatar, enable the required intents and copy its IDs/token.</li><li><strong>Choose bot features:</strong> enable the media servers you want, set trial length, Lifetime pricing and only the paid prices you actually offer.</li><li><strong>Choose hosting:</strong> select VPS, or Supabase + Railway. The page hides fields that do not apply.</li><li><strong>Save and generate:</strong> click Save Bot Template, then download a fresh <code>bot-config.json</code> and copy the safe project files into a new private repository.</li><li><strong>Deploy and register:</strong> follow the final platform tab at the bottom, run the registration command, start the bot and test <code>/ticketpanel</code>.</li></ol><div class="smtp-config-note"><strong>Keep these separate:</strong> portal member sign-in uses OAuth settings in Authentication &amp; Access. This page configures the separate Discord bot user. Never put tokens or API keys into GitHub, <code>bot-config.json</code> or the downloadable source.</div></section>`;
+  }).join('') : '<section class="settings-group-card wide"><h3>No media servers configured</h3><p>Configure Emby, Silo, Plex or Jellyfin under Media Servers first. The bot pricing builder will only show servers that have their required connection settings configured.</p></section>';
+  detail.innerHTML = `<div class="portal-admin-detail-head"><h2>Discord Bot</h2><p>Configure the ticket panel, ticket creation/close flow, media-server account creation, trial lengths, pricing and Lifetime status. IPTV, payment systems, private APIs, owner IDs and live credentials are excluded.</p></div><section class="settings-group-card wide"><h3>Bot setup</h3><p>Use these steps when creating the Discord application. The bot name and avatar are safe template values; tokens and secrets stay outside the downloaded code. The builder reuses the Discord IDs from Authentication &amp; Access and the configured media-server URLs, API keys and role IDs from Media Servers.</p><ol class="storage-guide-list"><li>Open Discord Developer Portal → New Application.</li><li>Set the application name and bot username you want members to see.</li><li>Open Bot → Reset Token only when you are ready to install; store the token as <code>DISCORD_TOKEN</code> on the selected host.</li><li>Upload a square PNG/JPG under Bot → App Icon/Profile Picture.</li><li>Enable the required server/member intents, copy the Application ID and Guild ID, then invite the bot with the generated OAuth2 URL.</li></ol><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;margin-top:1rem"><label class="smtp-config-field"><span>Bot name</span><input data-bot-identity="name" value="${v3Escape(identity.name || '')}" placeholder="Apex Media Bot"></label><label class="smtp-config-field"><span>Bot username</span><input data-bot-identity="username" value="${v3Escape(identity.username || '')}" placeholder="apex-media-bot"></label><label class="smtp-config-field"><span>Profile picture URL (optional)</span><input data-bot-identity="avatarUrl" type="url" value="${v3Escape(identity.avatarUrl || '')}" placeholder="https://…"></label></div></section><section class="settings-group-card wide"><h3>What this bot includes</h3><p>Ticket panel, ticket creation, ticket close, Emby and Silo account provisioning, subscription plans, trials, role assignment and Lifetime membership. Jellyfin is represented as a provider adapter slot when configured. Pricing is informational only; there is no payment option in this template.</p></section><div class="settings-card-grid">${providerMarkup}</div><section class="settings-group-card wide"><h3>Choose deployment target</h3><p id="discordBotDeploySummary">Choose one target. The setup fields, links and variables below update to match it.</p><div class="smtp-config-note" style="margin:.8rem 0 1rem"><strong>VPS / Docker Compose</strong><p style="margin:.35rem 0 0">The public build runs the portal and its PostgreSQL database on the VPS. The Discord bot is deployed beside it from the selected repository and branch.</p><input data-bot-deploy-target="vps" type="radio" name="botDeployTarget" value="vps" checked hidden></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem"><label class="smtp-config-field" data-bot-deployment-only="vps"><span>Bot GitHub repository URL</span><input data-bot-deployment="githubRepo" type="url" value="${v3Escape(deployment.githubRepo || '')}" placeholder="https://github.com/owner/private-repo"></label><label class="smtp-config-field" data-bot-deployment-only="vps"><span>GitHub branch</span><input data-bot-deployment="githubBranch" value="${v3Escape(deployment.githubBranch || 'main')}" placeholder="main"></label><label class="smtp-config-field" data-bot-deployment-only="vps"><span>VPS app directory</span><input data-bot-deployment="vpsDirectory" value="${v3Escape(deployment.vpsDirectory || '/opt/nova-discord-bot')}" placeholder="/opt/nova-discord-bot"></label></div><div class="smtp-config-note" style="margin-top:1rem"><strong>Required host variables:</strong><pre id="discordBotRequiredVars" class="storage-guide-code" style="margin-top:.7rem">${v3Escape(requiredBotVars.map(key => `${key}=REPLACE_ON_HOST`).join('\n'))}</pre></div></section><input type="hidden" data-portal-admin-key="DISCORD_BOT_PRICING" value=""><input type="hidden" data-portal-admin-key="DISCORD_BOT_IDENTITY" value=""><input type="hidden" data-portal-admin-key="DISCORD_BOT_DEPLOYMENT" value=""><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveDiscordBotDetail()">Save Bot Template</button></div>`;
+  const startHere = `<section class="settings-group-card wide" id="discordBotStartHere"><h3>Start here — setup order</h3><p>Complete these steps from top to bottom. You can return later to change providers or pricing, but you must save and re-register after those changes.</p><ol class="storage-guide-list"><li><strong>Prepare media servers:</strong> configure Emby, Silo, Jellyfin or Plex under Media Servers first. Only configured servers appear on this page.</li><li><strong>Create the Discord bot:</strong> make the application, set its name/avatar, enable the required intents and copy its IDs/token.</li><li><strong>Choose bot features:</strong> enable the media servers you want, set trial length, Lifetime pricing and only the paid prices you actually offer.</li><li><strong>Choose hosting:</strong> use the VPS / Docker Compose host beside the portal.</li><li><strong>Save and generate:</strong> click Save Bot Template, then download a fresh <code>bot-config.json</code> and copy the safe project files into a new private repository.</li><li><strong>Deploy and register:</strong> follow the final platform tab at the bottom, run the registration command, start the bot and test <code>/ticketpanel</code>.</li></ol><div class="smtp-config-note"><strong>Keep these separate:</strong> portal member sign-in uses OAuth settings in Authentication &amp; Access. This page configures the separate Discord bot user. Never put tokens or API keys into GitHub, <code>bot-config.json</code> or the downloadable source.</div></section>`;
   detail.querySelector('.portal-admin-detail-head')?.insertAdjacentHTML('afterend', startHere);
   const commandPrefixes = { emby:'emb', silo:'silo', jellyfin:'jelly', plex:'plex' };
   const commandProviders = providers.filter(([key]) => { const item = saved.providers?.[key]; return !item || item.enabled !== false; });
   const commandRows = commandProviders.flatMap(([key, name]) => DISCORD_BOT_COMMAND_GUIDE.map(([suffix, description]) => `<tr><td style="padding:.55rem"><code>/${commandPrefixes[key]}${suffix}</code></td><td style="padding:.55rem">${name}</td><td style="padding:.55rem">${description}</td></tr>`)).join('');
   const commandGuide = `<details class="settings-group-card wide" id="discordBotCommandGuide" style="padding:0"><summary style="cursor:pointer;list-style:none;padding:1.1rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem"><span><strong style="font-size:1.05rem">View commands</strong><small style="display:block;color:var(--muted);margin-top:.25rem">Only commands for configured and enabled media servers are shown.</small></span><span aria-hidden="true" style="color:var(--accent2);font-size:1.25rem">⌄</span></summary><div style="padding:0 1.2rem 1.2rem"><p>These are the commands the bot owner and staff use. Account-changing commands should be restricted to trusted staff roles.</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px"><thead><tr><th style="text-align:left;color:var(--muted);padding:.55rem">Command</th><th style="text-align:left;color:var(--muted);padding:.55rem">Service</th><th style="text-align:left;color:var(--muted);padding:.55rem">What it does</th></tr></thead><tbody><tr><td style="padding:.55rem"><code>/pricing</code></td><td style="padding:.55rem">All configured services</td><td style="padding:.55rem">Shows only non-blank prices from the portal pricing matrix.</td></tr><tr><td style="padding:.55rem"><code>/ticketpanel</code></td><td style="padding:.55rem">Discord</td><td style="padding:.55rem">Posts the ticket panel so members can open a private ticket.</td></tr><tr><td style="padding:.55rem"><code>/ticketclose</code></td><td style="padding:.55rem">Discord</td><td style="padding:.55rem">Closes the current ticket channel.</td></tr>${commandRows}</tbody></table></div><div class="smtp-config-note" style="margin-top:.8rem"><strong>After changing commands or provider selections:</strong> run <code>npm run register</code> with the bot token and Application ID, then restart the bot. Trial always means 5 days and 2 streams; Lifetime always uses 10 streams.</div></div></details>`;
-  const pricingExport = `<section class="settings-group-card wide"><h3>Generated provider configuration</h3><p>Copy this non-secret JSON into the bot host as <code>PRICING_JSON</code>, or download the complete <code>bot-config.json</code> manifest. It controls enabled provider commands, ticket categories and pricing. API keys and tokens are never included.</p><pre id="discordBotPricingExport" class="storage-guide-code">${v3Escape(JSON.stringify(saved && Object.keys(saved).length ? saved : { version: 3, providers: {} }, null, 2))}</pre><div style="display:flex;gap:.45rem;flex-wrap:wrap"><button type="button" class="btn-sm" onclick="copyDiscordBotPricingJson()">Copy PRICING_JSON value</button><button type="button" class="btn-sm" onclick="downloadDiscordBotConfig()">Download configured bot-config.json</button></div><div class="smtp-config-note" style="margin-top:.8rem"><strong>Deployment checklist — complete every step</strong><ol class="storage-guide-list"><li>Save this Discord Bot card after all provider choices, prices, role IDs and deployment settings are complete.</li><li>Download the updated <code>bot-config.json</code> and copy it into the bot repository root.</li><li>Copy the project files into a new private GitHub repository; never overwrite your existing private bot.</li><li>Add every required environment variable on Railway or the VPS. Never put tokens/API keys in GitHub.</li><li>Run the Supabase SQL when using Supabase + Railway, then run <code>npm install</code>, <code>npm run register</code> and <code>npm start</code>.</li><li>After changing a media server or pricing, download a fresh manifest and re-register the slash commands.</li></ol></div></section>`;
-  const botProjectFiles = `<div class="smtp-config-note" style="margin:.9rem 0 1rem"><strong>Download only after saving this card</strong><p style="margin:.35rem 0 .7rem">The sanitized project files are the fixed safe code base. Your selections are written into the generated <code>bot-config.json</code> manifest. Save the Discord Bot card first, download a fresh manifest, then copy the files and manifest into a new private GitHub repository.</p><div style="display:flex;gap:.45rem;flex-wrap:wrap"><a class="btn-sm" href="/discord-bot-template/README.md" target="_blank" rel="noopener">README / setup steps ↗</a><a class="btn-sm" href="/discord-bot-template/index.js" target="_blank" rel="noopener">index.js ↗</a><a class="btn-sm" href="/discord-bot-template/package.json" target="_blank" rel="noopener">package.json ↗</a><a class="btn-sm" href="/discord-bot-template/env.example" target="_blank" rel="noopener">env.example ↗</a><a class="btn-sm" href="/discord-bot-template/discord_bot_memberships.sql" target="_blank" rel="noopener">Membership SQL ↗</a><a class="btn-sm" href="/discord-bot-template/announcements.sql" target="_blank" rel="noopener">Announcements SQL ↗</a><a class="btn-sm" href="/discord-bot-template/CUSTOMIZATIONS.md" target="_blank" rel="noopener">Safe future-change rules ↗</a></div></div>`;
-  const registrationSection = `<section class="settings-group-card wide" id="discordBotRegistrationSteps"><h3>Final registration &amp; launch</h3><p>Complete your choices first, then save this card and download the fresh generated manifest before registering commands. This is the final step that publishes the selected slash commands to Discord.</p>${botProjectFiles}<div class="portal-auth-tabs" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:.9rem 0"><button type="button" class="portal-auth-tab" data-bot-registration-tab="vps" onclick="setDiscordBotDeployTarget('vps')">${adminCardIcon('vps')}<span>VPS / local terminal</span></button><button type="button" class="portal-auth-tab" data-bot-registration-tab="railway" onclick="setDiscordBotDeployTarget('railway')">${adminCardIcon('database')}<span>Supabase + Railway</span></button></div><div id="discordBotRegistrationVps" data-bot-registration-panel="vps"><strong>VPS / macOS / Linux</strong><pre class="storage-guide-code">cd /path/to/private-bot-repository
+  const pricingExport = `<section class="settings-group-card wide"><h3>Generated provider configuration</h3><p>Copy this non-secret JSON into the bot host as <code>PRICING_JSON</code>, or download the complete <code>bot-config.json</code> manifest. It controls enabled provider commands, ticket categories and pricing. API keys and tokens are never included.</p><pre id="discordBotPricingExport" class="storage-guide-code">${v3Escape(JSON.stringify(saved && Object.keys(saved).length ? saved : { version: 3, providers: {} }, null, 2))}</pre><div style="display:flex;gap:.45rem;flex-wrap:wrap"><button type="button" class="btn-sm" onclick="copyDiscordBotPricingJson()">Copy PRICING_JSON value</button><button type="button" class="btn-sm" onclick="downloadDiscordBotConfig()">Download configured bot-config.json</button><button type="button" class="btn-sm" onclick="downloadDiscordBotDockerBundle()">Download Docker deployment files</button><button type="button" class="btn-sm" onclick="downloadDiscordBotBundle()">Download complete bot folder (.tar.gz)</button></div><div class="smtp-config-note" style="margin-top:.8rem"><strong>Deployment checklist — complete every step</strong><ol class="storage-guide-list"><li>Save this Discord Bot card after all provider choices, prices, role IDs and deployment settings are complete.</li><li>Download the updated <code>bot-config.json</code> and copy it into the bot repository root.</li><li>Copy the project files into a new private GitHub repository; never overwrite your existing private bot.</li><li>Add every required environment variable on the VPS. Never put tokens/API keys in GitHub.</li><li>Run <code>npm install</code>, <code>npm run register</code> and <code>npm start</code> on the VPS.</li><li>After changing a media server or pricing, download a fresh manifest and re-register the slash commands.</li></ol></div></section>`;
+  const botProjectFiles = `<div class="smtp-config-note" style="margin:.9rem 0 1rem"><strong>Download only after saving this card</strong><p style="margin:.35rem 0 .7rem">The sanitized project files are the fixed safe code base. Your selections are written into the generated <code>bot-config.json</code> manifest. Save the Discord Bot card first, download a fresh manifest, then copy the files and manifest into a new private GitHub repository.</p><div style="display:flex;gap:.45rem;flex-wrap:wrap"><a class="btn-sm" href="/discord-bot-template/README.md" target="_blank" rel="noopener">README / setup steps ↗</a><a class="btn-sm" href="/discord-bot-template/index.js" target="_blank" rel="noopener">index.js ↗</a><a class="btn-sm" href="/discord-bot-template/package.json" target="_blank" rel="noopener">package.json ↗</a><a class="btn-sm" href="/discord-bot-template/env.example" target="_blank" rel="noopener">env.example ↗</a><a class="btn-sm" href="/discord-bot-template/discord_bot_memberships.sql" target="_blank" rel="noopener">Membership SQL ↗</a><a class="btn-sm" href="/discord-bot-template/announcements.sql" target="_blank" rel="noopener">Announcements SQL ↗</a><a class="btn-sm" href="/discord-bot-template/CUSTOMIZATIONS.md" target="_blank" rel="noopener">Safe future-change rules ↗</a><a class="btn-sm" href="/discord-bot-template/DEPLOY.md" target="_blank" rel="noopener">Docker deploy steps ↗</a></div></div>`;
+  const registrationSection = `<section class="settings-group-card wide" id="discordBotRegistrationSteps"><h3>Final registration &amp; launch</h3><p>Complete your choices first, then save this card and download the fresh generated manifest before registering commands. This is the final step that publishes the selected slash commands to Discord.</p>${botProjectFiles}<div class="portal-auth-tabs" style="display:grid;grid-template-columns:1fr;margin:.9rem 0"><button type="button" class="portal-auth-tab active" data-bot-registration-tab="vps" onclick="setDiscordBotDeployTarget('vps')">${adminCardIcon('vps')}<span>VPS / Docker Compose</span></button></div><div id="discordBotRegistrationVps" data-bot-registration-panel="vps"><strong>VPS / Docker Compose</strong><pre class="storage-guide-code">cd /path/to/private-bot-repository
 cp env.example .env
 chmod 600 .env
 npm install
 node --env-file=.env index.js register
-node --env-file=.env index.js</pre><p class="smtp-config-note">Homebrew is optional: <code>brew install node@22</code>. nvm is also supported: <code>nvm install 22 &amp;&amp; nvm use 22</code>. Run the bot under PM2 or Docker after registration.</p></div><div id="discordBotRegistrationRailway" data-bot-registration-panel="railway" style="display:none"><strong>Supabase + Railway</strong><ol class="storage-guide-list"><li>Run the Supabase SQL once.</li><li>Add the displayed variables under Railway → Service → Variables.</li><li>Set the Railway pre-deploy command to <code>npm run register</code>.</li><li>Set the start command to <code>npm start</code>.</li><li>Deploy from the selected private GitHub branch.</li></ol><p class="smtp-config-note">Railway runs registration with the environment variables already configured; do not paste tokens into GitHub or the portal-generated manifest.</p></div><div class="smtp-config-note" style="margin-top:1rem"><strong>After future changes:</strong> download a fresh <code>bot-config.json</code>, update the private repository, run registration again, then restart or redeploy the bot.</div></section>`;
+node --env-file=.env index.js</pre><p class="smtp-config-note">Run the bot beside the portal with PM2 or Docker Compose. Keep the bot environment file on the VPS only.</p></div><div class="smtp-config-note" style="margin-top:1rem"><strong>After future changes:</strong> download a fresh <code>bot-config.json</code>, update the private repository, run registration again, then restart or redeploy the bot.</div></section>`;
   const setupSection = [...detail.querySelectorAll('section')].find(section => section.querySelector('h3')?.textContent === 'Bot setup');
-  (setupSection || detail.querySelector('.portal-admin-detail-head')).insertAdjacentHTML('afterend', `<section id="discordBotCredentialSection" class="settings-group-card wide"><h3>Bot IDs and host variables</h3><p id="discordBotCredentialIntro">Enter the Discord bot values once. The portal stores secrets encrypted and maps them to the selected host’s environment-variable names.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.75rem;margin-top:.8rem">${DISCORD_BOT_CREDENTIAL_FIELDS.filter(([key]) => !key.startsWith('DISCORD_BOT_SUPABASE_')).map(([key, label, secret, help]) => { const item = configField(key); return `<label class="smtp-config-field"><span>${label}</span><input data-bot-credential="${key}" type="${secret ? 'password' : 'text'}" value="${secret ? '' : v3Escape(item.value || '')}" placeholder="${secret && item.configured ? 'Saved — leave blank to keep' : ''}"><small>${help}</small></label>`; }).join('')}</div></section><section class="settings-group-card wide"><h3>Bot installation invite</h3><p>Portal sign-in already uses the OAuth Client ID, Client Secret and Redirect URI in General Settings. This separate link installs the bot user into a Discord server and does not use the Client Secret or redirect.</p><div class="smtp-config-note"><strong>OAuth2 URL Generator settings</strong><ul class="storage-guide-list"><li>Scopes: <code>bot</code> and <code>applications.commands</code>.</li><li>Bot permissions: View Channels, Send Messages, Embed Links, Attach Files, Read Message History, Manage Messages, Manage Channels and Manage Roles.</li><li>Developer Portal → Bot → Privileged Gateway Intents: enable <strong>Server Members Intent</strong> and <strong>Message Content Intent</strong>. Presence Intent is not required by this code.</li></ul><a id="discordBotInviteLink" class="btn-sm" href="#" target="_blank" rel="noopener" style="display:inline-block;margin-top:.45rem;pointer-events:none;opacity:.55">Enter Application ID to generate invite ↗</a><code id="discordBotInviteUrl" style="display:block;word-break:break-all;margin-top:.7rem;color:var(--muted)"></code></div></section>`);
+  (setupSection || detail.querySelector('.portal-admin-detail-head')).insertAdjacentHTML('afterend', `<section id="discordBotCredentialSection" class="settings-group-card wide"><h3>Bot IDs and host variables</h3><p id="discordBotCredentialIntro">Enter the Discord bot values once. The portal stores secrets encrypted and maps them to the selected host’s environment-variable names.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.75rem;margin-top:.8rem">${DISCORD_BOT_CREDENTIAL_FIELDS.map(([key, label, secret, help]) => { const item = configField(key); return `<label class="smtp-config-field"><span>${label}</span><input data-bot-credential="${key}" type="${secret ? 'password' : 'text'}" value="${secret ? '' : v3Escape(item.value || '')}" placeholder="${secret && item.configured ? 'Saved — leave blank to keep' : ''}" ${key === 'DISCORD_BOT_GUILD_ID' ? 'readonly' : ''}><small>${help}</small></label>`; }).join('')}</div></section><section class="settings-group-card wide"><h3>Bot installation invite</h3><p>Portal sign-in already uses the OAuth Client ID, Client Secret and Redirect URI in General Settings. This separate link installs the bot user into a Discord server and does not use the Client Secret or redirect.</p><div class="smtp-config-note"><strong>OAuth2 URL Generator settings</strong><ul class="storage-guide-list"><li>Scopes: <code>bot</code> and <code>applications.commands</code>.</li><li>Bot permissions: View Channels, Send Messages, Embed Links, Attach Files, Read Message History, Manage Messages, Manage Channels and Manage Roles.</li><li>Developer Portal → Bot → Privileged Gateway Intents: enable <strong>Server Members Intent</strong> and <strong>Message Content Intent</strong>. Presence Intent is not required by this code.</li></ul><a id="discordBotInviteLink" class="btn-sm" href="#" target="_blank" rel="noopener" style="display:inline-block;margin-top:.45rem;pointer-events:none;opacity:.55">Enter Application ID to generate invite ↗</a><code id="discordBotInviteUrl" style="display:block;word-break:break-all;margin-top:.7rem;color:var(--muted)"></code></div></section>`);
   detail.querySelectorAll('[data-bot-credential="DISCORD_BOT_CLIENT_ID"], [data-bot-credential="DISCORD_BOT_GUILD_ID"]').forEach(input => input.addEventListener('input', updateDiscordBotInviteLink));
+  const generalGuildId = configField('DISCORD_GUILD_ID').value.trim();
+  const botGuildInput = detail.querySelector('[data-bot-credential="DISCORD_BOT_GUILD_ID"]');
+  if (botGuildInput && !botGuildInput.value && generalGuildId) botGuildInput.value = generalGuildId;
+  if (botGuildInput) { botGuildInput.readOnly = true; botGuildInput.title = 'Linked to Authentication & Access → Discord Server ID. Change the shared value there.'; botGuildInput.setAttribute('aria-readonly', 'true'); }
   updateDiscordBotInviteLink();
   const deploySection = [...detail.querySelectorAll('section')].find(section => section.querySelector('h3')?.textContent === 'Choose deployment target');
   if (deploySection) {
     deploySection.insertAdjacentHTML('beforeend', `<div id="discordBotDeploySteps" class="smtp-config-note" style="margin-top:1rem"></div>`);
-    deploySection.insertAdjacentHTML('afterend', `<section id="discordBotSupabaseFields" class="settings-group-card wide" data-bot-credential-only="railway"><h3>Supabase connection for this deployment</h3><p>These fields belong to the Supabase + Railway target and are hidden when VPS is selected. Use the publishable/anon key; this bot reads it as <code>SUPABASE_KEY</code>.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.75rem;margin-top:.8rem">${DISCORD_BOT_CREDENTIAL_FIELDS.filter(([key]) => key.startsWith('DISCORD_BOT_SUPABASE_')).map(([key, label, secret, help]) => { const item = configField(key); return `<label class="smtp-config-field"><span>${label}</span><input data-bot-credential="${key}" type="${secret ? 'password' : 'text'}" value="${secret ? '' : v3Escape(item.value || '')}" placeholder="${secret && item.configured ? 'Saved — leave blank to keep' : ''}"><small>${help}</small></label>`; }).join('')}</div></section>`);
     deploySection.insertAdjacentHTML('afterend', pricingExport + registrationSection + commandGuide);
   }
   const addDiscordBotSaveCheckpoint = (section, label = 'Save all bot settings') => {
@@ -4180,11 +4139,40 @@ node --env-file=.env index.js</pre><p class="smtp-config-note">Homebrew is optio
   addDiscordBotSaveCheckpoint([...detail.querySelectorAll('section')].find(section => section.querySelector('h3')?.textContent === 'Choose deployment target'), 'Save deployment choice');
   detail.querySelector('.portal-admin-save')?.replaceChildren(document.createTextNode('Save all bot settings'));
   detail.querySelectorAll('[data-bot-deploy-target]').forEach(input => { input.addEventListener('change', () => setDiscordBotDeployTarget(input.value)); });
-  setDiscordBotDeployTarget(deployment.target === 'railway' ? 'railway' : 'vps');
+  setDiscordBotDeployTarget('vps');
+  addDiscordBotDockerFlow(detail);
+  normalizeDiscordBotDownloads(detail);
   syncDiscordBotTemplate(saved, identity, deployment);
   document.getElementById('portalAdminIndex').style.display = 'none';
   document.getElementById('portalAdminDetail').style.display = 'block';
   attachAdminDetailTrail('Discord Bot');
+}
+
+function addDiscordBotDockerFlow(detail) {
+  if (!detail || detail.querySelector('#discordBotDockerFlow')) return;
+  const flow = `<section class="settings-group-card wide" id="discordBotDockerFlow"><h3>Download → deploy → register → run</h3><p>This is the complete order for the downloaded bot folder. The <code>register</code> command is required: it publishes the selected slash commands to Discord before the bot starts.</p><ol class="storage-guide-list"><li>Save all settings on this card, then click <strong>Download complete bot folder (.tar.gz)</strong>.</li><li>Upload the archive to the bot VPS and extract it: <code>tar -xzf portal-discord-bot-bundle.tar.gz</code>, then <code>cd portal-discord-bot</code>.</li><li>Create the private host environment: <code>cp env.example .env</code>, fill in the Discord token, Application ID, guild ID, database URL and any selected media-server keys, then run <code>chmod 600 .env</code>.</li><li>Build and start the Docker container: <code>docker compose up -d --build</code>.</li><li>Register the slash commands: <code>docker compose run --rm portal-discord-bot node index.js register</code>.</li><li>Check the running bot: <code>docker compose logs --tail=100 -f portal-discord-bot</code>.</li></ol><div class="smtp-config-note"><strong>When Portal settings change:</strong> download a fresh bundle, replace the bot folder, rebuild it and run the register command again. The generated <code>bot-config.json</code> carries the current provider, pricing, identity and lifetime settings; secrets remain only in <code>.env</code>.</div></section>`;
+  detail.querySelector('#discordBotRegistrationSteps')?.insertAdjacentElement('afterend', (() => { const wrapper = document.createElement('div'); wrapper.innerHTML = flow; return wrapper.firstElementChild; })());
+}
+
+function normalizeDiscordBotDownloads(detail) {
+  if (!detail) return;
+  detail.querySelectorAll('button').forEach(button => {
+    const label = (button.textContent || '').trim().toLowerCase();
+    if (label.includes('copy pricing_json') || label.includes('download configured') || label.includes('download docker deployment')) button.remove();
+  });
+  const fileSection = [...detail.querySelectorAll('section, .smtp-config-note')].find(node => node.querySelector('h3, strong')?.textContent?.trim() === 'Download only after saving this card');
+  if (fileSection) fileSection.innerHTML = '<h3>One download contains the complete bot</h3><p>Save this card first, then click <strong>Download complete bot folder (.tar.gz)</strong>. The single archive contains the bot source, generated <code>bot-config.json</code>, Dockerfile, Compose file, environment template, SQL and deployment documentation. Do not download or assemble separate files.</p>';
+  const checklist = [...detail.querySelectorAll('section, .settings-group-card')].find(node => node.querySelector('h3')?.textContent?.trim() === 'Deployment checklist — complete every step');
+  if (checklist) checklist.innerHTML = '<h3>One-download deployment checklist</h3><ol class="storage-guide-list"><li>Save this Discord Bot card.</li><li>Click <strong>Download complete bot folder (.tar.gz)</strong>.</li><li>Extract the archive on the bot VPS and create <code>.env</code> from <code>env.example</code>.</li><li>Run <code>docker compose up -d --build</code>.</li><li>Run <code>docker compose run --rm portal-discord-bot node index.js register</code>.</li><li>Check logs and test the commands shown below.</li></ol><p class="smtp-config-note">After changing providers, pricing or commands, download one fresh archive, redeploy it and register again.</p>';
+  const registration = detail.querySelector('#discordBotRegistrationVps');
+  if (registration) registration.innerHTML = `<strong>VPS / Docker Compose</strong><pre class="storage-guide-code">tar -xzf portal-discord-bot-bundle.tar.gz
+cd portal-discord-bot
+cp env.example .env
+chmod 600 .env
+# Fill in .env, then:
+docker compose up -d --build
+docker compose run --rm portal-discord-bot node index.js register
+docker compose logs --tail=100 -f portal-discord-bot</pre><p class="smtp-config-note">The register command publishes the selected slash commands to Discord. Run it again after command or provider changes.</p>`;
 }
 
 function updateDiscordBotInviteLink() {
@@ -4216,43 +4204,96 @@ function downloadDiscordBotConfig() {
   try { deployment = JSON.parse(field('DISCORD_BOT_DEPLOYMENT').value || '{}'); } catch (_) {}
   const providerDefs = { emby:['EMBY_URL','EMBY_API_KEY','EMBY_ROLE_IDS'], silo:['SILO_URL','SILO_API_KEY','SILO_ROLE_IDS'], jellyfin:['JELLYFIN_URL','JELLYFIN_API_KEY','JELLYFIN_ROLE_IDS'], plex:['PLEX_URL','PLEX_TOKEN','PLEX_ROLE_IDS'] };
   const mediaServers = Object.fromEntries(Object.keys(providerDefs).filter(key => mediaServerReady(key) && pricing.providers?.[key]?.enabled !== false).map(key => [key, { configured: true, enabled: pricing.providers?.[key]?.enabled !== false, requiredEnv: providerDefs[key] }]));
-  const manifest = { version: 1, generatedAt: new Date().toISOString(), warning: 'Non-secret configuration manifest. Add tokens and provider API keys only as host environment variables.', mediaServers, pricing, identity, deployment, commands: ['pricing', 'ticketpanel', 'ticketclose', ...Object.keys(mediaServers).flatMap(key => { const prefix = { emby:'emb', silo:'silo', jellyfin:'jelly', plex:'plex' }[key]; return DISCORD_BOT_COMMAND_GUIDE.map(([suffix]) => `${prefix}${suffix}`); })], requiredEnvironment: ['DISCORD_TOKEN', 'CLIENT_ID', 'PRICING_JSON', ...Object.values(mediaServers).flatMap(item => item.requiredEnv), ...(deployment.target === 'railway' ? ['SUPABASE_URL', 'SUPABASE_KEY'] : [])], completionChecklist: ['Copy this file into the bot repository root as bot-config.json.', 'Add the required host environment variables.', 'Run npm install.', 'Run npm run register.', 'Run npm start.'] };
+  const manifest = { version: 1, generatedAt: new Date().toISOString(), warning: 'Non-secret configuration manifest. Add tokens and provider API keys only as host environment variables.', mediaServers, pricing, identity, deployment, commands: ['pricing', 'ticketpanel', 'ticketclose', ...Object.keys(mediaServers).flatMap(key => { const prefix = { emby:'emb', silo:'silo', jellyfin:'jelly', plex:'plex' }[key]; return DISCORD_BOT_COMMAND_GUIDE.map(([suffix]) => `${prefix}${suffix}`); })], requiredEnvironment: ['DISCORD_TOKEN', 'CLIENT_ID', 'PRICING_JSON', ...Object.values(mediaServers).flatMap(item => item.requiredEnv)], completionChecklist: ['Copy this file into the bot repository root as bot-config.json.', 'Add the required host environment variables.', 'Run npm install.', 'Run npm run register.', 'Run npm start.'] };
   const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
   const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'bot-config.json'; link.click(); URL.revokeObjectURL(link.href);
+}
+
+async function downloadDiscordBotBundle() {
+  const field = key => (portalAdminConfig?.fields || []).find(item => item.key === key) || { value: '' };
+  let pricing = {}, identity = {}, deployment = {};
+  try { pricing = JSON.parse(field('DISCORD_BOT_PRICING').value || '{}'); } catch (_) {}
+  try { identity = JSON.parse(field('DISCORD_BOT_IDENTITY').value || '{}'); } catch (_) {}
+  try { deployment = JSON.parse(field('DISCORD_BOT_DEPLOYMENT').value || '{}'); } catch (_) {}
+  try {
+    const res = await fetch('/api/admin/discord-bot/bundle', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ pricing, identity, deployment }) });
+    if (!res.ok) { let detail = {}; try { detail = await res.json(); } catch (_) {} throw new Error(detail.error || 'Unable to build bot bundle'); }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url; link.download = 'portal-discord-bot-bundle.tar.gz'; link.click(); URL.revokeObjectURL(url);
+    showToast('Complete Discord bot folder downloaded', 'success');
+  } catch (error) { showToast(error.message, 'error'); }
+}
+
+function downloadDiscordBotDockerBundle() {
+  const field = key => (portalAdminConfig?.fields || []).find(item => item.key === key) || { value: '' };
+  let pricing = {}, deployment = {};
+  try { pricing = JSON.parse(field('DISCORD_BOT_PRICING').value || '{}'); } catch (_) {}
+  try { deployment = JSON.parse(field('DISCORD_BOT_DEPLOYMENT').value || '{}'); } catch (_) {}
+  const providerDefs = {
+    emby: ['EMBY_URL', 'EMBY_API_KEY', 'EMBY_ROLE_IDS'],
+    silo: ['SILO_URL', 'SILO_API_KEY', 'SILO_ROLE_IDS'],
+    jellyfin: ['JELLYFIN_URL', 'JELLYFIN_API_KEY', 'JELLYFIN_ROLE_IDS'],
+    plex: ['PLEX_URL', 'PLEX_TOKEN', 'PLEX_ROLE_IDS'],
+  };
+  const selected = Object.keys(providerDefs).filter(key => mediaServerReady(key) && pricing.providers?.[key]?.enabled !== false);
+  const required = [...new Set(['DISCORD_TOKEN', 'CLIENT_ID', 'DISCORD_GUILD_ID', 'DATABASE_URL', 'PRICING_JSON', ...selected.flatMap(key => providerDefs[key])])];
+  const envExample = [
+    '# Copy to .env on the bot VPS. Never commit the completed .env.',
+    ...required.map(key => key === 'DATABASE_URL' ? 'DATABASE_URL=postgres://portal:REPLACE_ON_HOST@db:5432/portal' : key === 'PRICING_JSON' ? 'PRICING_JSON=' : key + '=REPLACE_ON_HOST'),
+    '',
+  ].join('\n');
+  const appDirectory = deployment.vpsDirectory || '/opt/portal-discord-bot';
+  const compose = [
+    '# Generated for the Discord Bot card. Deploy from ' + appDirectory + '.',
+    'services:',
+    '  portal-discord-bot:',
+    '    build: .',
+    '    restart: unless-stopped',
+    '    init: true',
+    '    env_file:',
+    '      - .env',
+    '    volumes:',
+    '      - ./bot-config.json:/app/bot-config.json:ro',
+    '    networks:',
+    '      - portal-v1-postgres_default',
+    '    security_opt:',
+    '      - no-new-privileges:true',
+    'networks:',
+    '  portal-v1-postgres_default:',
+    '    external: true',
+    '',
+  ].join('\n');
+  const save = (name, text) => {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
+  };
+  save('docker-compose.yml', compose);
+  save('env.example', envExample);
+  showToast('Docker Compose and env.example downloaded', 'success');
 }
 
 function setDiscordBotDeployTarget(target) {
   const steps = document.getElementById('discordBotDeploySteps');
   if (!steps) return;
-  const isRailway = target === 'railway';
-  const selectedInput = document.querySelector(`[data-bot-deploy-target="${target}"]`);
+  const selectedInput = document.querySelector('[data-bot-deploy-target="vps"]');
   const tabBar = selectedInput?.parentElement?.parentElement;
-  if (tabBar) { tabBar.classList.add('portal-auth-tabs'); tabBar.style.display = 'grid'; tabBar.style.gridTemplateColumns = 'repeat(2,minmax(0,1fr))'; }
-  document.querySelectorAll('[data-bot-deploy-target]').forEach(input => input.closest('label')?.classList.toggle('discord-bot-target-tab', true));
-  document.querySelectorAll('[data-bot-deploy-target]').forEach(input => { const label = input.closest('label'); if (label && !label.querySelector('.discord-bot-target-icon')) label.insertAdjacentHTML('afterbegin', `<span class="discord-bot-target-icon">${adminCardIcon(input.value === 'vps' ? 'vps' : 'database')}</span>`); });
-  document.querySelectorAll('[data-bot-deploy-target]').forEach(input => input.closest('label')?.classList.toggle('active', input.value === target));
-  document.querySelectorAll('[data-bot-registration-tab]').forEach(tab => tab.classList.toggle('active', tab.dataset.botRegistrationTab === target));
-  document.querySelectorAll('[data-bot-registration-panel]').forEach(panel => { panel.style.display = panel.dataset.botRegistrationPanel === target ? '' : 'none'; });
-  document.querySelectorAll('[data-bot-deployment-only]').forEach(item => { item.style.display = item.dataset.botDeploymentOnly === 'all' || item.dataset.botDeploymentOnly === target ? '' : 'none'; });
-  document.querySelectorAll('[data-bot-credential-only]').forEach(item => { item.style.display = item.dataset.botCredentialOnly === 'all' || item.dataset.botCredentialOnly === target ? '' : 'none'; });
+  if (tabBar) { tabBar.classList.add('portal-auth-tabs'); tabBar.style.display = 'grid'; tabBar.style.gridTemplateColumns = '1fr'; }
+  document.querySelectorAll('[data-bot-deploy-target]').forEach(input => input.closest('label')?.classList.toggle('active', true));
+  document.querySelectorAll('[data-bot-registration-tab]').forEach(tab => tab.classList.toggle('active', tab.dataset.botRegistrationTab === 'vps'));
+  document.querySelectorAll('[data-bot-registration-panel]').forEach(panel => { panel.style.display = panel.dataset.botRegistrationPanel === 'vps' ? '' : 'none'; });
+  document.querySelectorAll('[data-bot-deployment-only]').forEach(item => { item.style.display = item.dataset.botDeploymentOnly === 'vps' || item.dataset.botDeploymentOnly === 'all' ? '' : 'none'; });
   const summary = document.getElementById('discordBotDeploySummary');
-  if (summary) summary.textContent = isRailway ? 'Supabase + Railway is selected. GitHub, Railway and Supabase setup are shown below.' : 'VPS is selected. The bot runs locally on the VPS; Supabase and Railway setup are not required.';
-  document.querySelectorAll('[data-bot-deployment="githubRepo"], [data-bot-deployment="githubBranch"]').forEach(input => { const field = input.closest('[data-bot-deployment-only]'); if (field) field.dataset.botDeploymentOnly = 'all'; });
+  if (summary) summary.textContent = 'VPS / Docker Compose is selected. The bot runs beside the PostgreSQL portal on the VPS.';
   const required = ['DISCORD_TOKEN', 'CLIENT_ID', 'DISCORD_GUILD_ID'];
-  if (isRailway) required.push('SUPABASE_URL', 'SUPABASE_KEY');
   document.querySelectorAll('[data-bot-provider]').forEach(card => {
     const env = { emby:['EMBY_URL','EMBY_API_KEY','EMBY_ROLE_IDS'], silo:['SILO_URL','SILO_API_KEY','SILO_ROLE_IDS'], plex:['PLEX_URL','PLEX_TOKEN','PLEX_ROLE_IDS'], jellyfin:['JELLYFIN_URL','JELLYFIN_API_KEY','JELLYFIN_ROLE_IDS'] }[card.dataset.botProvider] || [];
     required.push(...env);
   });
   const vars = document.getElementById('discordBotRequiredVars');
-  if (vars) vars.textContent = [...new Set(required)].map(key => `${key}=REPLACE_ON_HOST`).join('\n');
-  if (target === 'railway') {
-    steps.innerHTML = '<strong>Supabase + Railway steps</strong><ol class="storage-guide-list"><li>Run the Supabase SQL from Supabase Configuration → Discord Bot Integration.</li><li>Copy the Supabase project URL and publishable/anon key into the Supabase fields above.</li><li>Push the sanitized bot template to your private GitHub repository.</li><li>In Railway, create a service from that private repository and select the deployment branch.</li><li>Add only the displayed variables under Railway → Service → Variables, including <code>SUPABASE_URL</code> and <code>SUPABASE_KEY</code>.</li><li>Enable automatic deploys from GitHub. Each push to the selected branch redeploys the bot.</li></ol>';
-  } else {
-    steps.innerHTML = '<strong>VPS steps</strong><ol class="storage-guide-list"><li>Use the private GitHub repository as the code source and keep the VPS as the runtime host.</li><li>Configure a GitHub Actions deploy or a secured pull/deploy hook to update the VPS app directory from the selected branch.</li><li>Create a private <code>.env</code> file beside the bot and keep all generated secrets only on the VPS.</li><li>Run <code>chmod 600 .env</code>; never commit it to GitHub.</li><li>Install dependencies, then run the bot with PM2 or Docker using the same environment file.</li><li>For a manual deployment, upload the package directly to the VPS instead; GitHub is recommended for ongoing updates and rollback.</li></ol>';
-  }
+  if (vars) vars.textContent = [...new Set(required)].map(key => `${key}=REPLACE_ON_HOST`).join('\\n');
+  steps.innerHTML = '<strong>VPS / Docker Compose steps</strong><ol class="storage-guide-list"><li>Keep the bot source in the selected private repository and use the selected branch for deployments.</li><li>Deploy the bot beside the portal on the VPS using PM2 or Docker Compose.</li><li>Create a private <code>.env</code> file on the VPS and keep all tokens, passwords and provider keys there.</li><li>Run <code>chmod 600 .env</code>; never commit it to GitHub.</li><li>Verify the bot logs and portal health after each deployment.</li></ol>';
 }
-
 function syncDiscordBotTemplate() {
   const pricing = document.querySelector('[data-portal-admin-key="DISCORD_BOT_PRICING"]');
   const identity = document.querySelector('[data-portal-admin-key="DISCORD_BOT_IDENTITY"]');
@@ -4285,6 +4326,8 @@ async function saveDiscordBotDetail() {
     DISCORD_BOT_DEPLOYMENT: document.querySelector('[data-portal-admin-key="DISCORD_BOT_DEPLOYMENT"]')?.value || '',
   };
   document.querySelectorAll('[data-bot-credential]').forEach(input => { values[input.dataset.botCredential] = input.value.trim(); });
+    const sharedGuild = (portalAdminConfig?.fields || []).find(field => field.key === 'DISCORD_GUILD_ID')?.value?.trim() || '';
+    if (sharedGuild) values.DISCORD_BOT_GUILD_ID = sharedGuild;
   try {
     const res = await fetch('/api/admin/config', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ values }) });
     const data = await res.json();
@@ -4302,7 +4345,7 @@ function renderSeerrDetail() {
   const configuredServers = Object.entries(MEDIA_SERVER_SETUPS).filter(([key]) => mediaServerReady(key));
   const accessRows = configuredServers.length
     ? configuredServers.map(([key, setup]) => authAdminToggle(fields, `SEERR_ACCESS_${key.toUpperCase()}`, `${setup.title} members`, `Allow members with a configured ${setup.title} account to see Requests.`)).join('')
-    : '<p class="settings-empty-note">Configure a media server under Streaming Services first. Seerr access choices will appear here automatically.</p>';
+    : '<p class="settings-empty-note">Configure a media server under Media Servers first. Seerr access choices will appear here automatically.</p>';
   detail.innerHTML = `<div class="portal-admin-detail-head"><h2>Seerr</h2><p>Connect Seerr for movie and TV requests. Seerr supports Emby, Jellyfin and Plex integrations and authenticates API calls with an <code>X-Api-Key</code> header. Requests are shown only to the configured media-server memberships selected below.</p></div><section class="settings-group-card wide"><h3>Seerr connection</h3><p>Seerr is normally installed separately, for example at its default web address on port 5055. Leave this disabled until the Seerr setup is complete.</p><div class="portal-auth-fields">${authAdminToggle(fields, 'SEERR_ENABLED', 'Enable Seerr', 'Allow Seerr-backed Requests features to be considered for member navigation.')}${authAdminField(fields, 'SEERR_URL', 'Seerr URL', 'Public or internally reachable Seerr URL, for example https://requests.example.com.', 'url')}${authAdminField(fields, 'SEERR_API_KEY', 'Seerr API key', 'Create this in Seerr and keep it server-side. It is stored encrypted and sent as X-Api-Key.', 'password')}</div><div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-top:.9rem"><button type="button" class="btn-sm" onclick="testSeerrConnection(this)">⌁ Test Seerr connection</button><span id="seerrTestResult" style="color:var(--muted);font-size:.78rem"></span></div></section><section class="settings-group-card wide"><h3>Member access</h3><p>These choices are limited to media servers that are actually configured. Turn on only the memberships whose users should see Requests.</p><div class="settings-card-grid">${accessRows}</div></section><section class="settings-group-card wide"><h3>Request areas</h3><p>Choose which Seerr-backed sections appear under Requests.</p><div class="settings-card-grid">${authAdminToggle(fields, 'REQUESTS_ENABLED', 'Requests navigation', 'Show the Requests dropdown when Seerr and at least one allowed media server are ready.')}${authAdminToggle(fields, 'REQUESTS_MOVIES_ENABLED', 'Movies', 'Show movie search/request access.')}${authAdminToggle(fields, 'REQUESTS_SHOWS_ENABLED', 'Shows', 'Show TV show search/request access.')}${authAdminToggle(fields, 'REQUESTS_MY_ENABLED', 'My requests', 'Show each member’s request history.')}</div></section><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveAdminDetail('Requests & metadata')">Save Seerr settings</button></div>`;
   document.getElementById('portalAdminIndex').style.display = 'none';
   document.getElementById('portalAdminDetail').style.display = 'block';
@@ -4318,6 +4361,18 @@ async function testSeerrConnection(button) {
   try { const response = await fetch('/api/admin/seerr/test', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url, apiKey}) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Connection failed'); result.textContent = data.message || 'Seerr connected.'; result.style.color = 'var(--success)'; }
   catch (error) { result.textContent = error.message; result.style.color = 'var(--danger)'; }
   finally { button.disabled = false; }
+}
+
+function renderVpsConfigurationDetail() {
+  const fields = Object.fromEntries((portalAdminConfig.fields || []).map(field => [field.key, field]));
+  const field = key => fields[key] || { key, value:'', configured:false, secret:false, type:'text' };
+  const vpsName = field('VPS_NAME').value || 'Portal public PostgreSQL VPS';
+  const sshPort = field('VPS_SSH_PORT').value || '22';
+  const detail = document.getElementById('portalAdminDetailContent');
+  detail.innerHTML = `<div class="portal-admin-detail-head"><h2>VPS Configuration</h2><p>Docker supplies safe installation defaults for this public Portal build. Add the host address and dedicated SSH user for remote operations; private keys and credentials are never auto-filled.</p></div><section class="settings-group-card wide"><h3>Public test VPS</h3><p>These values describe the host running the public PostgreSQL Docker Compose project. The host and SSH user are deployment settings, not portal login credentials.</p><div class="portal-admin-fields"><div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>VPS name</strong><span>Friendly label for this installation.</span></div><div class="portal-admin-field-control"><input data-portal-admin-key="VPS_NAME" value="${v3Escape(vpsName)}" placeholder="Portal public PostgreSQL VPS"></div></div><div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>VPS host</strong><span>Hostname, public IP, or Tailscale address.</span></div><div class="portal-admin-field-control"><input data-portal-admin-key="VPS_HOST" value="${v3Escape(field('VPS_HOST').value || '')}" placeholder="vps.example.com"></div></div><div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>SSH port</strong><span>Normally 22.</span></div><div class="portal-admin-field-control"><input data-portal-admin-key="VPS_SSH_PORT" type="number" min="1" max="65535" value="${v3Escape(sshPort)}" placeholder="22"></div></div><div class="portal-admin-field"><div class="portal-admin-field-copy"><strong>SSH user</strong><span>Use a dedicated deployment/monitoring user where possible.</span></div><div class="portal-admin-field-control"><input data-portal-admin-key="VPS_SSH_USER" value="${v3Escape(field('VPS_SSH_USER').value || '')}" placeholder="portal"></div></div></div></section><section class="settings-group-card wide"><h3>Credential safety</h3><p>The private-key field remains available for encrypted storage but is never populated by Docker, returned by the API, or written into generated bot files. Save this card only after entering the host details you want the portal to retain.</p></section><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveAdminDetail('VPS')">Save VPS settings</button></div>`;
+  document.getElementById('portalAdminIndex').style.display = 'none';
+  document.getElementById('portalAdminDetail').style.display = 'block';
+  attachAdminDetailTrail('VPS Configuration');
 }
 
 function openAdminDetail(cardKey) {
@@ -4356,10 +4411,10 @@ function openAdminDetail(cardKey) {
   if (cardKey === 'Permissions') { renderToggleSettingsPage(cardKey); return; }
   if (cardKey === 'Media servers') {
     const detail = document.getElementById('portalAdminDetailContent');
-    detail.innerHTML = `<div class="portal-admin-detail-head"><h2>Streaming Services</h2><p>Choose the media server you want to connect. Each server keeps its own guided setup and credentials, so optional services do not affect the ones you already use.</p></div><div class="media-server-picker">${Object.entries(MEDIA_SERVER_SETUPS).map(([id, server]) => { const ready = mediaServerReady(id); return `<button type="button" class="media-server-card" onclick="openMediaServerSetup('${id}')"><div class="media-server-card-head"><span class="media-server-logo ${server.className}">${mediaServerIcon(id)}</span><span class="media-server-state ${ready ? 'ready' : ''}">${ready ? '● Connected' : '○ Not configured'}</span></div><h3>${server.title}</h3><p>${server.description}</p><small>Open ${server.title} Setup →</small></button>`; }).join('')}</div>`;
+    detail.innerHTML = `<div class="portal-admin-detail-head"><h2>Media Servers</h2><p>Choose the media server you want to connect. Each server keeps its own guided setup and credentials, so optional services do not affect the ones you already use.</p></div><div class="media-server-picker">${Object.entries(MEDIA_SERVER_SETUPS).map(([id, server]) => { const ready = mediaServerReady(id); return `<button type="button" class="media-server-card" onclick="openMediaServerSetup('${id}')"><div class="media-server-card-head"><span class="media-server-logo ${server.className}">${mediaServerIcon(id)}</span><span class="media-server-state ${ready ? 'ready' : ''}">${ready ? '● Connected' : '○ Not configured'}</span></div><h3>${server.title}</h3><p>${server.description}</p><small>Open ${server.title} Setup →</small></button>`; }).join('')}</div>`;
     document.getElementById('portalAdminIndex').style.display = 'none';
     document.getElementById('portalAdminDetail').style.display = 'block';
-    attachAdminDetailTrail('Streaming Services');
+    attachAdminDetailTrail('Media Servers');
     return;
   }
   if (cardKey === 'Security & ownership') {
@@ -4397,10 +4452,6 @@ function openAdminDetail(cardKey) {
     document.getElementById('portalAdminIndex').style.display = 'none';
     document.getElementById('portalAdminDetail').style.display = 'block';
     attachAdminDetailTrail(cardKey === 'KindleEmail' ? 'SMTP Configuration' : 'Admin & Recovery Email');
-    return;
-  }
-  if (cardKey === 'Supabase') {
-    renderStorageGuideIndex();
     return;
   }
   if (cardKey === 'Library') {
@@ -4566,15 +4617,10 @@ async function unlinkAdminLinkedService(service) {
   try { const res = await fetch(`/api/admin/services/${encodeURIComponent(service)}`, { method:'DELETE' }); const data = await res.json(); if (!res.ok || data.error) throw new Error(data.error || 'Unable to unlink service'); showToast('Service unlinked', 'success'); await loadAccount(); await loadAnnouncements(); renderAdminLinkedServices(); } catch (e) { showToast(e.message, 'error'); }
 }
 
-async function copySupabaseSetup() {
-  const text = document.getElementById('supabaseSetupSql')?.textContent || '';
-  try { await navigator.clipboard.writeText(text); showToast('Supabase SQL copied', 'success'); } catch (e) { showToast('Select and copy the SQL manually', 'error'); }
-}
-
 function adminFieldHelp(key) {
   const help = {
     PORTAL_URL:'The address members use to open this portal.', EMBYLINK_PUBLIC_URL:'Public EmbyLink address, if this installation uses EmbyLink.', AUTH_FORCE_OAUTH_LOGIN:'Hide the main password form when an enabled sign-in provider is available. Administrators retain the separate portal admin login.', AUTH_DISCORD_ENABLED:'Show the existing Discord sign-in option on the member login screen.', AUTH_WHMCS_ENABLED:'Show the WHMCS sign-in option on the member login screen.', AUTH_WHMCS_URL:'The WHMCS provider entry URL opened by the login button.', AUTH_WHMCS_CLIENT_ID:'Optional OAuth client ID used by your WHMCS sign-in bridge.', AUTH_WHMCS_CLIENT_SECRET:'Optional OAuth client secret used by your WHMCS sign-in bridge. Keep it private.', AUTH_EMBY_CONNECT_ENABLED:'Show the Emby Connect sign-in option on the member login screen.', AUTH_EMBY_CONNECT_URL:'The Emby Connect provider entry URL opened by the login button.',
-    DISCORD_CLIENT_ID:'Copy from Discord Developer Portal → OAuth2 → General.', DISCORD_CLIENT_SECRET:'Copy from Discord Developer Portal → OAuth2 → General. Keep private.', DISCORD_REDIRECT_URI:'Usually https://your-domain/auth/callback. Add this exact URL in Discord OAuth2.', DISCORD_GUILD_ID:'The Discord server ID with Developer Mode enabled.', DISCORD_ALLOWED_ROLE_IDS:'Comma-separated role IDs allowed to use member login.', DISCORD_IPTV_ROLE_IDS:'Comma-separated IPTV role IDs, if IPTV membership is role-based.', DISCORD_BOT_PRICING:'Saved provider pricing for the sanitized Discord bot template. This contains no credentials or private identifiers.', DISCORD_BOT_IDENTITY:'Saved bot name, username and optional avatar URL. This contains no Discord token.', DISCORD_BOT_DEPLOYMENT:'Saved VPS/Railway/GitHub deployment metadata. Tokens and secrets are never stored here.', DISCORD_BOT_TOKEN:'Discord Developer Portal → Bot → Reset Token. Saved encrypted and supplied only as DISCORD_TOKEN on the selected host.', DISCORD_BOT_CLIENT_ID:'Discord Developer Portal → OAuth2 → General → Application ID. Supplied as CLIENT_ID to the bot runtime and used to generate the bot invite.', DISCORD_BOT_GUILD_ID:'The Discord server ID where the bot is installed. Used to preselect the generated bot invite server.', DISCORD_BOT_PUBLIC_KEY:'Optional for this Gateway bot. Only needed later if an HTTP interactions endpoint verifies Discord signatures.', DISCORD_BOT_SUPABASE_URL:'Your Supabase project URL. Supplied as SUPABASE_URL to the bot runtime when using Supabase + Railway.', DISCORD_BOT_SUPABASE_ANON_KEY:'Supabase Project Settings → API → publishable/anon key. Supplied to this bot as SUPABASE_KEY when using Supabase + Railway.',
+    DISCORD_CLIENT_ID:'Copy from Discord Developer Portal → OAuth2 → General.', DISCORD_CLIENT_SECRET:'Copy from Discord Developer Portal → OAuth2 → General. Keep private.', DISCORD_REDIRECT_URI:'Usually https://your-domain/auth/callback. Add this exact URL in Discord OAuth2.', DISCORD_GUILD_ID:'The Discord server ID with Developer Mode enabled.', DISCORD_ALLOWED_ROLE_IDS:'Comma-separated role IDs allowed to use member login.', DISCORD_IPTV_ROLE_IDS:'Comma-separated IPTV role IDs, if IPTV membership is role-based.', DISCORD_BOT_PRICING:'Saved provider pricing for the sanitized Discord bot template. This contains no credentials or private identifiers.', DISCORD_BOT_IDENTITY:'Saved bot name, username and optional avatar URL. This contains no Discord token.', DISCORD_BOT_DEPLOYMENT:'Saved VPS/GitHub deployment metadata. Tokens and secrets are never stored here.', DISCORD_BOT_TOKEN:'Discord Developer Portal → Bot → Reset Token. Saved encrypted and supplied only as DISCORD_TOKEN on the selected host.', DISCORD_BOT_CLIENT_ID:'Discord Developer Portal → OAuth2 → General → Application ID. Supplied as CLIENT_ID to the bot runtime and used to generate the bot invite.', DISCORD_BOT_GUILD_ID:'The Discord server ID where the bot is installed. Used to preselect the generated bot invite server.', DISCORD_BOT_PUBLIC_KEY:'Optional for this Gateway bot. Only needed later if an HTTP interactions endpoint verifies Discord signatures.',
     EMBY_URL:'The Emby server URL reachable by the portal.', EMBY_DIRECT_URL:'The public Emby URL used in member links.', EMBY_API_KEY:'Emby Dashboard → API Keys → create or copy a key.', EMBY_TEMPLATE_USER_ID:'Optional Emby user used as the template for new sub-users.', EMBY_HEALTH_URL:'Optional health-check URL for the Emby installation.', EMBY_ROLE_IDS:'Optional: paste one or more Discord role IDs, separated by commas, to associate Discord membership with Emby.', SILO_URL:'The Silo server URL.', SILO_API_KEY:'The Silo administrator API key used to provision accounts.', SILO_ROLE_IDS:'Optional: paste one or more Discord role IDs, separated by commas, to associate Discord membership with Silo.', JELLYFIN_URL:'The Jellyfin server URL.', JELLYFIN_API_KEY:'Jellyfin administrator API key.', JELLYFIN_ROLE_IDS:'Optional: paste one or more Discord role IDs, separated by commas, to associate Discord membership with Jellyfin.', PLEX_URL:'The Plex server URL.', PLEX_TOKEN:'Plex authentication token.', PLEX_ROLE_IDS:'Optional: paste one or more Discord role IDs, separated by commas, to associate Discord membership with Plex.',
     IPTV_PANEL_URL:'The panel link supplied by your IPTV provider.', IPTV_API_KEY:'The API key supplied by your IPTV provider, if it uses keys.', IPTV_USERNAME:'The panel username, only if your provider requires it.', IPTV_PASSWORD:'The panel password, only if your provider requires it.',
     BOOKWAREHOUSE_URL:'BookWarehouse API endpoint used for the portal’s catalogue and metadata.', BOOKWAREHOUSE_API_KEY:'BookWarehouse API key. Keep it private; it is stored encrypted.', HARDCOVER_API_KEY:'Optional search enrichment from Hardcover. It improves request information but does not control BookWarehouse metadata.', COMICVINE_API_KEY:'Optional search enrichment from ComicVine. It improves comic request information but does not control BookWarehouse metadata.', GOOGLE_BOOKS_API_KEY:'Optional search enrichment from Google Books. It improves search and request information but does not control BookWarehouse metadata.', BOOKS_DIR:'Optional local VPS folder path for imported or locally stored book files.',
@@ -9211,15 +9257,19 @@ async function pollMainEmbyStatus() {
 /* Public-build UI guard: only configured, linked media services are shown. */
 (function () {
   const supported = ['emby', 'silo'];
+  const originalOpenAccountInfo = window.openAccountInfo;
   const labels = { emby: 'Emby', silo: 'Silo' };
   const icon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>';
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   function cleanLegacyUi() {
     document.querySelectorAll('[id*="iptv" i], [class*="iptv" i], [href*="iptv" i]').forEach(el => el.remove());
     document.querySelectorAll('body *').forEach(el => {
-      if (el.children.length === 0 && /Portal/i.test(el.textContent || '')) el.textContent = el.textContent.replace(/Portal/gi, 'Portal');
       ['alt','title','aria-label'].forEach(attr => {
-        if (el.hasAttribute(attr)) el.setAttribute(attr, el.getAttribute(attr).replace(/Portal/gi, 'Portal'));
+        if (el.hasAttribute(attr)) {
+          const current = el.getAttribute(attr);
+          const next = current.replace(/Portal/gi, 'Portal');
+          if (next !== current) el.setAttribute(attr, next);
+        }
       });
     });
   }
@@ -9261,7 +9311,7 @@ async function pollMainEmbyStatus() {
     modal.classList.add('open');
   };
   window.openAccountInfo = function (kind) {
-    if (kind !== 'linked') { return; }
+    if (kind !== 'linked') { return originalOpenAccountInfo?.(kind); }
     const panel = document.getElementById('accountInfoPanel'), grid = document.getElementById('accountOverviewCards');
     if (!panel || !grid) return;
     const linked = linkedServices();

@@ -1,6 +1,6 @@
 # Integration audit
 
-This audit covers the public GitHub build. It does not connect to an operator's Supabase project, media servers, Discord application, or hosting provider, so external authentication and provider responses must still be tested by each operator.
+This audit covers the public GitHub build. It does not connect to an operator's PostgreSQL project, media servers, Discord application, or hosting provider, so external authentication and provider responses must still be tested by each operator.
 
 ## Static checks performed
 
@@ -10,7 +10,7 @@ This audit covers the public GitHub build. It does not connect to an operator's 
 - Confirmed no active frontend calls remain for IPTV or VPS endpoints.
 - Confirmed `server.js` contains no IPTV or VPS integration terms.
 - Confirmed the Docker files use the public build marker and the isolated `portal-v1-public` service/container name.
-- Confirmed installation secrets remain environment/Supabase settings inputs rather than committed values.
+- Confirmed installation secrets remain environment/PostgreSQL settings inputs rather than committed values.
 
 The route comparison found one dynamic reader-progress path that requires runtime URL encoding; it corresponds to the backend route `/api/reader/progress/:book_title` and is expected.
 
@@ -30,4 +30,4 @@ Run these after setting up the operator's own values:
 
 ## Important limits
 
-A static route audit cannot prove that an API key has the required provider permissions, that a Supabase schema is installed, that OAuth redirect URLs are correct, or that a third-party service is reachable from the operator's host. Those checks require the operator's own installation values and must never use private production credentials.
+A static route audit cannot prove that an API key has the required provider permissions, that a PostgreSQL schema is installed, that OAuth redirect URLs are correct, or that a third-party service is reachable from the operator's host. Those checks require the operator's own installation values and must never use private production credentials.

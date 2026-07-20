@@ -1,11 +1,11 @@
 # Docker installation
 
-This is the provider-neutral Portal-v1 public-safe build. Docker gives each operator a separate application container, but it does not provide the Supabase project or provider credentials. Every operator must supply their own values.
+This is the provider-neutral Portal-v1 public-safe build. Docker gives each operator a separate application container, but it does not provide the PostgreSQL project or provider credentials. Every operator must supply their own values.
 
 ## Requirements
 
 - Docker Engine with Compose v2
-- A separate Supabase project
+- A separate PostgreSQL project
 - Installation-specific provider and Discord application values
 - GitHub access to this repository
 
@@ -19,7 +19,7 @@ cd /opt/portal-v1-public
 cp .env.example .env
 ```
 
-Edit .env with values for this installation only. Never copy a private portal .env into this directory. Run portal_settings.sql in the installation's Supabase project, then build and start:
+Edit .env with values for this installation only. Never copy a private portal .env into this directory. Apply `portal_schema.sql` to the PostgreSQL database, then build and start:
 
 ```bash
 docker compose -p portal-v1-public up -d --build
@@ -47,4 +47,21 @@ The container has no private portal data or credentials embedded in the image. K
 
 ## Safety boundary
 
-Do not reuse another portal's directory, .env, Supabase project, provider accounts, process name, or host port. Do not deploy this compose project over a different portal installation.
+Do not reuse another portal's directory, .env, PostgreSQL project, provider accounts, process name, or host port. Do not deploy this compose project over a different portal installation.
+
+## Clean public deployment
+
+Use a unique Compose project name and a named PostgreSQL volume so this installation cannot overwrite another Portal:
+
+```bash
+cp .env.example .env
+docker compose -p portal-v1-public up -d --build
+docker compose -p portal-v1-public ps
+curl -i http://127.0.0.1:3100/api/health
+```
+
+PostgreSQL must become healthy before the Portal starts. Keep the host `.env` outside Git and back up the named database volume before upgrades. The VPS metadata card may contain a host, SSH port, and SSH user, but never private keys, passwords, tokens, API keys, or database secrets. The separately downloaded Discord bot uses its own Compose service and environment file.
+
+## Clean public deployment
+
+Use a unique Compose project name and a named PostgreSQL volume. PostgreSQL must become healthy before the Portal starts. Keep the host `.env` outside Git and back up the volume before upgrades. VPS metadata may include host, SSH port, and SSH user, but never private keys, passwords, tokens, API keys, or database secrets.

@@ -70,10 +70,14 @@ node --env-file=.env index.js register
 node --env-file=.env index.js
 ```
 
-The `.env` file must contain the real values locally or in the host environment, but must never be committed. If environment variables are already configured by Railway, run `npm run register` as a Railway one-off command instead.
+The `.env` file must contain the real values locally or in the host environment, but must never be committed. Keep it beside the bot on the VPS with permissions `600`.
 
-Railway: connect the private GitHub repository, add the variables under Service → Variables, set the pre-deploy command to `npm run register`, and set the start command to `npm start`. Supabase SQL must be run once before the bot starts.
-
-For Supabase + Railway, run the portal’s Discord Bot Integration SQL, add the variables in Railway → Service → Variables, and connect the private GitHub repository. For another host, keep `.env` in the host secret store or beside the bot with permissions `600`. Supabase remains the shared account store.
+For the public PostgreSQL build, run the bot beside the portal with PM2 or Docker Compose. Keep the PostgreSQL connection and all provider credentials in the VPS environment only. Verify the portal health endpoint and bot logs after deployment.
 
 Never commit `.env`, bot tokens, service-role keys, provider API keys, private IDs, or private adapter code.
+
+## Generated archive workflow
+
+The Portal Discord Bot card generates one complete `.tar.gz` folder containing the bot source, package manifest, Docker files, PostgreSQL adapter/schema, `env.example`, `bot-config.json`, and deployment documentation. Configure providers, pricing, roles, and announcements in Portal before downloading it.
+
+The shared Discord Server/Guild ID is read from Portal Authentication & Access. Channel IDs and allowed role IDs are entered separately under Permissions & Announcements. Create `.env` on the bot host only. Run `npm run register` after the first deployment and after command, provider, or pricing changes; starting the bot alone does not publish changed slash commands.

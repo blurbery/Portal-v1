@@ -13,7 +13,7 @@ const {
   SlashCommandBuilder, SlashCommandIntegerOption, SlashCommandStringOption, SlashCommandUserOption,
   StringSelectMenuBuilder, StringSelectMenuOptionBuilder,
 } = require('discord.js');
-const { createClient } = require('@supabase/supabase-js');
+const { createDatabase } = require('./db');
 const fs = require('fs');
 const crypto = require('crypto');
 
@@ -30,7 +30,7 @@ const fileConfig = (() => { try { return JSON.parse(fs.readFileSync('./bot-confi
 const pricing = fileConfig.pricing || (() => { try { return JSON.parse(process.env.PRICING_JSON || '{}'); } catch { return {}; } })();
 const selectedProviderConfig = pricing.providers || {};
 const providers = Object.fromEntries(Object.entries(providerDefinitions).filter(([key, p]) => process.env[p.url] && process.env[p.apiKey] && (!Object.keys(selectedProviderConfig).length || selectedProviderConfig[key]?.enabled !== false)));
-const supabase = process.env.SUPABASE_URL && process.env.SUPABASE_KEY ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY) : null;
+const db = process.env.DATABASE_URL ? createDatabase() : null;
 const portalUrl = String(process.env.PORTAL_URL || fileConfig.portalUrl || '').trim().replace(/\/+$/, '');
 
 function randomPassword() { return String(crypto.randomInt(100000, 1000000)); }
@@ -47,7 +47,7 @@ function durationDetails(provider, duration, trial = false) {
   return { label: `${months} month${months === 1 ? '' : 's'}`, days: months * 30, isTrial: false, isLifetime: false };
 }
 function expiryFor(plan) { return plan.days == null ? null : new Date(Date.now() + plan.days * 86400000).toISOString(); }
-function requireDatabase() { if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_KEY are required so the portal can see bot-created accounts.'); }
+function requireDatabase() { if (!db) throw new Error('DATABASE_URL are required so the portal can see bot-created accounts.'); }
 async function jsonRequest(url, options = {}) {
   const response = await fetch(url, { ...options, headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...(options.headers || {}) } });
   const text = await response.text(); let data = null;
@@ -82,23 +82,23 @@ async function persistAccount(provider, input, created, plan) {
   const discordId = String(input.discordUserId || '');
   const nativeTable = provider === 'emby' ? 'emby_accounts' : provider === 'silo' ? 'silo_accounts' : null;
   const native = nativeTable === 'emby' ? { discord_user_id: discordId, emby_user_id: created.id, parent_emby_user_id: input.parentProviderUserId || null, username: created.username, password: input.password, is_trial: plan.isTrial, is_lifetime: plan.isLifetime, connections: input.streams, total_pool: plan.isLifetime ? input.streams : null, expires_at: input.expiresAt } : nativeTable === 'silo' ? { discord_user_id: discordId, silo_user_id: created.id, parent_silo_user_id: input.parentProviderUserId || null, username: created.username, password: input.password, is_trial: plan.isTrial, is_lifetime: plan.isLifetime, connections: input.streams, total_pool: plan.isLifetime ? input.streams : null, expires_at: input.expiresAt } : null;
-  if (native) { const { error } = await supabase.from(nativeTable).insert(native); if (error) throw new Error(`Portal account storage failed: ${error.message}`); }
-  const { error } = await supabase.from('discord_bot_memberships').insert({ discord_user_id: discordId, provider, provider_user_id: created.id, username: created.username, plan_key: input.duration, is_trial: plan.isTrial, is_lifetime: plan.isLifetime, expires_at: input.expiresAt, connections: input.streams, parent_membership_id: input.parentMembershipId || null });
+  if (native) { const { error } = await db.from(nativeTable).insert(native); if (error) throw new Error(`Portal account storage failed: ${error.message}`); }
+  const { error } = await db.from('discord_bot_memberships').insert({ discord_user_id: discordId, provider, provider_user_id: created.id, username: created.username, plan_key: input.duration, is_trial: plan.isTrial, is_lifetime: plan.isLifetime, expires_at: input.expiresAt, connections: input.streams, parent_membership_id: input.parentMembershipId || null });
   if (error) throw new Error(`Bot membership storage failed: ${error.message}`);
 }
 async function findLifetimeParent(provider, discordUserId) {
   requireDatabase();
   const table = provider === 'emby' ? 'emby_accounts' : provider === 'silo' ? 'silo_accounts' : null;
   if (table) {
-    const { data, error } = await supabase.from(table).select('*').eq('discord_user_id', String(discordUserId)).is(provider === 'emby' ? 'parent_emby_user_id' : 'parent_silo_user_id', null).eq('is_lifetime', true).maybeSingle();
+    const { data, error } = await db.from(table).select('*').eq('discord_user_id', String(discordUserId)).is(provider === 'emby' ? 'parent_emby_user_id' : 'parent_silo_user_id', null).eq('is_lifetime', true).maybeSingle();
     if (error) throw new Error(`Could not find the Lifetime parent: ${error.message}`);
     if (data) {
       const providerUserId = provider === 'emby' ? data.emby_user_id : data.silo_user_id;
-      const { data: membership } = await supabase.from('discord_bot_memberships').select('id').eq('discord_user_id', String(discordUserId)).eq('provider', provider).eq('provider_user_id', String(providerUserId)).maybeSingle();
+      const { data: membership } = await db.from('discord_bot_memberships').select('id').eq('discord_user_id', String(discordUserId)).eq('provider', provider).eq('provider_user_id', String(providerUserId)).maybeSingle();
       return { ...data, provider_user_id: providerUserId, membership_id: membership?.id || null };
     }
   }
-  const { data, error } = await supabase.from('discord_bot_memberships').select('*').eq('discord_user_id', String(discordUserId)).eq('provider', provider).eq('is_lifetime', true).is('parent_membership_id', null).maybeSingle();
+  const { data, error } = await db.from('discord_bot_memberships').select('*').eq('discord_user_id', String(discordUserId)).eq('provider', provider).eq('is_lifetime', true).is('parent_membership_id', null).maybeSingle();
   if (error) throw new Error(`Could not find the Lifetime parent: ${error.message}`);
   return data ? { ...data, membership_id: data.id } : null;
 }
@@ -149,7 +149,7 @@ if (process.argv[2] === 'register') { register().catch(error => { console.error(
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers] });
 const providerCreateForCommand = name => Object.entries(providers).find(([, p]) => name === `${p.command}trial` || name === `${p.command}add` || name === `${p.command}addsub`);
-async function saveMembership(row) { if (supabase) await supabase.from('discord_bot_memberships').upsert(row, { onConflict: 'discord_user_id,provider,provider_user_id' }); }
+async function saveMembership(row) { if (db) await db.from('discord_bot_memberships').upsert(row, { onConflict: 'discord_user_id,provider,provider_user_id' }); }
 function priceText(provider) {
   const rows = pricing.providers?.[provider]?.prices || pricing[provider] || {};
   const lines = [];
