@@ -9326,7 +9326,7 @@ async function pollMainEmbyStatus() {
     const linked = linkedServices();
     const source = accountData?.linkedServices || accountData?.adminServices || {};
     const rows = linked.length
-      ? linked.map(key => '<div class="account-linked-service"><div><strong>'+labels[key]+'</strong><small>'+esc(source[key]?.username || 'Connected')+'</small></div><div style="display:flex;align-items:center;gap:.55rem"><span style="color:var(--success)">Linked</span>'+(accountData?.adminLogin === true ? '<button class="btn-sm" onclick="unlinkAccountService(\\''+key+'\\')">Unlink</button>' : '')+'</div></div>').join('')
+      ? linked.map(key => "<div class=\"account-linked-service\"><div><strong>" + labels[key] + "</strong><small>" + esc(source[key]?.username || 'Connected') + "</small></div><div style=\"display:flex;align-items:center;gap:.55rem\"><span style=\"color:var(--success)\">Linked</span>" + (accountData?.adminLogin === true ? "<button class=\"btn-sm\" onclick=\"unlinkAccountService('" + key + "')\">Unlink</button>" : "") + "</div></div>").join('')
       : '<div class="account-linked-service"><div><strong>No media servers linked</strong><small>Connect a configured server to this administrator account.</small></div></div>';
     grid.style.display = 'none';
     panel.style.display = 'block';
