@@ -86,3 +86,8 @@ A static route audit cannot prove that an API key has the required provider perm
 - Simulate an expired token and confirm it is rejected.
 - Confirm an Emby-side password failure does not produce a false success or overwrite the Portal password record.
 - Confirm Silo-only accounts are not presented as supported by this Emby recovery flow.
+
+
+## Multi-server recovery verification
+
+The Forgot Password token lookup covers both `emby_accounts` and `silo_accounts`. Verify an Emby reset calls the Emby password API and a Silo reset calls the Silo admin password API, then confirm the shared token is consumed only after the provider accepts the new password.
