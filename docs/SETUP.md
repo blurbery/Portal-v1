@@ -42,7 +42,7 @@ Pull updates into a staging directory, back up `.env` and the database, run `npm
 
 ## Required configuration
 
-Copy `.env.example` to `.env` and set the PostgreSQL connection values before starting the server. The schema is `portal_schema.sql`; `portal_schema.sql` is not required for the public PostgreSQL build.
+Copy `.env.example` to `.env` and set the PostgreSQL connection values before starting the server. The schema is `portal_schema.sql` and is required for a new public PostgreSQL database.
 
 After the first admin login, configure General Settings, Authentication & Access, Media Servers, Permissions & Announcements, and then the separate Discord Bot card. The Bot card reads the shared Discord Server ID from Authentication & Access. Enter announcement channel IDs and allowed media-server role IDs explicitly.
 
@@ -95,6 +95,32 @@ docker compose -p portal-v1-public logs --tail=200 portal-v1-public
 ```
 
 Then verify administrator login, member login, provider linking, navigation gating, library access, requests if enabled, Kindle delivery if enabled, bot command registration, and PostgreSQL backups.
+
+### Seerr navigation and issues
+
+When Seerr is enabled, the member sidebar shows a **Requests** dropdown above **Library**. It links to Discover, Movies, TV Shows, My Requests, and My Issues. The homepage Search/Request buttons are intentionally not used; library searches and requests remain in their dedicated Library categories.
+
+Seerr's **My Issues** area is for media/request issues handled by Seerr. **Portal Issues** is for Portal itself, account access, playback, or general service-support problems. The Portal page calls Seerr through the server-side API proxy; members do not leave Portal or receive the Seerr API key.
+
+Portal issue reports, BookWarehouse library requests, Seerr request records, and Seerr issue records are stored or mirrored in the Portal PostgreSQL database. Configure a matching Seerr user identity for each Portal member; the server matches email or provider username before allowing Seerr actions. Seerr remains the media backend, while Portal is the member-facing interface.
+
+The Portal-native Seerr flow is server-hosted. In Administration → Seerr, use the three tabs:
+
+- **Seerr:** set the Seerr URL and API key, then test the connection.
+- **Radarr & Sonarr:** set each automation service URL and API key, then test each connection from the Portal server. Seerr must also be configured to use those same Radarr/Sonarr services; Portal does not replace Seerr's download orchestration.
+- **Portal Permissions:** enable requests, movie/TV requests, personal history, media issues, and the linked provider memberships that may use Seerr.
+
+The equivalent environment values are `SEERR_URL`, `SEERR_API_KEY`, `RADARR_URL`, `RADARR_API_KEY`, `SONARR_URL`, `SONARR_API_KEY`, `SEERR_ENABLED=true`, `REQUESTS_ENABLED=true`, and the relevant `REQUESTS_MOVIES_ENABLED`, `REQUESTS_SHOWS_ENABLED`, `REQUESTS_MY_ENABLED`, and `REQUESTS_ISSUES_ENABLED` switches. Select which linked provider memberships may use Seerr with the `SEERR_ACCESS_*` settings. The Seerr, Radarr, and Sonarr API keys stay server-side and are stored through the encrypted Portal settings path; they are never sent to members. A member must both have an enabled Portal membership and match a Seerr user by email or provider username.
+
+The Portal page uses Seerr's server API for Discover, search, movie/TV details, requests, and media issues. **My Requests** and **My Issues** are filtered to the signed-in Seerr user. Portal mirrors returned activity in `seerr_history` and can show that local history if Seerr is temporarily unavailable. Seerr remains authoritative for live request and issue workflow state.
+
+For an existing PostgreSQL volume, apply the additive migration once from the repository root after backing up the database:
+
+```bash
+docker compose -p portal-v1-public exec -T db psql -U portal -d portal < migrations/002-seerr-portal-flow.sql
+```
+
+New installations receive the two tables from `portal_schema.sql`. Do not delete or recreate the PostgreSQL volume during this migration.
 
 ## Admin and recovery email
 
