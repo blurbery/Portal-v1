@@ -19,7 +19,7 @@ cd /opt/portal-v1-public
 cp .env.example .env
 ```
 
-Edit .env with values for this installation only. Never copy a private portal .env into this directory. Run portal_settings.sql in the installation's PostgreSQL project, then build and start:
+Edit .env with values for this installation only. Never copy a private portal .env into this directory. Apply `portal_schema.sql` to the PostgreSQL database, then build and start:
 
 ```bash
 docker compose -p portal-v1-public up -d --build
@@ -48,3 +48,16 @@ The container has no private portal data or credentials embedded in the image. K
 ## Safety boundary
 
 Do not reuse another portal's directory, .env, PostgreSQL project, provider accounts, process name, or host port. Do not deploy this compose project over a different portal installation.
+
+## Clean public deployment
+
+Use a unique Compose project name and a named PostgreSQL volume so this installation cannot overwrite another Portal:
+
+```bash
+cp .env.example .env
+docker compose -p portal-v1-public up -d --build
+docker compose -p portal-v1-public ps
+curl -i http://127.0.0.1:3100/api/health
+```
+
+PostgreSQL must become healthy before the Portal starts. Keep the host `.env` outside Git and back up the named database volume before upgrades. The VPS metadata card may contain a host, SSH port, and SSH user, but never private keys, passwords, tokens, API keys, or database secrets. The separately downloaded Discord bot uses its own Compose service and environment file.
