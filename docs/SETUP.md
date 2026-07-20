@@ -98,7 +98,7 @@ Then verify administrator login, member login, provider linking, navigation gati
 
 ## Admin and recovery email
 
-The **Admin & Recovery Email** card is separate from **SMTP Configuration**, which is used for Kindle delivery. The Admin card currently uses Resend for Portal-generated mail.
+The **Admin & Recovery Email** card is separate from **SMTP Configuration**, which is used for Kindle delivery. The Admin card supports Resend or another SMTP provider for Portal-generated mail.
 
 Configure it after the first administrator login:
 
@@ -114,3 +114,7 @@ Member recovery is configured by each member under Account → Recovery Email. T
 Test the live flow after deployment with a non-production member account: save a recovery address, request a reset, use the emailed link once, confirm it cannot be reused, and confirm an expired link is rejected. The Admin card does not reset the bootstrap Portal administrator password; use Administration → Administrator Accounts for that password.
 
 If the installation still has legacy RESEND_API_KEY and RESEND_FROM_EMAIL settings, use **Use Current Resend Setup** once from the Admin & Recovery Email card, then save the new separated settings. Never commit the key, sender credentials, recovery addresses, or support inbox to Git.
+
+### Choosing Resend or SMTP
+
+For Resend, enter the API key and a sender on a verified domain. For SMTP, select **Other SMTP** and enter the host, port, security mode, username, password or app password, sender, and support inbox. Use port 587 with SSL/TLS off for STARTTLS, or port 465 with SSL/TLS enabled. **Test Connection** verifies the selected provider and intentionally sends no email. After saving, test an actual recovery message with a non-production member account.
