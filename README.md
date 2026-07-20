@@ -110,3 +110,10 @@ Back up PostgreSQL and the host `.env` separately. The `.env` bootstrap values a
 Administration → Users is the shared management view for provider accounts stored in PostgreSQL. Emby and Silo are the supported public account-provisioning paths: accounts created from the Users card or the Discord bot are written to the same provider tables, so they appear in the same tabs and share the same parent/sub-user and expiry records. A Discord user ID is required when creating an account manually so Portal and bot identity remain linked.
 
 Plex and Jellyfin tabs may appear when their server credentials are configured, but they are configuration/adapter slots only in this release. Their native account-creation and session bridges are not complete, and the Discord bot must not be treated as a supported Plex/Jellyfin provisioning path. Do not enable those member flows until their provider bridges are implemented and tested.
+
+
+## Profile recovery email
+
+The Profile → Recovery Email card stores a member-owned recovery address on the linked Emby or Silo account. The sign-in page's Forgot Password flow looks up that address, creates a 30-minute single-use token, and sends the reset link through the configured **Admin & Recovery Email** provider. The reset page verifies the token, asks Emby to change the password, and only then updates the Portal record and consumes the token.
+
+Admin mail supports either Resend or SMTP. SMTP uses the Admin card's host, port, security, credentials, and sender; Kindle SMTP settings are separate. The request response intentionally does not reveal whether an address exists. Plex/Jellyfin are not included because their account bridges are not implemented.

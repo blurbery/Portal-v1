@@ -2038,7 +2038,7 @@
             <span style="opacity:0.7"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
             <span class="card-title" style="margin-bottom:0">Recovery Email</span>
           </div>
-          <p style="font-size:0.83rem;color:var(--muted);line-height:1.6;margin-bottom:1rem">Used to reset your Emby password if you get locked out. Never shared or used for marketing.</p>
+          <p style="font-size:0.83rem;color:var(--muted);line-height:1.6;margin-bottom:1rem">Used to reset your Emby or Silo password if you get locked out. Never shared or used for marketing.</p>
           <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);font-weight:600;margin-bottom:0.4rem">Current Recovery Email</div>
           <div style="font-size:0.9rem;font-weight:500;margin-bottom:0.75rem" id="settingsRecoveryEmailCurrent" style="color:var(--muted)">Not set</div>
           <div style="display:flex;gap:0.5rem">
@@ -5791,7 +5791,7 @@ function openAccountInfo(kind) {
     body = `<p>Use this OPDS address in Panels or another compatible comic app. Sign in with your normal portal username and password. Your comics remain on the live library service rather than being bulk-downloaded to the VPS.</p><label class="account-field-label">Panels / OPDS URL</label><div style="display:flex;gap:.5rem;flex-wrap:wrap"><input id="accountOpdsUrl" class="input-sm" readonly value="${window.location.origin}/opds" style="flex:1;min-width:220px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem"><button class="btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('accountOpdsUrl').value);showToast('OPDS URL copied','success')">Copy</button></div><p style="margin-bottom:0">In your app, add an OPDS server, paste this URL, and authenticate using your portal login.</p>`;
   } else if (kind === 'recovery') {
     title = 'Recovery Email';
-    body = `<p>Your recovery email is used to reset your portal or Emby password if you get locked out. It is not shown to other members.</p><label class="account-field-label">Recovery email</label><div style="display:flex;gap:.5rem;flex-wrap:wrap"><input id="accountRecoveryEmail" class="input-sm" type="email" placeholder="your@email.com" value="${v3Escape(acc.recovery_email || '')}" style="flex:1;min-width:220px"><button class="btn-sm" onclick="saveAccountEmail('recovery',this)">Save</button></div><div id="accountRecoveryError" class="account-inline-error" style="display:none"></div>`;
+    body = `<p>Your recovery email is used to reset your Emby or Silo password if you get locked out. It is not shown to other members.</p><label class="account-field-label">Recovery email</label><div style="display:flex;gap:.5rem;flex-wrap:wrap"><input id="accountRecoveryEmail" class="input-sm" type="email" placeholder="your@email.com" value="${v3Escape(acc.recovery_email || '')}" style="flex:1;min-width:220px"><button class="btn-sm" onclick="saveAccountEmail('recovery',this)">Save</button></div><div id="accountRecoveryError" class="account-inline-error" style="display:none"></div>`;
   } else if (kind === 'linked' && !acc.is_sub) {
     title = 'Linked Services';
     const services = accountData.adminServices || accountData.linkedServices || {};
