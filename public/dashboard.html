@@ -5464,52 +5464,42 @@ function formatTime(isoString) {
 
 function renderPanel(data) {
   const body = document.getElementById('panelBody');
-
-  // Update home status card
+  const services = Array.isArray(data.services) ? data.services : [];
+  const offline = services.filter(service => !service.online);
   const homeDot = document.getElementById('homeStatusDot');
   const homeText = document.getElementById('homeStatusText');
   const homeEvents = document.getElementById('homeStatusEvents');
+
   if (homeDot && homeText) {
-    if (data.online) {
-      homeDot.className = 'status-dot online';
-      homeText.style.color = 'var(--success)';
-      homeText.textContent = 'Online';
-    } else {
-      homeDot.className = 'status-dot offline';
-      homeText.style.color = 'var(--danger)';
-      homeText.textContent = 'Offline';
-    }
+    const hasHealth = services.length > 0;
+    const allOnline = hasHealth && offline.length === 0;
+    homeDot.className = `status-dot ${allOnline ? 'online' : hasHealth ? 'offline' : 'online'}`;
+    homeText.style.color = allOnline || !hasHealth ? 'var(--success)' : 'var(--danger)';
+    homeText.textContent = !hasHealth ? 'No health endpoints configured' : offline.length ? `${offline.length} server${offline.length === 1 ? '' : 's'} offline` : 'All media servers online';
   }
   if (homeEvents) homeEvents.innerHTML = '';
-  let html = '';
 
-  if (!data.online && data.currentDowntime) {
-    const since = new Date(data.currentDowntime.startedAt);
-    const elapsed = Math.floor((new Date() - since) / 1000);
-    html += `
-      <div class="current-offline">
-        <div class="current-offline-label">● Server currently offline</div>
-        <div class="current-offline-time">Down since ${formatTime(data.currentDowntime.startedAt)} (${formatDuration(elapsed)})</div>
-      </div>
-    `;
+  if (!services.length) {
+    body.innerHTML = '<div class="panel-empty">No media-server health endpoints are configured<br><span style="font-size:0.8rem">The administrator can add them under Media Server Health</span></div>';
+    return;
   }
 
-  if (data.log && data.log.length > 0) {
-    const recent = data.log.slice(0, 5); // already sorted newest first by server
-    html += recent.map(event => `
+  let html = services.map(service => {
+    const current = service.currentDowntime;
+    const currentElapsed = current ? Math.max(0, Math.floor((Date.now() - new Date(current.startedAt)) / 1000)) : 0;
+    const currentHtml = !service.online && current
+      ? `<div class="current-offline"><div class="current-offline-label">● ${service.label} currently offline</div><div class="current-offline-time">Down since ${formatTime(current.startedAt)} (${formatDuration(currentElapsed)})</div></div>`
+      : '';
+    const events = (service.log || []).slice(0, 5).map(event => `
       <div class="downtime-item">
-        <div class="downtime-item-header">
-          <span class="downtime-badge-resolved">Resolved</span>
-          <span class="downtime-duration">${event.duration != null ? formatDuration(event.duration) + ' downtime' : 'Duration unknown'}</span>
-        </div>
-        <div class="downtime-time">⬇️ Offline: ${formatTime(event.startedAt)}</div>
-        <div class="downtime-time">⬆️ Online: ${formatTime(event.resolvedAt)}</div>
-      </div>
-    `).join('');
-  } else if (!data.currentDowntime) {
-    html = '<div class="panel-empty">No downtime in the last 7 days<br><span style="font-size:0.8rem">Server has been running smoothly</span></div>';
-  }
+        <div class="downtime-item-header"><span class="downtime-badge-resolved">${event.resolved ? 'Resolved' : 'Active'}</span><span class="downtime-duration">${event.duration != null ? formatDuration(event.duration) + ' downtime' : event.resolved ? 'Duration unknown' : 'Ongoing'}</span></div>
+        <div class="downtime-time">⬇️ ${service.label} offline: ${formatTime(event.startedAt)}</div>
+        ${event.resolvedAt ? `<div class="downtime-time">⬆️ ${service.label} online: ${formatTime(event.resolvedAt)}</div>` : ''}
+      </div>`).join('');
+    return `<div class="health-service-group"><div class="health-service-heading"><span class="status-dot ${service.online ? 'online' : 'offline'}"></span><strong>${service.label}</strong><span class="health-service-state">${service.online ? 'Online' : 'Offline'}</span></div>${currentHtml}${events}</div>`;
+  }).join('');
 
+  if (!html) html = '<div class="panel-empty">No downtime events recorded</div>';
   body.innerHTML = html;
 }
 
@@ -5522,31 +5512,34 @@ async function checkServerStatus() {
     const data = await res.json();
     const dot = document.getElementById('statusDot');
     const text = document.getElementById('statusText');
+    const services = Array.isArray(data.services) ? data.services : [];
+    const offline = services.filter(service => !service.online);
 
-    if (data.online) {
+    if (!services.length) {
       dot.className = 'status-dot online';
       text.className = 'status-label-text online';
-      text.textContent = 'Server Online';
-    } else {
+      text.textContent = 'No health endpoints';
+    } else if (offline.length) {
       dot.className = 'status-dot offline';
       text.className = 'status-label-text offline';
-      text.textContent = 'Server Offline';
+      text.textContent = `${offline.length} server${offline.length === 1 ? '' : 's'} offline`;
+    } else {
+      dot.className = 'status-dot online';
+      text.className = 'status-label-text online';
+      text.textContent = services.length === 1 ? `${services[0].label} Online` : 'Media Servers Online';
     }
 
-    // Check for new events
     const newEvents = (data.log?.length || 0) - lastLogLength;
     if (newEvents > 0 && lastLogLength > 0) {
       unreadCount += newEvents;
       if (!panelOpen) updateBadge();
     }
     lastLogLength = data.log?.length || 0;
-
-    renderPanel(data); // Always pre-render so panel opens instantly
-
+    renderPanel(data);
   } catch(e) {
     document.getElementById('statusDot').className = 'status-dot offline';
     document.getElementById('statusText').className = 'status-label-text offline';
-    document.getElementById('statusText').textContent = 'Server Offline';
+    document.getElementById('statusText').textContent = 'Health check unavailable';
   }
 }
 
@@ -6020,7 +6013,7 @@ async function loadDowntimeHistory(days) {
     list.innerHTML = data.log.map(e => `
       <div class="dh-item">
         <div class="dh-header">
-          <span class="dh-title">${e.resolved ? 'Resolved' : 'Active'}</span>
+          <span class="dh-title">${e.providerLabel ? e.providerLabel + ' · ' : ''}${e.resolved ? 'Resolved' : 'Active'}</span>
           <span class="dh-duration">${e.duration != null ? formatDuration(e.duration) : e.resolved ? 'Duration unknown' : 'Ongoing'}</span>
         </div>
         <div class="dh-time">⬇️ Offline: ${formatTime(e.startedAt)}</div>
