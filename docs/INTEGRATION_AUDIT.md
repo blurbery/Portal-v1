@@ -35,7 +35,7 @@ A static route audit cannot prove that an API key has the required provider perm
 
 ## Admin and recovery email verification
 
-- Confirm Administration → Admin & Recovery Email shows **Configured** only when the API key and sender are present.
+- Confirm Administration → Admin & Recovery Email shows **Configured** only when the selected provider has its required host/API key and sender configured.
 - Use **Test Connection** and confirm it reports Resend/domain verification without sending an email.
 - Save a member recovery address under Account.
 - Request a reset from the sign-in page and confirm the 30-minute link works once and cannot be reused.
