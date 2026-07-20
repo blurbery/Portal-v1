@@ -2,7 +2,7 @@
 
 ## 1. PostgreSQL
 
-Create a new PostgreSQL project. In SQL Editor, run `portal_settings.sql`. Keep the database service key server-side only. The browser must never receive it.
+Install PostgreSQL for this Portal instance. From the repository root, run `psql "$DATABASE_URL" -f portal_schema.sql` (or apply `portal_schema.sql` with your PostgreSQL administrator). Keep the database password and other secrets server-side only; the browser must never receive them.
 
 ## 2. Environment
 
@@ -42,3 +42,10 @@ Create the repository as private before pushing. Review `git diff --cached` and 
 
 Pull updates into a staging directory, back up `.env` and the database, run `npm run check`, then restart the process. Do not overwrite the live/private portal from this repository without a tested migration plan.
 
+## Required configuration
+
+Copy `.env.example` to `.env` and set the PostgreSQL connection values before starting the server. The schema is `portal_schema.sql`; `portal_settings.sql` is not required for the public PostgreSQL build.
+
+After the first admin login, configure General Settings, Authentication & Access, Media Servers, Permissions & Announcements, and then the separate Discord Bot card. The Bot card reads the shared Discord Server ID from Authentication & Access. Enter announcement channel IDs and allowed media-server role IDs explicitly.
+
+Emby and Silo are the active provider paths. Plex and Jellyfin may be stored as provider configuration, but must not be presented as fully operational without their tested user/session bridges.
