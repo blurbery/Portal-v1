@@ -6522,8 +6522,8 @@ const CV_HEADERS = { 'User-Agent': 'Portal v1/1.0 (portal.example.invalid)' };
 
 function kavitaOpdsUrl() {
   const direct = String(KAVITA_OPDS_URL || process.env.KAVITA_OPDS_URL || '').trim();
-  if (direct) return direct.replace(/\\/$/, '');
-  const base = String(KAVITA_URL || process.env.KAVITA_URL || '').trim().replace(/\\/$/, '');
+  if (direct) return direct.replace(/\/$/, '');
+  const base = String(KAVITA_URL || process.env.KAVITA_URL || '').trim().replace(/\/$/, '');
   const key = String(KAVITA_API_KEY || process.env.KAVITA_API_KEY || '').trim();
   return base && key ? `${base}/api/opds/${encodeURIComponent(key)}` : '';
 }
