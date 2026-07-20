@@ -61,3 +61,7 @@ curl -i http://127.0.0.1:3100/api/health
 ```
 
 PostgreSQL must become healthy before the Portal starts. Keep the host `.env` outside Git and back up the named database volume before upgrades. The VPS metadata card may contain a host, SSH port, and SSH user, but never private keys, passwords, tokens, API keys, or database secrets. The separately downloaded Discord bot uses its own Compose service and environment file.
+
+## Clean public deployment
+
+Use a unique Compose project name and a named PostgreSQL volume. PostgreSQL must become healthy before the Portal starts. Keep the host `.env` outside Git and back up the volume before upgrades. VPS metadata may include host, SSH port, and SSH user, but never private keys, passwords, tokens, API keys, or database secrets.
