@@ -3474,7 +3474,7 @@ function chooseAdminService(service) {
 
 function openAdminServiceLogin(service = 'emby') {
   const modal = document.getElementById('adminServiceLoginModal');
-  if (!modal || accountData?.account?.is_sub) return;
+  if (!modal || accountData?.account?.is_sub || accountData?.adminLogin !== true) return;
   const select = document.getElementById('adminServiceLoginService');
   if (select) select.value = ['emby','silo'].includes(service) ? service : 'emby';
   document.getElementById('adminServiceLoginUsername').value = '';
@@ -9315,7 +9315,7 @@ async function pollMainEmbyStatus() {
     document.getElementById('adminServiceLoginUsername').value = '';
     document.getElementById('adminServiceLoginPassword').value = '';
     const error = document.getElementById('adminServiceLoginError');
-    if (error) { error.textContent = choices.length ? '' : 'Configure Emby or Silo in the media-server settings before linking an account.'; error.style.display = choices.length ? 'none' : 'block'; }
+    if (error) { error.textContent = choices.length ? '' : 'Configure at least one media server in Administration → Media Servers before linking an account.'; error.style.display = choices.length ? 'none' : 'block'; }
     window.updateAdminServiceLoginCopy();
     modal.classList.add('open');
   };
@@ -9326,11 +9326,11 @@ async function pollMainEmbyStatus() {
     const linked = linkedServices();
     const source = accountData?.linkedServices || accountData?.adminServices || {};
     const rows = linked.length
-      ? linked.map(key => '<div class="account-linked-service"><div><strong>'+labels[key]+'</strong><small>'+esc(source[key]?.username || 'Connected')+'</small></div><div style="display:flex;align-items:center;gap:.55rem"><span style="color:var(--success)">Linked</span><button class="btn-sm" onclick="unlinkAccountService(\''+key+'\')">Unlink</button></div></div>').join('')
+      ? linked.map(key => "<div class=\"account-linked-service\"><div><strong>" + labels[key] + "</strong><small>" + esc(source[key]?.username || 'Connected') + "</small></div><div style=\"display:flex;align-items:center;gap:.55rem\"><span style=\"color:var(--success)\">Linked</span>" + (accountData?.adminLogin === true ? "<button class=\"btn-sm\" onclick=\"unlinkAccountService('" + key + "')\">Unlink</button>" : "") + "</div></div>").join('')
       : '<div class="account-linked-service"><div><strong>No media servers linked</strong><small>Connect a configured server to this administrator account.</small></div></div>';
     grid.style.display = 'none';
     panel.style.display = 'block';
-    panel.innerHTML = '<button class="btn-sm" onclick="renderAccountPage()">← Back to account</button><div style="margin-top:1.1rem"><h3>Linked Media Servers</h3><p>Only servers configured for this Portal installation appear here.</p><div style="display:grid;gap:.7rem">'+rows+'</div><div style="margin-top:1rem"><button class="btn-sm" onclick="openAdminServiceLogin()">＋ Add a service</button></div></div>';
+    panel.innerHTML = '<button class="btn-sm" onclick="renderAccountPage()">← Back to account</button><div style="margin-top:1.1rem"><h3>Linked Media Servers</h3><p>Only servers configured for this Portal installation appear here. Linking and unlinking service credentials is restricted to the portal administrator.</p><div style="display:grid;gap:.7rem">'+rows+'</div>'+(accountData?.adminLogin === true ? '<div style="margin-top:1rem"><button class="btn-sm" onclick="openAdminServiceLogin()">＋ Add a service</button></div>' : '')+'</div>';
   };
   window.renderAccountPage = (function (original) {
     return function () {

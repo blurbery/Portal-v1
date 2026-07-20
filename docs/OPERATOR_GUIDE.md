@@ -203,3 +203,10 @@ Plex and Jellyfin can be configured for future adapters, but their Users tabs an
 The Profile → Recovery Email card writes `recovery_email` to the linked `emby_accounts` record. Forgot Password matches only that field, stores a 30-minute token, and sends through the selected Admin Resend or Admin SMTP configuration. The reset handler verifies the token, changes the password on Emby, then synchronizes the Portal password record and clears the token. A failed Emby password update does not consume the token or report success.
 
 This is an Emby-backed flow. The recovery card is not a Silo password-reset bridge. Admin mail and Kindle mail are separate provider configurations.
+
+
+## Linked Media Servers and provider gating
+
+`GET /api/provider-status` exposes only configuration state needed by the account UI. The Add-service modal filters against that state, so an unconfigured provider cannot be selected. The server separately protects link/unlink actions with the dedicated portal-admin session; member sessions cannot manage administrator-linked credentials.
+
+Member sign-in also depends on the configured provider adapters and matching Portal account records. Disabling or clearing a provider stops it from appearing as an available link target; existing database rows are not evidence that the provider is currently reachable.

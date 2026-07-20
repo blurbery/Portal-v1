@@ -117,3 +117,8 @@ Plex and Jellyfin tabs may appear when their server credentials are configured, 
 The Profile → Recovery Email card stores a member-owned recovery address on the linked Emby or Silo account. The sign-in page's Forgot Password flow looks up that address, creates a 30-minute single-use token, and sends the reset link through the configured **Admin & Recovery Email** provider. The reset page verifies the token, asks Emby to change the password, and only then updates the Portal record and consumes the token.
 
 Admin mail supports either Resend or SMTP. SMTP uses the Admin card's host, port, security, credentials, and sender; Kindle SMTP settings are separate. The request response intentionally does not reveal whether an address exists. Plex/Jellyfin are not included because their account bridges are not implemented.
+
+
+## Linked Media Servers
+
+The **Linked Media Servers** account view is provider-neutral. It lists only service accounts linked to the current Portal account. The Add-service modal offers a provider only when that provider has been configured in Administration → Media Servers with the required URL and credentials. The portal administrator is the only user who can link or unlink the stored service credentials; ordinary members can sign in with an enabled provider and use the account records provisioned for them, but cannot attach arbitrary provider credentials or unlink the administrator's service connection.

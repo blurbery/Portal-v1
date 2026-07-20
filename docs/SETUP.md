@@ -177,3 +177,10 @@ The member flow is linked end to end for Emby- and Silo-backed accounts:
 6. The token is single-use and cannot be reused after a successful reset.
 
 The Admin mail provider may be Resend or SMTP. For SMTP, configure the Admin & Recovery Email card—not the separate Kindle SMTP card—and use port 587 with STARTTLS or port 465 with SSL/TLS as appropriate. Test the actual recovery flow with a non-production Emby account after saving the provider settings. Plex/Jellyfin are not included because their account bridges are not implemented.
+
+
+## Linked Media Servers
+
+The Add-service list is populated from the providers configured in Administration → Media Servers. A provider is considered available only when its required URL and server credential/API key are saved. If none are configured, the modal shows a provider-neutral warning.
+
+The portal administrator can link or unlink the administrator's service credentials. Ordinary members can sign in only through configured/available provider paths and cannot link arbitrary service credentials or unlink the administrator's connection. Configure and test the provider before inviting members.
