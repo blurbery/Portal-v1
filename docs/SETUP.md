@@ -95,3 +95,26 @@ docker compose -p portal-v1-public logs --tail=200 portal-v1-public
 ```
 
 Then verify administrator login, member login, provider linking, navigation gating, library access, requests if enabled, Kindle delivery if enabled, bot command registration, and PostgreSQL backups.
+
+## Admin and recovery email
+
+The **Admin & Recovery Email** card is separate from **SMTP Configuration**, which is used for Kindle delivery. The Admin card supports Resend or another SMTP provider for Portal-generated mail.
+
+Configure it after the first administrator login:
+
+1. Open Administration → Admin & Recovery Email.
+2. Enter an Admin Resend API key.
+3. Enter a sender address on a verified Resend domain.
+4. Enter the private support inbox that should receive issue reports.
+5. Select **Test Connection**. This checks Resend authentication and the sender domain but intentionally sends no message.
+6. Save the card.
+
+Member recovery is configured by each member under Account → Recovery Email. The sign-in page’s password-reset flow matches that address, creates a single-use token that expires after 30 minutes, and sends the link using the Admin sender. Subscription-expiry reminders use the same sender and the member’s recovery address. Issue reports are sent to the private support inbox, with the member recovery address used as reply-to when available.
+
+Test the live flow after deployment with a non-production member account: save a recovery address, request a reset, use the emailed link once, confirm it cannot be reused, and confirm an expired link is rejected. The Admin card does not reset the bootstrap Portal administrator password; use Administration → Administrator Accounts for that password.
+
+If the installation still has legacy RESEND_API_KEY and RESEND_FROM_EMAIL settings, use **Use Current Resend Setup** once from the Admin & Recovery Email card, then save the new separated settings. Never commit the key, sender credentials, recovery addresses, or support inbox to Git.
+
+### Choosing Resend or SMTP
+
+For Resend, enter the API key and a sender on a verified domain. For SMTP, select **Other SMTP** and enter the host, port, security mode, username, password or app password, sender, and support inbox. Use port 587 with SSL/TLS off for STARTTLS, or port 465 with SSL/TLS enabled. **Test Connection** verifies the selected provider and intentionally sends no email. After saving, test an actual recovery message with a non-production member account.

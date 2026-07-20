@@ -123,8 +123,15 @@ const PORTAL_CONFIG_FIELDS = [
   { key: 'KINDLE_SMTP_FROM_EMAIL', label: 'SMTP sender email (also approve for Kindle)', category: 'Kindle delivery', type: 'email', secret: false },
   // Admin mail is used only for password recovery, expiry reminders and
   // private portal support notifications. It does not affect Kindle sends.
+  { key: 'ADMIN_EMAIL_PROVIDER', label: 'Admin email provider', category: 'Admin email', type: 'text', secret: false },
   { key: 'ADMIN_RESEND_API_KEY', label: 'Admin Resend API key', category: 'Admin email', type: 'password', secret: true },
-  { key: 'ADMIN_FROM_EMAIL', label: 'Admin sender email', category: 'Admin email', type: 'email', secret: false },
+  { key: 'ADMIN_FROM_EMAIL', label: 'Admin Resend sender email', category: 'Admin email', type: 'email', secret: false },
+  { key: 'ADMIN_SMTP_HOST', label: 'Admin SMTP host', category: 'Admin email', type: 'text', secret: false },
+  { key: 'ADMIN_SMTP_PORT', label: 'Admin SMTP port', category: 'Admin email', type: 'number', secret: false },
+  { key: 'ADMIN_SMTP_SECURE', label: 'Admin SMTP SSL/TLS', category: 'Admin email', type: 'toggle', secret: false },
+  { key: 'ADMIN_SMTP_USERNAME', label: 'Admin SMTP username', category: 'Admin email', type: 'text', secret: false },
+  { key: 'ADMIN_SMTP_PASSWORD', label: 'Admin SMTP password', category: 'Admin email', type: 'password', secret: true },
+  { key: 'ADMIN_SMTP_FROM_EMAIL', label: 'Admin SMTP sender email', category: 'Admin email', type: 'email', secret: false },
   { key: 'ADMIN_SUPPORT_INBOX', label: 'Private support inbox', category: 'Admin email', type: 'email', secret: true },
   // Legacy values are retained for existing installations. They are used as a
   // safe fallback until an administrator fills in the two new email cards.
@@ -1798,7 +1805,19 @@ function getKindleMailConfig(overrides = {}) {
 }
 
 function getAdminMailConfig(overrides = {}) {
+  const provider = String(overrides.provider || process.env.ADMIN_EMAIL_PROVIDER || 'resend').trim().toLowerCase() === 'smtp' ? 'smtp' : 'resend';
+  if (provider === 'smtp') return {
+    provider,
+    host: String(overrides.host || process.env.ADMIN_SMTP_HOST || '').trim(),
+    port: Number(overrides.port || process.env.ADMIN_SMTP_PORT || 587),
+    secure: String(overrides.secure ?? process.env.ADMIN_SMTP_SECURE ?? 'false').toLowerCase() === 'true',
+    username: String(overrides.username || process.env.ADMIN_SMTP_USERNAME || '').trim(),
+    password: String(overrides.password || process.env.ADMIN_SMTP_PASSWORD || ''),
+    fromEmail: String(overrides.fromEmail || process.env.ADMIN_SMTP_FROM_EMAIL || '').trim(),
+    supportInbox: String(overrides.supportInbox || process.env.ADMIN_SUPPORT_INBOX || '').trim(),
+  };
   return {
+    provider,
     apiKey: String(overrides.apiKey || process.env.ADMIN_RESEND_API_KEY || process.env.RESEND_API_KEY || '').trim(),
     fromEmail: String(overrides.fromEmail || process.env.ADMIN_FROM_EMAIL || process.env.RESEND_FROM_EMAIL || '').trim(),
     supportInbox: String(overrides.supportInbox || process.env.ADMIN_SUPPORT_INBOX || '').trim(),
@@ -1851,7 +1870,7 @@ async function sendKindleMail(message) {
 }
 
 async function sendAdminMail(message) {
-  return sendConfiguredMail({ provider: 'resend', ...getAdminMailConfig() }, message);
+  return sendConfiguredMail(getAdminMailConfig(), message);
 }
 
 async function sendResetEmail(toEmail, resetUrl) {
@@ -2572,7 +2591,7 @@ app.post('/api/admin/email/migrate-legacy', requireAdmin, async (req, res) => {
   if (!apiKey || !fromEmail) return res.status(400).json({ error: 'No existing Resend setup was found to copy.' });
   const fields = target === 'kindle'
     ? { KINDLE_EMAIL_PROVIDER: 'resend', KINDLE_RESEND_API_KEY: apiKey, KINDLE_RESEND_FROM_EMAIL: fromEmail }
-    : { ADMIN_RESEND_API_KEY: apiKey, ADMIN_FROM_EMAIL: fromEmail };
+    : { ADMIN_EMAIL_PROVIDER: 'resend', ADMIN_RESEND_API_KEY: apiKey, ADMIN_FROM_EMAIL: fromEmail };
   try {
     configEncryptionKey();
     for (const [key, value] of Object.entries(fields)) {
@@ -2656,15 +2675,30 @@ app.post('/api/admin/kindle-email/test', requireAdmin, async (req, res) => {
 
 app.post('/api/admin/admin-email/test', requireAdmin, async (req, res) => {
   await settingsReady;
-  const config = getAdminMailConfig({ apiKey: req.body?.apiKey, fromEmail: req.body?.fromEmail });
-  if (!config.apiKey) return res.status(400).json({ error: 'Enter the admin Resend API key first.' });
-  if (!config.fromEmail || !config.fromEmail.includes('@')) return res.status(400).json({ error: 'Enter the admin sender email first.' });
+  const provider = String(req.body?.provider || process.env.ADMIN_EMAIL_PROVIDER || 'resend').toLowerCase();
   try {
+    if (provider === 'smtp') {
+      const config = getAdminMailConfig({
+        provider, host: req.body?.host, port: req.body?.port, secure: req.body?.secure,
+        username: req.body?.username, password: req.body?.password, fromEmail: req.body?.fromEmail,
+      });
+      if (!config.host || !config.fromEmail || !config.fromEmail.includes('@')) return res.status(400).json({ error: 'Enter the SMTP host and sender email first.' });
+      const transporter = nodemailer.createTransport({
+        host: config.host, port: config.port || 587, secure: config.secure,
+        auth: config.username ? { user: config.username, pass: config.password } : undefined,
+      });
+      await transporter.verify();
+      return res.json({ success: true, message: 'Admin SMTP connection and login verified. No email was sent.' });
+    }
+    const config = getAdminMailConfig({ provider: 'resend', apiKey: req.body?.apiKey, fromEmail: req.body?.fromEmail });
+    if (!config.apiKey) return res.status(400).json({ error: 'Enter the admin Resend API key first.' });
+    if (!config.fromEmail || !config.fromEmail.includes('@')) return res.status(400).json({ error: 'Enter the admin sender email first.' });
     await axios.get('https://api.resend.com/domains', { headers: { Authorization: `Bearer ${config.apiKey}` }, timeout: 10000 });
-    res.json({ success: true, message: 'Admin email connection verified. No email was sent.' });
+    return res.json({ success: true, message: 'Admin Resend connection verified. No email was sent.' });
   } catch (error) {
     console.error('[admin email test]', error.message);
-    res.status(502).json({ error: error.response?.status === 401 ? 'Resend rejected that API key.' : 'Could not verify the admin email connection.' });
+    const status = error.response?.status;
+    res.status(502).json({ error: status === 401 || status === 403 ? 'Email provider rejected the supplied credentials.' : 'Could not verify the admin email connection.' });
   }
 });
 

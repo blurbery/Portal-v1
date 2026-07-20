@@ -84,3 +84,17 @@ The public library actions are wired by media type: eBooks are converted to EPUB
 8. Test one login, one provider link, one library search/download, one request if enabled, one Kindle send if enabled, and one announcement before inviting members.
 
 The Portal does not install Emby, Silo, Jellyfin, Plex, BookWarehouse, Shelfmark, Kavita, Seerr, SMTP, or Discord. Those are separate services that the operator owns and configures. The Portal stores their settings and provides the integration routes.
+
+## Admin and recovery email
+
+The **Admin & Recovery Email** card is a provider-configurable delivery path for member account recovery, subscription-expiry reminders, and private support notifications. It is separate from the Kindle delivery card.
+
+Configure:
+
+1. A Resend API key with permission to send.
+2. A verified sender address on a verified Resend domain.
+3. A private support inbox for issue reports.
+
+Use **Test Connection** before saving to verify the selected provider. For Resend it checks the API key and sender domain; for SMTP it verifies the connection and authentication. The test does not send an email. After saving, verify the live flow by setting a member recovery address under Account, requesting a password reset from the sign-in page, and confirming the link arrives and expires as documented. The recovery email is never shown to other members. The card does not reset the bootstrap Portal administrator password; administrators change that under Administration → Administrator Accounts.
+
+When SMTP is selected, configure the SMTP host, port, security mode, username/password if required, sender address, and private support inbox in the Admin & Recovery Email card. Port 587 normally uses STARTTLS with SSL/TLS off; port 465 normally uses SSL/TLS with it enabled. The card’s Test Connection verifies SMTP with `transporter.verify()` and sends no message.

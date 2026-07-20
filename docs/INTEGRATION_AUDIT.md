@@ -31,3 +31,18 @@ Run these after setting up the operator's own values:
 ## Important limits
 
 A static route audit cannot prove that an API key has the required provider permissions, that a PostgreSQL schema is installed, that OAuth redirect URLs are correct, or that a third-party service is reachable from the operator's host. Those checks require the operator's own installation values and must never use private production credentials.
+
+
+## Admin and recovery email verification
+
+- Confirm Administration → Admin & Recovery Email shows **Configured** only when the selected provider has its required host/API key and sender configured.
+- Use **Test Connection** and confirm it reports Resend/domain verification without sending an email.
+- Save a member recovery address under Account.
+- Request a reset from the sign-in page and confirm the 30-minute link works once and cannot be reused.
+- Confirm an expired token is rejected.
+- Confirm expiry reminders use the configured sender and member recovery address.
+- Submit an issue report and confirm it reaches the private support inbox.
+- Confirm the bootstrap administrator password is managed separately under Administrator Accounts.
+
+- Repeat the connection test with the selected provider: Resend domain/API validation or SMTP connection/authentication verification.
+- If SMTP is selected, verify that port/security settings match the provider (587/STARTTLS or 465/SSL).
