@@ -134,6 +134,22 @@ Configure the Library card only with services owned by this installation. For eb
 
 For comics, Kavita is the recommended backend for the in-app comic library and external reader apps. In Kavita, create/copy the user's OPDS URL from Preferences → OPDS. Either paste that complete URL into the Portal Library card as `KAVITA_OPDS_URL`, or configure `KAVITA_URL` plus `KAVITA_API_KEY` and let Portal construct `/api/opds/<key>`. The signed-in member can retrieve the URL from `GET /api/library/kavita/opds`; never place it in public documentation or commit it to Git.
 
+When Seerr is enabled, the member sidebar places a **Requests** dropdown above **Library**. Its links are Discover, Movies, TV Shows, My Requests, and My Issues. The homepage Search/Request shortcut is intentionally removed so books, audiobooks, and comics stay in their dedicated Library categories. My Issues is for media/request problems inside Seerr; **Portal Issues** is for general Portal support. Portal calls Seerr through its server-side API proxy, so members stay in Portal and the Seerr API key never reaches the browser.
+
+Portal persists its own issue reports in `portal_issue_reports`, BookWarehouse requests in `library_requests`, and mirrors Seerr activity in `seerr_history`. The Portal proxy matches the signed-in Portal member to a Seerr user by email or provider username; unmatched users are denied rather than being allowed to create unattributed requests.
+
+For a Portal-only Seerr experience, use the three tabs in Administration → Seerr. The **Seerr** tab stores and tests `SEERR_URL` and `SEERR_API_KEY`. The **Radarr & Sonarr** tab stores and tests `RADARR_URL`/`RADARR_API_KEY` and `SONARR_URL`/`SONARR_API_KEY`; those services must also be configured inside Seerr because Seerr remains responsible for approvals, downloads, and status. The **Portal Permissions** tab controls request types, request history, media issues, and linked-provider access.
+
+Members use `/seerr` through the Portal session; the browser never receives the Seerr, Radarr, or Sonarr API keys. Portal calls Seerr for Discover, search, media details, request creation, and media issue creation, then mirrors the signed-in member's returned records in `seerr_history`. Every request is assigned to the matching Seerr user found from Portal identity data; unmatched users are denied. If Seerr is temporarily unavailable, Portal can return that member's mirrored request/issue history, but new requests and issues still require Seerr to be online.
+
+For an existing database, back up PostgreSQL and run this additive migration from the repository root:
+
+```bash
+docker compose -p portal-v1-public exec -T db psql -U portal -d portal < migrations/002-seerr-portal-flow.sql
+```
+
+New databases create `seerr_users` and `seerr_history` from `portal_schema.sql`.
+
 After configuration, verify an ebook opens at `/reader`, an audiobook opens at `/audio-reader`, and the returned Kavita OPDS URL works in the target comic app. A Kavita OPDS URL is separate from Portal's own `/opds/*` feed.
 
 
