@@ -65,6 +65,20 @@ The Library Configuration card controls the provider settings used by the Portal
 
 The card does not control whether members can see the library. Use Feature switches to enable Library, ebooks, audiobooks, or comics, then use Permissions & Announcements to grant access to the relevant member-service groups. A valid card test proves reachability and authentication only; operators should still verify search, covers, requests, and downloads against their own live provider.
 
+## Seerr request configuration
+
+Seerr is an optional external request service. The Portal card stores and tests the Seerr connection, then gates member navigation based on the enabled request areas and configured provider memberships.
+
+Configure it in Administration → Requests & metadata:
+
+- **Seerr URL** is the reachable Seerr web/API address. The Portal trims a trailing slash before status checks and generated request links.
+- **Seerr API key** is sent only by the server with the `X-Api-Key` header and is stored encrypted. It is never returned in normal configuration responses.
+- **Test Seerr connection** checks `/api/v1/status` and falls back to `/status`; it does not save the form values.
+- **Seerr** and **Requests navigation** must both be enabled. Then enable Movies, Shows, My requests, and/or Issue reports as needed.
+- **Member access** must be enabled for each provider membership allowed to see Requests. That provider’s URL and credentials must already be configured and the member must have the corresponding linked account.
+
+The Portal is a request-navigation and status-linking layer. Seerr remains responsible for its own media-server integrations, download clients, libraries, approvals, and user permissions. Confirm one safe end-to-end request after deployment; a successful status test alone does not prove search, approval, download, or status synchronization.
+
 ## Authentication notes
 
 The bootstrap admin account is local to the Portal server:
@@ -119,6 +133,8 @@ After installation, verify:
 - Linking a service creates a linked row and unlinking removes it.
 - Optional integrations remain disabled when their environment variables are blank.
 - Library Configuration can successfully test the BookWarehouse URL and API key.
+- Seerr status testing succeeds, Requests navigation is enabled, and one safe request reaches the expected Seerr status.
+- Only provider memberships with configured URLs, credentials, and linked accounts can see Seerr Requests.
 - Enabled library member groups can search the configured catalogue and receive the expected access response.
 
 For a Docker-specific checklist, see [DOCKER.md](DOCKER.md). For security requirements, see [SECURITY.md](SECURITY.md). For schema setup, see [SETUP.md](SETUP.md).
