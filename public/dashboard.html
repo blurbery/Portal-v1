@@ -1181,25 +1181,26 @@
     .v3-recent-card small { font-size:0.54rem; }
   }
   /* Public desktop build: preserve the desktop canvas when the browser is resized. */
-  html, body { min-width: 1280px !important; }
+  html, body { min-width: 0; }
   body { overflow-x: auto !important; }
-  nav { min-width: 984px !important; left: 296px !important; width: calc(100% - 296px) !important; }
-  .layout { display: block !important; min-width: 1280px !important; padding-left: 296px !important; }
+  nav { left: 296px !important; width: calc(100% - 296px) !important; }
+  .layout { display: block !important; padding-left: 296px !important; }
   .sidebar { position: fixed !important; inset: 0 auto 0 0 !important; transform: none !important; width: 296px !important; height: 100vh !important; z-index: 110 !important; }
   .sidebar-overlay, #sidebarToggleBtn { display: none !important; }
-  main, main.wide { min-width: 984px !important; max-width: 1420px !important; margin: 0 auto !important; padding: 2.35rem 1.5rem !important; }
+  main, main.wide { max-width: 1420px !important; margin: 0 auto !important; padding: 2.35rem 1.5rem !important; }
   /* A desktop browser keeps the desktop canvas even when its window is narrowed.
      Touch devices alone receive the mobile navigation/layout below. */
   @media (max-width: 1279px) and (hover: hover) and (pointer: fine) {
+    html, body { min-width:1716px !important; }
     nav { height:72px !important; padding:0 2rem !important; }
     .v3-nav-context { display:block !important; }
     .v3-sidebar-brand { display:flex !important; }
     nav.v3-bottom-nav { display:none !important; }
     body { padding-bottom:0 !important; }
-    .layout { display:block !important; min-width:1280px !important; padding-left:296px !important; }
+    .layout { display:block !important; width:1716px !important; min-width:1716px !important; padding-left:296px !important; }
     .sidebar { position:fixed !important; inset:0 auto 0 0 !important; transform:none !important; width:296px !important; height:100vh !important; }
     .sidebar-overlay, #sidebarToggleBtn { display:none !important; }
-    main, main.wide { min-width:984px !important; padding:2.35rem 1.5rem !important; }
+    main, main.wide { width:1420px !important; min-width:1420px !important; max-width:1420px !important; margin:0 !important; padding:2.35rem 1.5rem !important; }
     .v3-service-strip { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
     #v3ServiceStrip { grid-auto-flow:column !important; grid-auto-columns:minmax(0,1fr) !important; }
     .quick-links { overflow:visible !important; flex-wrap:wrap !important; }
@@ -1208,6 +1209,13 @@
     .v3-continue-grid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
     .v3-recent-grid { grid-template-columns:repeat(6,minmax(0,1fr)) !important; }
     .library-grid, .my-books-grid { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+  }
+  @media (hover: none) and (pointer: coarse) {
+    html, body { min-width:0 !important; overflow-x:hidden !important; }
+    nav { min-width:0 !important; left:0 !important; width:100% !important; }
+    .layout { width:auto !important; min-width:0 !important; padding-left:0 !important; }
+    .sidebar { width:var(--sidebar-w) !important; }
+    main, main.wide { width:auto !important; min-width:0 !important; max-width:none !important; margin:0 !important; }
   }
 </style>
 <style>
@@ -3872,7 +3880,28 @@ function renderToggleSettingsPage(cardKey) {
     ['REQUESTS_ISSUES_ENABLED','Report issues','Let members submit a private support report.']
   ];
   detail.innerHTML = `<div class="portal-admin-detail-head"><h2>${title}</h2><p>${description}</p></div><div class="settings-card-grid">${permissions ? `<section class="settings-group-card"><h3>Library Access</h3><p>Membership access is separate from the global Library feature switch.</p>${library}</section><section class="settings-group-card"><h3>Announcement Access</h3><p>Choose which server memberships are allowed to see announcements.</p>${announcements}</section><section class="settings-group-card wide"><h3>Announcement Source</h3><p>Add one or more Discord channels. Each channel must list the media-server Discord role IDs that are allowed to receive it. The announcement’s own tagged role is then matched exactly, so tagging one role does not notify the other roles.</p><div id="announcementChannelRows"></div><button class="btn-sm" type="button" style="margin-top:.85rem" onclick="addAnnouncementChannel()">＋ Add channel</button><input type="hidden" data-portal-admin-key="ANNOUNCEMENTS_CHANNELS" value=""></section>` : `<section class="settings-group-card wide"><h3>Member Areas</h3><p>These switches control what members can see. A feature remains hidden when its required service has not been configured.</p>${features.map(([key,label,help]) => settingsSwitch(key,label,help)).join('')}</section>`}</div><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveAdminDetail('${cardKey}')">Save Changes</button></div>`;
-  if (permissions) renderAnnouncementChannelRows(channelList.value, legacyChannel.value);
+  if (permissions) {
+    renderAnnouncementChannelRows(channelList.value, legacyChannel.value);
+    const valueFor = key => String((portalAdminConfig?.fields || []).find(field => field.key === key)?.value || '').trim();
+    const generalGuildId = valueFor('DISCORD_GUILD_ID');
+    const botGuildId = valueFor('DISCORD_BOT_GUILD_ID');
+    const channelCount = readAnnouncementChannels(channelList.value, legacyChannel.value).length;
+    const warnings = [];
+    if (!generalGuildId) warnings.push('Set the Discord Server ID in Administration → Authentication & Access.');
+    if (!botGuildId) warnings.push('Set the bot Server ID on the Discord Bot card.');
+    if (generalGuildId && botGuildId && generalGuildId !== botGuildId) warnings.push('The Portal Server ID and Discord Bot Server ID do not match.');
+    if (!channelCount) warnings.push('Add at least one announcement channel ID and its allowed media-server role IDs.');
+    const source = [...detail.querySelectorAll('section')].find(section => section.querySelector('h3')?.textContent === 'Announcement Source');
+    if (source) {
+      const note = document.createElement('div');
+      note.className = 'smtp-config-note';
+      note.style.marginTop = '1rem';
+      note.innerHTML = warnings.length
+        ? `<strong style="color:var(--warning)">⚠ Announcement setup incomplete</strong><ul class="storage-guide-list">${warnings.map(item => `<li>${item}</li>`).join('')}</ul><p style="margin:.6rem 0 0">The Portal can only filter announcements for the Discord server and channels configured here. The bot card reuses the same server ID.</p>`
+        : '<strong style="color:var(--success)">✓ Discord announcement wiring ready</strong><p style="margin:.35rem 0 0">The Portal Server ID matches the bot Server ID and announcement channel rules are configured.</p>';
+      source.appendChild(note);
+    }
+  }
   document.getElementById('portalAdminIndex').style.display = 'none';
   document.getElementById('portalAdminDetail').style.display = 'block';
   attachAdminDetailTrail(title);
@@ -4089,6 +4118,10 @@ node --env-file=.env index.js</pre><p class="smtp-config-note">Run the bot besid
   const setupSection = [...detail.querySelectorAll('section')].find(section => section.querySelector('h3')?.textContent === 'Bot setup');
   (setupSection || detail.querySelector('.portal-admin-detail-head')).insertAdjacentHTML('afterend', `<section id="discordBotCredentialSection" class="settings-group-card wide"><h3>Bot IDs and host variables</h3><p id="discordBotCredentialIntro">Enter the Discord bot values once. The portal stores secrets encrypted and maps them to the selected host’s environment-variable names.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.75rem;margin-top:.8rem">${DISCORD_BOT_CREDENTIAL_FIELDS.map(([key, label, secret, help]) => { const item = configField(key); return `<label class="smtp-config-field"><span>${label}</span><input data-bot-credential="${key}" type="${secret ? 'password' : 'text'}" value="${secret ? '' : v3Escape(item.value || '')}" placeholder="${secret && item.configured ? 'Saved — leave blank to keep' : ''}"><small>${help}</small></label>`; }).join('')}</div></section><section class="settings-group-card wide"><h3>Bot installation invite</h3><p>Portal sign-in already uses the OAuth Client ID, Client Secret and Redirect URI in General Settings. This separate link installs the bot user into a Discord server and does not use the Client Secret or redirect.</p><div class="smtp-config-note"><strong>OAuth2 URL Generator settings</strong><ul class="storage-guide-list"><li>Scopes: <code>bot</code> and <code>applications.commands</code>.</li><li>Bot permissions: View Channels, Send Messages, Embed Links, Attach Files, Read Message History, Manage Messages, Manage Channels and Manage Roles.</li><li>Developer Portal → Bot → Privileged Gateway Intents: enable <strong>Server Members Intent</strong> and <strong>Message Content Intent</strong>. Presence Intent is not required by this code.</li></ul><a id="discordBotInviteLink" class="btn-sm" href="#" target="_blank" rel="noopener" style="display:inline-block;margin-top:.45rem;pointer-events:none;opacity:.55">Enter Application ID to generate invite ↗</a><code id="discordBotInviteUrl" style="display:block;word-break:break-all;margin-top:.7rem;color:var(--muted)"></code></div></section>`);
   detail.querySelectorAll('[data-bot-credential="DISCORD_BOT_CLIENT_ID"], [data-bot-credential="DISCORD_BOT_GUILD_ID"]').forEach(input => input.addEventListener('input', updateDiscordBotInviteLink));
+  const generalGuildId = configField('DISCORD_GUILD_ID').value.trim();
+  const botGuildInput = detail.querySelector('[data-bot-credential="DISCORD_BOT_GUILD_ID"]');
+  if (botGuildInput && !botGuildInput.value && generalGuildId) botGuildInput.value = generalGuildId;
+  if (botGuildInput) botGuildInput.title = 'Prefilled from Authentication & Access → Discord Server ID. Keep it matched to the Portal server.';
   updateDiscordBotInviteLink();
   const deploySection = [...detail.querySelectorAll('section')].find(section => section.querySelector('h3')?.textContent === 'Choose deployment target');
   if (deploySection) {
