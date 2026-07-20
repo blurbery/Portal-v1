@@ -9,6 +9,8 @@ Before changing code:
 3. Add a backward-compatible migration when a field changes.
 4. Keep secrets out of source, fixtures, screenshots, logs, and tests.
 5. Run `npm run check` and manually test login, provider gating, announcements, and sub-user privacy.
+6. When Seerr is enabled, verify the sidebar Requests dropdown appears above Library, Portal-native Discover/Movies/TV Shows/My Requests/My Issues load through the server-side proxy, and the homepage has no Search/Request shortcut. On an existing PostgreSQL volume, apply `migrations/002-seerr-portal-flow.sql` before testing history.
+7. Verify a matched Seerr user can create a request and media issue, then confirm both appear in Portal history and in Seerr. Verify an unmatched Portal user is denied.
 
 Keep custom branding and installation settings in `.env` or encrypted PostgreSQL settings. Do not hardcode them into the repository.
 
