@@ -33,3 +33,17 @@ After a Portal contract or bot-command change, deploy a fresh bundle and run:
 `docker compose run --rm portal-discord-bot node index.js register`
 
 Preserve the protected configuration loader at the top of `index.js`. Test ticket categories, selected provider commands, `/pricing`, provider account creation, trials, Lifetime membership, parent/sub-user limits, sub-user deletion and stream return, and Portal membership sync after every contract change.
+
+## Permissions and announcements contract
+
+The Administration → **Permissions & Announcements** card saves through `PUT /api/admin/config` into encrypted `portal_settings`. The server applies these values at runtime.
+
+- `LIBRARY_ENABLED` controls the global Library feature.
+- `LIBRARY_ACCESS_EMBY`, `LIBRARY_ACCESS_SILO`, `LIBRARY_ACCESS_PLEX` and `LIBRARY_ACCESS_JELLYFIN` control Library visibility by membership type.
+- `ANNOUNCEMENTS_EMBY_ENABLED`, `ANNOUNCEMENTS_SILO_ENABLED`, `ANNOUNCEMENTS_PLEX_ENABLED` and `ANNOUNCEMENTS_JELLYFIN_ENABLED` control announcement eligibility.
+- `ANNOUNCEMENTS_CHANNELS` stores channel IDs and the allowed media-server role IDs for each channel. `ANNOUNCEMENTS_CHANNEL_ID` remains a legacy single-channel fallback.
+- `GET /api/announcements` reads the shared PostgreSQL `announcements` table and filters by membership, enabled provider, channel rule and tagged Discord role.
+
+The Portal is the announcement reader and permission gate. The sanitized bot does not bypass these rules or use a separate announcement database. A publisher writes rows with `channel_id`, `channel_name`, `title`, `body`, `role_mention` and `posted_at`.
+
+Emby and Silo are the active membership/session paths in the public PostgreSQL build. Plex and Jellyfin remain configuration/adapter slots until their account/session bridges are implemented and tested; do not enable them as live announcement audiences before then. Update the server resolver, bot adapter, card, SQL/docs and tests together when that changes.
