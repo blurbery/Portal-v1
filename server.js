@@ -1178,7 +1178,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
         emby_user_id: adminAccount?.emby_user_id || emby_user_id || null,
         password: adminAccount?.password || null,
         connect_email: adminAccount?.connect_email || null,
-        recovery_email: adminAccount?.recovery_email || null,
+        recovery_email: adminAccount?.recovery_email || siloAccount?.recovery_email || null,
         kindle_email: adminAccount?.kindle_email || null,
       },
       silo: siloAccount ? {
@@ -1246,7 +1246,7 @@ app.get('/api/account', requireAuth, async (req, res) => {
         total_pool: siloAccount.total_pool,
         emby_user_id: null,
         password: siloAccount.password,
-        recovery_email: null,
+        recovery_email: siloAccount.recovery_email || null,
         profile_pic_url: req.session.user.profile_pic_url || null,
         kindle_email: null,
       },
@@ -2158,13 +2158,13 @@ app.post('/api/reset-password/submit', async (req, res) => {
     return res.json({ error: 'Password must be at least 6 characters.' });
   }
   try {
-    const { data } = await db.from('emby_accounts')
-      .select('emby_user_id, username, reset_token_expires')
-      .eq('reset_token', token)
-      .limit(1);
-    if (!data?.length) return res.json({ error: 'Invalid or expired reset link.' });
-    if (new Date(data[0].reset_token_expires) < new Date()) return res.json({ error: 'Reset link has expired. Please request a new one.' });
-    const account = data[0];
+    const [{ data: embyRows }, { data: siloRows }] = await Promise.all([
+      db.from('emby_accounts').select('emby_user_id, username, reset_token_expires').eq('reset_token', token).limit(1),
+      db.from('silo_accounts').select('silo_user_id, username, reset_token_expires').eq('reset_token', token).limit(1),
+    ]);
+    const account = embyRows?.length ? { ...embyRows[0], service: 'Emby' } : siloRows?.length ? { ...siloRows[0], service: 'Silo' } : null;
+    if (!account) return res.json({ error: 'Invalid or expired reset link.' });
+    if (new Date(account.reset_token_expires) < new Date()) return res.json({ error: 'Reset link has expired. Please request a new one.' });
     const table = account.service === 'Silo' ? 'silo_accounts' : 'emby_accounts';
     try {
       if (account.service === 'Silo') {
