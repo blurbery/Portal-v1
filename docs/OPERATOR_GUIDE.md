@@ -139,7 +139,7 @@ After configuration, verify an ebook opens at `/reader`, an audiobook opens at `
 
 ## Admin and recovery email flow
 
-Admin email is a server-side Resend integration. The Admin & Recovery Email card stores the API key, verified sender, and private support inbox in encrypted PostgreSQL settings. Its connection test checks Resend without sending.
+Admin email is a server-side Resend or SMTP integration. The Admin & Recovery Email card stores the selected provider, provider credentials, sender, and private support inbox in encrypted PostgreSQL settings. Its connection test verifies the selected provider without sending.
 
 The flow is:
 
@@ -159,3 +159,5 @@ Issue report
 The recovery address belongs to the member account and is not used for the bootstrap Portal administrator login. Change the bootstrap administrator password under Administration → Administrator Accounts. Kindle mail is configured and tested independently in the SMTP Configuration card.
 
 For release verification, test connection, recovery-link delivery, token expiry/reuse rejection, expiry reminders, and support-report delivery with a test member account.
+
+The Admin & Recovery Email provider can be switched independently from Kindle delivery. Resend uses the API key and verified sender fields. SMTP uses the host, port, SSL/TLS toggle, credentials, sender, and support inbox. The selected provider is used by password resets, expiry reminders, and support notifications.
