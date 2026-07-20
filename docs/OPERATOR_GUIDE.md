@@ -26,7 +26,7 @@ The browser talks to the server through the `/api/*` routes. Provider credential
 | Announcements | Publish messages to members | PostgreSQL settings and Admin |
 | Users | Review and manage member/sub-user records | PostgreSQL account tables and Admin |
 | Discord bot | Optional slash commands and member integration | `public/discord-bot-template/` and generated bot settings |
-| Libraries | BookWarehouse catalogue, optional metadata enrichment, and local book storage | Admin → Library Configuration, Feature switches, and Permissions & Announcements |
+| Libraries | Optional books, comics, audiobooks, and request integrations | `.env` and Admin → Library |
 | Docker | Isolated runtime for the public build | `Dockerfile`, `docker-compose.yml` |
 
 ## How service linking works
@@ -52,32 +52,6 @@ A provider must be configured before it appears in “Add a service”. The publ
 8. Open Administration → Media Servers and save provider configuration.
 9. Open Account → Linked Media Servers and connect existing provider accounts.
 10. Configure optional Discord, library, mail, or request integrations only when needed.
-
-## Library configuration
-
-The Library Configuration card controls the provider settings used by the Portal’s books, audiobooks, comics, and request flows.
-
-- **BookWarehouse Base URL and API key** are the primary connection. The server normalizes a base URL to the `/api/v1` API path and sends the key only from the server-side proxy.
-- **Test Connection** calls the BookWarehouse `/books?limit=1` endpoint using the values currently displayed in the form. It does not save changes.
-- **Save Library Configuration** writes the submitted values to encrypted PostgreSQL settings and refreshes the server runtime.
-- **Hardcover, ComicVine, and Google Books** are optional enrichment providers. They improve search and request details but are not the Portal catalogue source.
-- **Books Directory** is an optional local filesystem path for imported or downloaded files; it is not a remote provider URL.
-
-The card does not control whether members can see the library. Use Feature switches to enable Library, ebooks, audiobooks, or comics, then use Permissions & Announcements to grant access to the relevant member-service groups. A valid card test proves reachability and authentication only; operators should still verify search, covers, requests, and downloads against their own live provider.
-
-## Seerr request configuration
-
-Seerr is an optional external request service. The Portal card stores and tests the Seerr connection, then gates member navigation based on the enabled request areas and configured provider memberships.
-
-Configure it in Administration → Requests & metadata:
-
-- **Seerr URL** is the reachable Seerr web/API address. The Portal trims a trailing slash before status checks and generated request links.
-- **Seerr API key** is sent only by the server with the `X-Api-Key` header and is stored encrypted. It is never returned in normal configuration responses.
-- **Test Seerr connection** checks `/api/v1/status` and falls back to `/status`; it does not save the form values.
-- **Seerr** and **Requests navigation** must both be enabled. Then enable Movies, Shows, My requests, and/or Issue reports as needed.
-- **Member access** must be enabled for each provider membership allowed to see Requests. That provider’s URL and credentials must already be configured and the member must have the corresponding linked account.
-
-The Portal is a request-navigation and status-linking layer. Seerr remains responsible for its own media-server integrations, download clients, libraries, approvals, and user permissions. Confirm one safe end-to-end request after deployment; a successful status test alone does not prove search, approval, download, or status synchronization.
 
 ## Authentication notes
 
@@ -108,7 +82,7 @@ After signing in, use Administration to configure the Portal's provider settings
 The server needs its own PostgreSQL connection before it can start reliably because PostgreSQL is the Portal's settings and account store:
 
 - `DATABASE_URL`
-- `PORTAL_ADMIN_USERNAME`, `PORTAL_ADMIN_PASSWORD_SALT`, and `PORTAL_ADMIN_PASSWORD_HASH`
+- `DATABASE_URL` (server-side key, kept only in `.env`)
 - `CONFIG_ENCRYPTION_KEY`
 - `SESSION_SECRET`
 - the schema from `portal_schema.sql`
@@ -132,10 +106,6 @@ After installation, verify:
 - Account → Linked Media Servers shows no rows until a service is actually linked.
 - Linking a service creates a linked row and unlinking removes it.
 - Optional integrations remain disabled when their environment variables are blank.
-- Library Configuration can successfully test the BookWarehouse URL and API key.
-- Seerr status testing succeeds, Requests navigation is enabled, and one safe request reaches the expected Seerr status.
-- Only provider memberships with configured URLs, credentials, and linked accounts can see Seerr Requests.
-- Enabled library member groups can search the configured catalogue and receive the expected access response.
 
 For a Docker-specific checklist, see [DOCKER.md](DOCKER.md). For security requirements, see [SECURITY.md](SECURITY.md). For schema setup, see [SETUP.md](SETUP.md).
 
@@ -156,3 +126,12 @@ Save the Bot card only after configuring providers, prices, stream tiers, roles,
 A Lifetime parent has no expiry and owns a fixed stream pool. A linked sub-user belongs to that same membership record, consumes part of the pool, and cannot exceed available capacity. Adding, reclaiming, or deleting a sub-user updates the parent pool; a sub-user must never become an unrelated standalone parent.
 
 Emby and Silo are active public integration paths. Plex and Jellyfin are adapter/configuration slots until their user APIs and account/session bridges are implemented and tested.
+
+
+## Library and comic-app wiring
+
+Configure the Library card only with services owned by this installation. For ebooks, Portal downloads from BookWarehouse and uses the container's Calibre `ebook-convert` binary to produce a consistent EPUB before opening the Portal reader or sending to Kindle. Audiobooks use Portal's authenticated range-enabled player and download path.
+
+For comics, Kavita is the recommended backend for the in-app comic library and external reader apps. In Kavita, create/copy the user's OPDS URL from Preferences → OPDS. Either paste that complete URL into the Portal Library card as `KAVITA_OPDS_URL`, or configure `KAVITA_URL` plus `KAVITA_API_KEY` and let Portal construct `/api/opds/<key>`. The signed-in member can retrieve the URL from `GET /api/library/kavita/opds`; never place it in public documentation or commit it to Git.
+
+After configuration, verify an ebook opens at `/reader`, an audiobook opens at `/audio-reader`, and the returned Kavita OPDS URL works in the target comic app. A Kavita OPDS URL is separate from Portal's own `/opds/*` feed.

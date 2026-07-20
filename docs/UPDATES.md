@@ -18,15 +18,14 @@ Keep custom branding and installation settings in `.env` or encrypted PostgreSQL
 The public branch uses self-hosted PostgreSQL and Docker Compose. Apply portal_schema.sql, keep secrets on the host, and use a named database volume. The Discord Bot card generates one complete provider-neutral archive; re-register after commands, providers, or pricing change.
 
 
-## Library configuration contract
+## Library reader and Kavita OPDS
 
-The public dashboard’s Library Configuration card is the supported operator path for BookWarehouse and optional metadata-provider settings. BookWarehouse URL and API key are required for the catalogue-backed library features; Hardcover, ComicVine, and Google Books are optional enrichment providers. The card’s connection test does not save values, while Save Library Configuration writes encrypted PostgreSQL settings and refreshes the server runtime.
+The public build keeps Portal as the authenticated control plane and uses the appropriate backend for each media type:
 
-Feature switches and Permissions & Announcements remain separate controls: enabling a provider connection does not automatically expose Library to members. When changing library settings or routes, preserve the `/api/library/*` proxy boundary so provider keys remain server-side, and validate the live provider after deployment.
+- BookWarehouse eBooks are normalized to EPUB with Calibre and open in Portal's EPUB reader.
+- BookWarehouse audiobooks open in Portal's range-enabled audio player; the same endpoint supports seeking on desktop and mobile.
+- Kavita is the comic backend. Configure `KAVITA_URL` and `KAVITA_API_KEY`, or paste the complete user OPDS URL in `KAVITA_OPDS_URL`. Kavita's OPDS/OPDS-PS feed is intended for comic apps such as Panels, Chunky, and compatible readers.
+- The authenticated route `GET /api/library/kavita/opds` returns the configured OPDS URL for the signed-in member. Do not publish that URL in logs or screenshots because it contains the OPDS credential.
+- Portal's custom BookWarehouse comic feed remains available for installations that do not use Kavita; it is not a substitute for Kavita's richer OPDS/OPDS-PS experience.
 
-
-## Seerr configuration contract
-
-Seerr is an optional external request service. Preserve the admin configuration contract for `SEERR_ENABLED`, `SEERR_URL`, `SEERR_API_KEY`, `REQUESTS_ENABLED`, the request-area toggles, and the per-provider `SEERR_ACCESS_*` toggles. The connection test uses a server-side `X-Api-Key` request to Seerr status and does not save values; saving must continue through encrypted PostgreSQL settings.
-
-The Portal provides request navigation and status links; Seerr owns its own media-server integrations, download clients, libraries, approvals, and user permissions. Any change to `/api/admin/seerr/test`, request gating, or generated Seerr links must be followed by a live end-to-end request check. Keep provider keys server-side and do not add them to public examples or logs.
+The old external-library popup links were removed from the public flow. Ebook, audiobook, and comic actions now stay inside Portal or use the configured Kavita OPDS path.

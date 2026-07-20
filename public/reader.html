@@ -223,7 +223,7 @@ function goBack() {
 
 async function init() {
   try {
-    const url = `/api/reader/file/${SOURCE_ID}`;
+    const url = `/api/reader/file/${SOURCE_ID}?title=${encodeURIComponent(BOOK_TITLE)}`;
     // Check file is accessible
     const check = await fetch(url, { method: 'HEAD' }).catch(() => null);
     if (!check || !check.ok) {
