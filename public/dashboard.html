@@ -4087,6 +4087,7 @@ node --env-file=.env index.js</pre><p class="smtp-config-note">Run the bot besid
   detail.querySelectorAll('[data-bot-deploy-target]').forEach(input => { input.addEventListener('change', () => setDiscordBotDeployTarget(input.value)); });
   setDiscordBotDeployTarget('vps');
   addDiscordBotDockerFlow(detail);
+  normalizeDiscordBotDownloads(detail);
   syncDiscordBotTemplate(saved, identity, deployment);
   document.getElementById('portalAdminIndex').style.display = 'none';
   document.getElementById('portalAdminDetail').style.display = 'block';
@@ -4097,6 +4098,27 @@ function addDiscordBotDockerFlow(detail) {
   if (!detail || detail.querySelector('#discordBotDockerFlow')) return;
   const flow = `<section class="settings-group-card wide" id="discordBotDockerFlow"><h3>Download → deploy → register → run</h3><p>This is the complete order for the downloaded bot folder. The <code>register</code> command is required: it publishes the selected slash commands to Discord before the bot starts.</p><ol class="storage-guide-list"><li>Save all settings on this card, then click <strong>Download complete bot folder (.tar.gz)</strong>.</li><li>Upload the archive to the bot VPS and extract it: <code>tar -xzf portal-discord-bot-bundle.tar.gz</code>, then <code>cd portal-discord-bot</code>.</li><li>Create the private host environment: <code>cp env.example .env</code>, fill in the Discord token, Application ID, guild ID, database URL and any selected media-server keys, then run <code>chmod 600 .env</code>.</li><li>Build and start the Docker container: <code>docker compose up -d --build</code>.</li><li>Register the slash commands: <code>docker compose run --rm portal-discord-bot node index.js register</code>.</li><li>Check the running bot: <code>docker compose logs --tail=100 -f portal-discord-bot</code>.</li></ol><div class="smtp-config-note"><strong>When Portal settings change:</strong> download a fresh bundle, replace the bot folder, rebuild it and run the register command again. The generated <code>bot-config.json</code> carries the current provider, pricing, identity and lifetime settings; secrets remain only in <code>.env</code>.</div></section>`;
   detail.querySelector('#discordBotRegistrationSteps')?.insertAdjacentElement('afterend', (() => { const wrapper = document.createElement('div'); wrapper.innerHTML = flow; return wrapper.firstElementChild; })());
+}
+
+function normalizeDiscordBotDownloads(detail) {
+  if (!detail) return;
+  detail.querySelectorAll('button').forEach(button => {
+    const label = (button.textContent || '').trim().toLowerCase();
+    if (label.includes('copy pricing_json') || label.includes('download configured') || label.includes('download docker deployment')) button.remove();
+  });
+  const fileSection = [...detail.querySelectorAll('section, .smtp-config-note')].find(node => node.querySelector('h3')?.textContent?.trim() === 'Download only after saving this card');
+  if (fileSection) fileSection.innerHTML = '<h3>One download contains the complete bot</h3><p>Save this card first, then click <strong>Download complete bot folder (.tar.gz)</strong>. The single archive contains the bot source, generated <code>bot-config.json</code>, Dockerfile, Compose file, environment template, SQL and deployment documentation. Do not download or assemble separate files.</p>';
+  const checklist = [...detail.querySelectorAll('section, .settings-group-card')].find(node => node.querySelector('h3')?.textContent?.trim() === 'Deployment checklist — complete every step');
+  if (checklist) checklist.innerHTML = '<h3>One-download deployment checklist</h3><ol class="storage-guide-list"><li>Save this Discord Bot card.</li><li>Click <strong>Download complete bot folder (.tar.gz)</strong>.</li><li>Extract the archive on the bot VPS and create <code>.env</code> from <code>env.example</code>.</li><li>Run <code>docker compose up -d --build</code>.</li><li>Run <code>docker compose run --rm portal-discord-bot node index.js register</code>.</li><li>Check logs and test the commands shown below.</li></ol><p class="smtp-config-note">After changing providers, pricing or commands, download one fresh archive, redeploy it and register again.</p>';
+  const registration = detail.querySelector('#discordBotRegistrationVps');
+  if (registration) registration.innerHTML = `<strong>VPS / Docker Compose</strong><pre class="storage-guide-code">tar -xzf portal-discord-bot-bundle.tar.gz
+cd portal-discord-bot
+cp env.example .env
+chmod 600 .env
+# Fill in .env, then:
+docker compose up -d --build
+docker compose run --rm portal-discord-bot node index.js register
+docker compose logs --tail=100 -f portal-discord-bot</pre><p class="smtp-config-note">The register command publishes the selected slash commands to Discord. Run it again after command or provider changes.</p>`;
 }
 
 function updateDiscordBotInviteLink() {
