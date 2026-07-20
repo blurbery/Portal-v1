@@ -1387,10 +1387,12 @@
           <span style="flex:1;text-align:left">Requests</span><span class="group-caret">▸</span>
         </button>
         <div class="sidebar-submenu" id="requestsMenu">
-          <a class="sidebar-subitem" id="navRequestMovies" onclick="showSection('requestMovies'); closeSidebar();"><span class="sidebar-icon">🎬</span>Movies</a>
-          <a class="sidebar-subitem" id="navRequestShows" onclick="showSection('requestShows'); closeSidebar();"><span class="sidebar-icon">📺</span>Shows</a>
-          <a class="sidebar-subitem" id="navRequestMy" onclick="showSection('myRequests'); closeSidebar();"><span class="sidebar-icon">✓</span>My requests</a>
-          <a class="sidebar-subitem" id="navRequestIssues" onclick="showSection('reportIssues'); closeSidebar();"><span class="sidebar-icon">!</span>Report issues</a>
+          <a class="sidebar-subitem" id="navRequestDiscover" href="/seerr#discover" onclick="closeSidebar();"><span class="sidebar-icon">✦</span>Discover</a>
+          <a class="sidebar-subitem" id="navRequestMovies" href="/seerr#movies" onclick="closeSidebar();"><span class="sidebar-icon">🎬</span>Movies</a>
+          <a class="sidebar-subitem" id="navRequestShows" href="/seerr#tv" onclick="closeSidebar();"><span class="sidebar-icon">📺</span>TV Shows</a>
+          <a class="sidebar-subitem" id="navRequestMy" href="/seerr#requests" onclick="closeSidebar();"><span class="sidebar-icon">✓</span>My requests</a>
+          <a class="sidebar-subitem" id="navRequestSeerrIssues" href="/seerr#issues" onclick="closeSidebar();"><span class="sidebar-icon">⚠</span>My Issues</a>
+          <a class="sidebar-subitem" id="navRequestIssues" onclick="showSection('reportIssues'); closeSidebar();"><span class="sidebar-icon">!</span>Portal Issues</a>
         </div>
       </div>
 
@@ -1508,10 +1510,6 @@
       <div>
         <h2 id="greetingText">Welcome back!</h2>
         <p id="greetingSubtitle">Everything you use, ready in one place.</p>
-      </div>
-      <div class="v3-head-actions">
-        <button type="button" class="v3-head-btn" onclick="openV3Search('search')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Search</button>
-        <button type="button" class="v3-head-btn primary" onclick="openV3Search('request')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Request</button>
       </div>
     </div>
 
@@ -1959,9 +1957,9 @@
     </div>
 
     <!-- ===== REQUESTS / SEERR SECTIONS ===== -->
-    <div id="requestMoviesSection" class="section-pane" style="display:none"><div class="portal-admin-shell"><div class="portal-admin-hero"><div><h2>Request movies</h2><p>Search and request movies through the configured Seerr service. Seerr handles approval, downloads and status tracking.</p></div><span class="portal-admin-owner">Member requests</span></div><div class="card" style="margin-top:1.25rem;padding:1.25rem"><p style="color:var(--muted);line-height:1.6">Use Seerr to search its movie catalogue and submit a request. The portal only displays this option when the administrator has enabled Requests and configured Seerr.</p><a id="requestMoviesLink" class="btn-sm" href="#" target="_blank" rel="noopener">Open movie requests ↗</a></div></div></div>
-    <div id="requestShowsSection" class="section-pane" style="display:none"><div class="portal-admin-shell"><div class="portal-admin-hero"><div><h2>Request shows</h2><p>Search and request TV shows through the configured Seerr service.</p></div><span class="portal-admin-owner">Member requests</span></div><div class="card" style="margin-top:1.25rem;padding:1.25rem"><p style="color:var(--muted);line-height:1.6">Seerr manages show seasons, approvals and download status. This option is hidden automatically when the service is disabled.</p><a id="requestShowsLink" class="btn-sm" href="#" target="_blank" rel="noopener">Open show requests ↗</a></div></div></div>
-    <div id="reportIssuesSection" class="section-pane" style="display:none"><div class="portal-admin-shell"><div class="portal-admin-hero"><div><h2>Report an issue</h2><p>Tell the administrator about a playback, account or request problem.</p></div><span class="portal-admin-owner">Member support</span></div><div class="card" style="margin-top:1.25rem;padding:1.25rem;max-width:720px"><label>Subject<input id="issueSubject" class="input-sm" placeholder="Short description"></label><label style="display:block;margin-top:1rem">Details<textarea id="issueDetails" class="input-sm" rows="7" placeholder="What happened, and which service was affected?"></textarea></label><button class="btn-sm" style="margin-top:1rem" onclick="submitPortalIssue()">Submit report</button></div></div></div>
+    <div id="requestMoviesSection" class="section-pane" style="display:none"><div class="portal-admin-shell"><div class="portal-admin-hero"><div><h2>Movies</h2><p>Search and request movies through the Portal-hosted Seerr flow.</p></div><span class="portal-admin-owner">Member requests</span></div><div class="card" style="margin-top:1.25rem;padding:1.25rem"><p style="color:var(--muted);line-height:1.6">Portal keeps the Seerr API key on the server and submits requests for the signed-in Portal member.</p><a id="requestMoviesLink" class="btn-sm" href="/seerr#movies">Open Movies in Portal</a></div></div></div>
+    <div id="requestShowsSection" class="section-pane" style="display:none"><div class="portal-admin-shell"><div class="portal-admin-hero"><div><h2>TV Shows</h2><p>Search and request TV shows through the Portal-hosted Seerr flow.</p></div><span class="portal-admin-owner">Member requests</span></div><div class="card" style="margin-top:1.25rem;padding:1.25rem"><p style="color:var(--muted);line-height:1.6">Portal keeps the Seerr API key on the server and submits requests for the signed-in Portal member.</p><a id="requestShowsLink" class="btn-sm" href="/seerr#tv">Open TV Shows in Portal</a></div></div></div>
+    <div id="reportIssuesSection" class="section-pane" style="display:none"><div class="portal-admin-shell"><div class="portal-admin-hero"><div><h2>Portal Issues</h2><p>Report a Portal, account, playback, or service-support problem.</p></div><span class="portal-admin-owner">Portal support</span></div><div class="card" style="margin-top:1.25rem;padding:1.25rem;max-width:720px"><label>Subject<input id="issueSubject" class="input-sm" placeholder="Short description"></label><label style="display:block;margin-top:1rem">Details<textarea id="issueDetails" class="input-sm" rows="7" placeholder="What happened, and which service was affected?"></textarea></label><button class="btn-sm" style="margin-top:1rem" onclick="submitPortalIssue()">Submit Portal issue</button></div></div></div>
 
     <!-- ===== ADMINISTRATION SECTION ===== -->
     <div id="administrationSection" class="section-pane" style="display:none">
@@ -2385,7 +2383,6 @@
 
 <nav class="v3-bottom-nav" id="v3BottomNav" aria-label="Mobile navigation">
   <button type="button" class="active" data-bottom-section="home" onclick="showSection('home')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg><span>Home</span></button>
-  <button type="button" id="v3BottomSearch" data-bottom-section="search" onclick="openV3Search('search')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Search</span></button>
   <button type="button" id="v3BottomBooks" data-bottom-section="myRequests" onclick="showSection('myRequests')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg><span>My Books</span></button>
   <button type="button" data-bottom-section="account" onclick="showSection('account')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg><span>Account</span></button>
 </nav>
@@ -2511,11 +2508,10 @@ function applyPortalCapabilities(data) {
   const streamingApps = document.getElementById('v3StreamingApps');
   const administrationLink = document.getElementById('v3AdministrationLink');
   const requestsGroup = document.getElementById('requestsGroup');
-  const bottomSearch = document.getElementById('v3BottomSearch');
   const bottomBooks = document.getElementById('v3BottomBooks');
   if (readingGroup) readingGroup.style.display = portalCapabilities.library ? 'block' : 'none';
   if (requestsGroup) requestsGroup.style.display = portalCapabilities.requests ? 'block' : 'none';
-  const featureNav = { navLibraryEbooks: portalCapabilities.ebooks, navLibraryAudiobooks: portalCapabilities.audiobooks, navLibraryComics: portalCapabilities.comics, navRequestMovies: portalCapabilities.requestMovies, navRequestShows: portalCapabilities.requestShows, navRequestMy: portalCapabilities.requestMy, navRequestIssues: portalCapabilities.requestIssues };
+  const featureNav = { navLibraryEbooks: portalCapabilities.ebooks, navLibraryAudiobooks: portalCapabilities.audiobooks, navLibraryComics: portalCapabilities.comics, navRequestDiscover: portalCapabilities.requests, navRequestMovies: portalCapabilities.requestMovies, navRequestShows: portalCapabilities.requestShows, navRequestMy: portalCapabilities.requestMy, navRequestSeerrIssues: portalCapabilities.requests, navRequestIssues: portalCapabilities.requestIssues };
   Object.entries(featureNav).forEach(([id, visible]) => { const el = document.getElementById(id); if (el) el.style.display = visible ? 'flex' : 'none'; });
   if (embyGroup) embyGroup.style.display = portalCapabilities.emby ? 'block' : 'none';
   if (libraryCard) libraryCard.style.display = portalCapabilities.library ? 'flex' : 'none';
@@ -2525,9 +2521,7 @@ function applyPortalCapabilities(data) {
   if (streamingSilo) streamingSilo.style.display = portalCapabilities.silo ? 'flex' : 'none';
   if (streamingEmby) streamingEmby.style.display = portalCapabilities.emby ? 'flex' : 'none';
   if (streamingApps) streamingApps.style.display = (portalCapabilities.emby ) ? 'flex' : 'none';
-  if (bottomSearch) bottomSearch.style.display = portalCapabilities.library ? 'flex' : 'none';
   if (bottomBooks) bottomBooks.style.display = portalCapabilities.library ? 'flex' : 'none';
-  ['requestMoviesLink','requestShowsLink'].forEach(id => { const el = document.getElementById(id); if (el && portalCapabilities.seerrUrl) el.href = portalCapabilities.seerrUrl; });
   applyStoredSidebarState('v3StreamingGroup', false);
   if (administrationLink) administrationLink.style.display = (portalCapabilities.isAdmin || accountData?.isAdmin) ? 'flex' : 'none';
   requestAnimationFrame(updateV3ServiceStrip);
@@ -3877,7 +3871,7 @@ function renderToggleSettingsPage(cardKey) {
     ['EBOOKS_ENABLED','eBooks','Show eBook browsing and requests.'],
     ['AUDIOBOOKS_ENABLED','Audiobooks','Show audiobook browsing and requests.'],
     ['COMICS_ENABLED','Comics','Show comic browsing and reading tools.'],
-    ['REQUESTS_ISSUES_ENABLED','Report issues','Let members submit a private support report.']
+    ['REQUESTS_ISSUES_ENABLED','Portal Issues','Let members submit a private Portal support report.']
   ];
   detail.innerHTML = `<div class="portal-admin-detail-head"><h2>${title}</h2><p>${description}</p></div><div class="settings-card-grid">${permissions ? `<section class="settings-group-card"><h3>Library Access</h3><p>Membership access is separate from the global Library feature switch.</p>${library}</section><section class="settings-group-card"><h3>Announcement Access</h3><p>Choose which server memberships are allowed to see announcements.</p>${announcements}</section><section class="settings-group-card wide"><h3>Announcement Source</h3><p>Add one or more Discord channels. Each channel must list the media-server Discord role IDs that are allowed to receive it. The announcement’s own tagged role is then matched exactly, so tagging one role does not notify the other roles.</p><div id="announcementChannelRows"></div><button class="btn-sm" type="button" style="margin-top:.85rem" onclick="addAnnouncementChannel()">＋ Add channel</button><input type="hidden" data-portal-admin-key="ANNOUNCEMENTS_CHANNELS" value=""></section>` : `<section class="settings-group-card wide"><h3>Member Areas</h3><p>These switches control what members can see. A feature remains hidden when its required service has not been configured.</p>${features.map(([key,label,help]) => settingsSwitch(key,label,help)).join('')}</section>`}</div><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveAdminDetail('${cardKey}')">Save Changes</button></div>`;
   if (permissions) {
@@ -4346,10 +4340,23 @@ function renderSeerrDetail() {
   const accessRows = configuredServers.length
     ? configuredServers.map(([key, setup]) => authAdminToggle(fields, `SEERR_ACCESS_${key.toUpperCase()}`, `${setup.title} members`, `Allow members with a configured ${setup.title} account to see Requests.`)).join('')
     : '<p class="settings-empty-note">Configure a media server under Media Servers first. Seerr access choices will appear here automatically.</p>';
-  detail.innerHTML = `<div class="portal-admin-detail-head"><h2>Seerr</h2><p>Connect Seerr for movie and TV requests. Seerr supports Emby, Jellyfin and Plex integrations and authenticates API calls with an <code>X-Api-Key</code> header. Requests are shown only to the configured media-server memberships selected below.</p></div><section class="settings-group-card wide"><h3>Seerr connection</h3><p>Seerr is normally installed separately, for example at its default web address on port 5055. Leave this disabled until the Seerr setup is complete.</p><div class="portal-auth-fields">${authAdminToggle(fields, 'SEERR_ENABLED', 'Enable Seerr', 'Allow Seerr-backed Requests features to be considered for member navigation.')}${authAdminField(fields, 'SEERR_URL', 'Seerr URL', 'Public or internally reachable Seerr URL, for example https://requests.example.com.', 'url')}${authAdminField(fields, 'SEERR_API_KEY', 'Seerr API key', 'Create this in Seerr and keep it server-side. It is stored encrypted and sent as X-Api-Key.', 'password')}</div><div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-top:.9rem"><button type="button" class="btn-sm" onclick="testSeerrConnection(this)">⌁ Test Seerr connection</button><span id="seerrTestResult" style="color:var(--muted);font-size:.78rem"></span></div></section><section class="settings-group-card wide"><h3>Member access</h3><p>These choices are limited to media servers that are actually configured. Turn on only the memberships whose users should see Requests.</p><div class="settings-card-grid">${accessRows}</div></section><section class="settings-group-card wide"><h3>Request areas</h3><p>Choose which Seerr-backed sections appear under Requests.</p><div class="settings-card-grid">${authAdminToggle(fields, 'REQUESTS_ENABLED', 'Requests navigation', 'Show the Requests dropdown when Seerr and at least one allowed media server are ready.')}${authAdminToggle(fields, 'REQUESTS_MOVIES_ENABLED', 'Movies', 'Show movie search/request access.')}${authAdminToggle(fields, 'REQUESTS_SHOWS_ENABLED', 'Shows', 'Show TV show search/request access.')}${authAdminToggle(fields, 'REQUESTS_MY_ENABLED', 'My requests', 'Show each member’s request history.')}</div></section><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveAdminDetail('Requests & metadata')">Save Seerr settings</button></div>`;
+  const requestSwitches = [
+    ['REQUESTS_ENABLED', 'Enable Requests', 'Show the Requests menu when Seerr and at least one enabled provider membership are configured.'],
+    ['SEERR_ENABLED', 'Enable Seerr integration', 'Enable the Portal-hosted Seerr backend.'],
+    ['REQUESTS_MOVIES_ENABLED', 'Allow movie requests', 'Show Movies and allow movie requests.'],
+    ['REQUESTS_SHOWS_ENABLED', 'Allow TV requests', 'Show TV Shows and allow TV requests.'],
+    ['REQUESTS_MY_ENABLED', 'Allow request history', 'Show My Requests for the signed-in Portal member.'],
+    ['REQUESTS_ISSUES_ENABLED', 'Allow media issues', 'Show My Issues for Seerr media/request problems.'],
+  ].map(([key, title, help]) => authAdminToggle(fields, key, title, help, false)).join('');
   document.getElementById('portalAdminIndex').style.display = 'none';
   document.getElementById('portalAdminDetail').style.display = 'block';
+  detail.innerHTML = `<div class="portal-admin-detail-head"><h2>Seerr Configuration</h2><p>Portal hosts the member-facing request flow. Seerr remains the request engine, while Radarr and Sonarr remain its download automation services. API keys stay server-side and member actions are tied to Portal's authenticated user record.</p></div><div class="portal-auth-tabs" role="tablist"><button type="button" class="portal-auth-tab active" data-seerr-tab="seerr" onclick="selectSeerrTab('seerr')">Seerr</button><button type="button" class="portal-auth-tab" data-seerr-tab="arr" onclick="selectSeerrTab('arr')">Radarr &amp; Sonarr</button><button type="button" class="portal-auth-tab" data-seerr-tab="permissions" onclick="selectSeerrTab('permissions')">Portal Permissions</button></div><section class="portal-auth-provider-card active" data-seerr-panel="seerr"><div class="portal-auth-provider-head"><span class="portal-auth-provider-mark">⌁</span><div><h3>Seerr server</h3><p>Enter the server-side Seerr endpoint and API key used by Portal.</p></div></div><div class="portal-auth-fields">${authAdminField(fields, 'SEERR_URL', 'Seerr URL', 'The internal or HTTPS URL reachable from the Portal container.', 'url')}${authAdminField(fields, 'SEERR_API_KEY', 'Seerr API key', 'Stored encrypted and used only by Portal server routes.', 'password')}${authAdminField(fields, 'TMDB_API_KEY', 'TMDB API key', 'Optional Portal metadata key; Seerr may also have its own TMDB configuration.', 'password')}</div><div class="library-test-row"><button type="button" class="library-test-button" onclick="testSeerrConnection(this)">⌁ Test Seerr connection</button><span id="seerrTestResult" class="library-test-result"></span></div></section><section class="portal-auth-provider-card" data-seerr-panel="arr"><div class="portal-auth-provider-head"><span class="portal-auth-provider-mark">⚙</span><div><h3>Download automation</h3><p>These are server-side Radarr and Sonarr connections. Seerr should also be configured to use the same services for approvals, downloads, and status updates.</p></div></div><div class="portal-auth-fields">${authAdminField(fields, 'RADARR_URL', 'Radarr URL', 'Radarr v3 API endpoint reachable from the Portal container.', 'url')}${authAdminField(fields, 'RADARR_API_KEY', 'Radarr API key', 'Stored encrypted; used for the administrator connection test.', 'password')}</div><div class="library-test-row"><button type="button" class="library-test-button" onclick="testArrConnection(this, 'radarr')">⌁ Test Radarr connection</button><span id="radarrTestResult" class="library-test-result"></span></div><div class="portal-auth-fields" style="margin-top:1rem">${authAdminField(fields, 'SONARR_URL', 'Sonarr URL', 'Sonarr v3 API endpoint reachable from the Portal container.', 'url')}${authAdminField(fields, 'SONARR_API_KEY', 'Sonarr API key', 'Stored encrypted; used for the administrator connection test.', 'password')}</div><div class="library-test-row"><button type="button" class="library-test-button" onclick="testArrConnection(this, 'sonarr')">⌁ Test Sonarr connection</button><span id="sonarrTestResult" class="library-test-result"></span></div></section><section class="portal-auth-provider-card" data-seerr-panel="permissions"><div class="portal-auth-provider-head"><span class="portal-auth-provider-mark">✓</span><div><h3>Portal request permissions</h3><p>Every request is made through Portal and assigned to the matching Seerr user. A member must have an enabled linked provider membership and a matching Portal/Seerr identity; unmatched users are denied.</p></div></div><div class="portal-auth-fields">${requestSwitches}</div><h3 style="margin-top:1.2rem">Linked provider membership access</h3><div class="portal-auth-fields">${accessRows}</div></section><div class="portal-admin-detail-actions"><button class="portal-admin-save" onclick="saveAdminDetail('Requests & metadata')">Save Seerr settings</button></div>`;
   attachAdminDetailTrail('Seerr');
+}
+
+function selectSeerrTab(tab) {
+  document.querySelectorAll('[data-seerr-tab]').forEach(button => button.classList.toggle('active', button.dataset.seerrTab === tab));
+  document.querySelectorAll('[data-seerr-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.seerrPanel === tab));
 }
 
 async function testSeerrConnection(button) {
@@ -4359,6 +4366,18 @@ async function testSeerrConnection(button) {
   if (!url || !apiKey) { if (result) result.textContent = 'Enter the URL and API key first.'; return; }
   button.disabled = true; if (result) result.textContent = 'Testing…';
   try { const response = await fetch('/api/admin/seerr/test', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url, apiKey}) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Connection failed'); result.textContent = data.message || 'Seerr connected.'; result.style.color = 'var(--success)'; }
+  catch (error) { result.textContent = error.message; result.style.color = 'var(--danger)'; }
+  finally { button.disabled = false; }
+}
+
+async function testArrConnection(button, service) {
+  const result = document.getElementById(`${service}TestResult`);
+  const prefix = service.toUpperCase();
+  const url = document.querySelector(`[data-portal-admin-key="${prefix}_URL"]`)?.value.trim() || '';
+  const apiKey = document.querySelector(`[data-portal-admin-key="${prefix}_API_KEY"]`)?.value.trim() || '';
+  if (!url || !apiKey) { if (result) result.textContent = `Enter the ${service[0].toUpperCase() + service.slice(1)} URL and API key first.`; return; }
+  button.disabled = true; if (result) result.textContent = 'Testing…';
+  try { const response = await fetch('/api/admin/arr/test', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ service, url, apiKey }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Connection failed'); result.textContent = data.message || 'Connection verified.'; result.style.color = 'var(--success)'; }
   catch (error) { result.textContent = error.message; result.style.color = 'var(--danger)'; }
   finally { button.disabled = false; }
 }
