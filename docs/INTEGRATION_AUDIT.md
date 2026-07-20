@@ -57,3 +57,9 @@ A static route audit cannot prove that an API key has the required provider perm
 - Add and remove a non-primary additional administrator.
 - Confirm the primary administrator cannot be removed from the card.
 - Confirm administrator records are stored encrypted in PostgreSQL and no password hash is returned to the browser.
+
+## Authentication provider verification
+
+- **Discord:** enable the provider, register the exact `/auth/callback` URL, complete OAuth, and verify guild/role restrictions.
+- **Emby Connect:** configure Emby URL/API key, enable the provider, save the member's Emby Connect email from the profile, then verify a fresh Connect login creates the correct Portal session. Confirm a wrong password fails and the Connect password is not persisted.
+- **WHMCS:** do not mark this provider operational based on the card alone. The public implementation only redirects to `AUTH_WHMCS_URL`; a complete deployment still needs a tested callback, token exchange, user lookup, and Portal-session handoff.
