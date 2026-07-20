@@ -42,6 +42,17 @@ Select **Save Library Configuration** after the connection test succeeds. Hardco
 
 Library availability is controlled separately by the Feature switches and Permissions & Announcements cards. Enable the required Library, ebooks, audiobooks, or comics features and grant access to the relevant member services. A live provider test still requires a reachable BookWarehouse deployment and valid credentials; do not commit those values to Git.
 
+## Seerr request configuration
+
+Seerr is an optional, separately hosted request service. After the first administrator login, open Administration → Requests & metadata:
+
+1. Set **Seerr URL** to the reachable Seerr web/API address and enter the Seerr API key. The Portal sends the key server-side as `X-Api-Key`.
+2. Use **Test Seerr connection**. The test checks Seerr status and does not save changes.
+3. Enable **Seerr** and **Requests navigation**, then enable the request areas required by this installation: Movies, Shows, My requests, or Issue reports.
+4. Enable only the member-service access switches whose configured users should see Requests. The relevant Emby, Silo, Plex, or Jellyfin provider URL and credentials must already be configured.
+
+The Portal links members into Seerr for catalogue search, approvals, downloads, and status tracking; it does not replace Seerr’s own media-server, downloader, or library configuration. Keep the URL, API key, and provider credentials out of source control. A successful connection test confirms reachability and authentication only; verify an actual request flow against the live Seerr installation after deployment.
+
 ## Operator isolation
 
 Each operator must create and use their own PostgreSQL project, Discord application, provider accounts, environment variables, and encrypted settings. Invited GitHub collaborators receive the distributable source only; never share the private portal’s .env, database, bot configuration, credentials, domains, or server details.
