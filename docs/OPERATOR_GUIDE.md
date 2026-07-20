@@ -161,3 +161,12 @@ The recovery address belongs to the member account and is not used for the boots
 For release verification, test connection, recovery-link delivery, token expiry/reuse rejection, expiry reminders, and support-report delivery with a test member account.
 
 The Admin & Recovery Email provider can be switched independently from Kindle delivery. Resend uses the API key and verified sender fields. SMTP uses the host, port, SSL/TLS toggle, credentials, sender, and support inbox. The selected provider is used by password resets, expiry reminders, and support notifications.
+
+## Administrator account lifecycle
+
+Portal has a two-stage administrator setup:
+
+1. **Bootstrap:** before PostgreSQL contains a saved primary record, the portal-only login comes from the host `.env` bootstrap values.
+2. **Persistent:** when the first administrator saves **Primary Administrator** in Administration → Administrator Accounts, the credentials are hashed and encrypted into PostgreSQL. The saved primary record becomes the source of truth and the original bootstrap login is disabled.
+
+Additional administrators are also hashed and stored in encrypted PostgreSQL settings. They are independent of member and provider identities. Verify the new primary login after saving and keep a protected backup of both PostgreSQL and the host `.env`.

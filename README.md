@@ -98,3 +98,9 @@ Configure:
 Use **Test Connection** before saving to verify the selected provider. For Resend it checks the API key and sender domain; for SMTP it verifies the connection and authentication. The test does not send an email. After saving, verify the live flow by setting a member recovery address under Account, requesting a password reset from the sign-in page, and confirming the link arrives and expires as documented. The recovery email is never shown to other members. The card does not reset the bootstrap Portal administrator password; administrators change that under Administration → Administrator Accounts.
 
 When SMTP is selected, configure the SMTP host, port, security mode, username/password if required, sender address, and private support inbox in the Admin & Recovery Email card. Port 587 normally uses STARTTLS with SSL/TLS off; port 465 normally uses SSL/TLS with it enabled. The card’s Test Connection verifies SMTP with `transporter.verify()` and sends no message.
+
+## Administrator account lifecycle
+
+The first Portal login is bootstrapped from `PORTAL_ADMIN_USERNAME`, `PORTAL_ADMIN_PASSWORD_SALT`, and `PORTAL_ADMIN_PASSWORD_HASH` in the host environment. After signing in, open Administration → Administrator Accounts and save the **Primary Administrator** with the username and password you want to keep. Portal stores that credential record encrypted in PostgreSQL and then stops accepting the old environment bootstrap login. Additional administrator logins are stored in the same encrypted settings record.
+
+Back up PostgreSQL and the host `.env` separately. The `.env` bootstrap values are needed to recover access if the settings database has not yet been initialized; once a primary administrator is saved, use the stored primary login. Changing the primary administrator does not change member or media-server accounts.

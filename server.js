@@ -572,9 +572,15 @@ function matchesPortalAdminHash(password, record) {
 
 async function portalAdminLoginMatches(username, password) {
   const designated = await getPortalDesignatedAdmin();
-  if (designated && String(designated.username).toLowerCase() === username.toLowerCase() && matchesPortalAdminHash(password, designated)) return true;
-  const configured = String(process.env.PORTAL_ADMIN_USERNAME || 'admin').trim();
-  if (username.toLowerCase() === configured.toLowerCase() && portalAdminPasswordMatches(password)) return true;
+  // The environment bootstrap account is only valid until the first primary
+  // administrator is saved into encrypted PostgreSQL settings. This prevents
+  // an old .env credential from remaining a second hidden admin login.
+  if (designated) {
+    if (String(designated.username).toLowerCase() === username.toLowerCase() && matchesPortalAdminHash(password, designated)) return true;
+  } else {
+    const configured = String(process.env.PORTAL_ADMIN_USERNAME || 'admin').trim();
+    if (username.toLowerCase() === configured.toLowerCase() && portalAdminPasswordMatches(password)) return true;
+  }
   const accounts = await getPortalAdminAccounts();
   const account = accounts.find(item => String(item.username).toLowerCase() === username.toLowerCase());
   return Boolean(account && matchesPortalAdminHash(password, account));
@@ -2751,9 +2757,10 @@ app.post('/api/admin/administrators', requireAdmin, async (req, res) => {
   const username = String(req.body?.username || '').trim();
   const password = String(req.body?.password || '');
   const configured = String(process.env.PORTAL_ADMIN_USERNAME || 'admin').trim();
+  const designated = await getPortalDesignatedAdmin();
   if (!username || username.length < 3) return res.status(400).json({ error: 'Username must be at least 3 characters.' });
   if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
-  if (username.toLowerCase() === configured.toLowerCase()) return res.status(400).json({ error: 'That username is the designated server admin.' });
+  if (username.toLowerCase() === configured.toLowerCase() || username.toLowerCase() === String(designated?.username || '').toLowerCase()) return res.status(400).json({ error: 'That username is reserved for the primary administrator.' });
   try {
     const accounts = await getPortalAdminAccounts();
     const existing = accounts.findIndex(item => String(item.username).toLowerCase() === username.toLowerCase());
@@ -2771,7 +2778,8 @@ app.post('/api/admin/administrators', requireAdmin, async (req, res) => {
 app.delete('/api/admin/administrators/:username', requireAdmin, async (req, res) => {
   const username = String(req.params.username || '').trim();
   const configured = String(process.env.PORTAL_ADMIN_USERNAME || 'admin').trim();
-  if (!username || username.toLowerCase() === configured.toLowerCase()) return res.status(400).json({ error: 'The designated server admin cannot be removed here.' });
+  const designated = await getPortalDesignatedAdmin();
+  if (!username || username.toLowerCase() === configured.toLowerCase() || username.toLowerCase() === String(designated?.username || '').toLowerCase()) return res.status(400).json({ error: 'The primary administrator cannot be removed here.' });
   try {
     const accounts = await getPortalAdminAccounts();
     await savePortalAdminAccounts(accounts.filter(item => String(item.username).toLowerCase() !== username.toLowerCase()));
