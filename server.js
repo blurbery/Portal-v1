@@ -8096,6 +8096,11 @@ app.post('/api/reader/progress', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// In-app audiobook player page
+app.get('/audio-reader', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'audio-reader.html'));
+});
+
 // Reader page
 app.get('/reader', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'reader.html'));
