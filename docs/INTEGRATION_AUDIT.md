@@ -46,3 +46,14 @@ A static route audit cannot prove that an API key has the required provider perm
 
 - Repeat the connection test with the selected provider: Resend domain/API validation or SMTP connection/authentication verification.
 - If SMTP is selected, verify that port/security settings match the provider (587/STARTTLS or 465/SSL).
+
+
+## Administrator account verification
+
+- Start with the documented `.env` bootstrap credentials.
+- Open Administration → Administrator Accounts and save a new Primary Administrator.
+- Sign out and confirm the saved primary credentials work.
+- Confirm the old bootstrap credentials no longer work after the saved record exists.
+- Add and remove a non-primary additional administrator.
+- Confirm the primary administrator cannot be removed from the card.
+- Confirm administrator records are stored encrypted in PostgreSQL and no password hash is returned to the browser.
