@@ -95,6 +95,10 @@ const PORTAL_CONFIG_FIELDS = [
   { key: 'TMDB_API_KEY', label: 'TMDB API key', category: 'Requests & metadata', type: 'password', secret: true },
   { key: 'SEERR_URL', label: 'Seerr URL', category: 'Requests & metadata', type: 'url', secret: false },
   { key: 'SEERR_API_KEY', label: 'Seerr API key', category: 'Requests & metadata', type: 'password', secret: true },
+  { key: 'RADARR_URL', label: 'Radarr URL', category: 'Requests & metadata', type: 'url', secret: false },
+  { key: 'RADARR_API_KEY', label: 'Radarr API key', category: 'Requests & metadata', type: 'password', secret: true },
+  { key: 'SONARR_URL', label: 'Sonarr URL', category: 'Requests & metadata', type: 'url', secret: false },
+  { key: 'SONARR_API_KEY', label: 'Sonarr API key', category: 'Requests & metadata', type: 'password', secret: true },
   { key: 'SEERR_ACCESS_EMBY', label: 'Allow Emby members to use Seerr', category: 'Requests & metadata', type: 'toggle', secret: false },
   { key: 'SEERR_ACCESS_SILO', label: 'Allow Silo members to use Seerr', category: 'Requests & metadata', type: 'toggle', secret: false },
   { key: 'SEERR_ACCESS_PLEX', label: 'Allow Plex members to use Seerr', category: 'Requests & metadata', type: 'toggle', secret: false },
@@ -151,7 +155,7 @@ const PORTAL_CONFIG_FIELDS = [
   { key: 'REQUESTS_MOVIES_ENABLED', label: 'Movie requests enabled', category: 'Feature switches', type: 'toggle', secret: false },
   { key: 'REQUESTS_SHOWS_ENABLED', label: 'TV show requests enabled', category: 'Feature switches', type: 'toggle', secret: false },
   { key: 'REQUESTS_MY_ENABLED', label: 'My requests enabled', category: 'Feature switches', type: 'toggle', secret: false },
-  { key: 'REQUESTS_ISSUES_ENABLED', label: 'Report issues enabled', category: 'Feature switches', type: 'toggle', secret: false },
+  { key: 'REQUESTS_ISSUES_ENABLED', label: 'Portal Issues enabled', category: 'Feature switches', type: 'toggle', secret: false },
 ]; 
 const PORTAL_CONFIG_BY_KEY = new Map(PORTAL_CONFIG_FIELDS.map(field => [field.key, field]));
 let portalSettings = new Map();
@@ -1024,6 +1028,11 @@ app.post('/api/report-issue', requireAuth, async (req, res) => {
 app.get('/dashboard', requireAuth, (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+app.get('/seerr', requireAuth, (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.sendFile(path.join(__dirname, 'public', 'seerr.html'));
 });
 
 // ─── API: Get account data ─────────────────────────────────────────────────────
@@ -2500,6 +2509,230 @@ app.post('/api/admin/seerr/test', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('[seerr test]', error.response?.status || 'network', error.message);
     res.status(502).json({ error: `Seerr connection failed (${error.response?.status || 'network error'}). Check the URL and API key.` });
+  }
+});
+
+app.post('/api/admin/arr/test', requireAdmin, async (req, res) => {
+  const service = String(req.body?.service || '').toLowerCase();
+  const allowed = { radarr: 'Radarr', sonarr: 'Sonarr' };
+  if (!allowed[service]) return res.status(400).json({ error: 'Choose Radarr or Sonarr.' });
+  const url = String(req.body?.url || process.env[`${service.toUpperCase()}_URL`] || '').trim().replace(/\/+$/, '');
+  const apiKey = String(req.body?.apiKey || process.env[`${service.toUpperCase()}_API_KEY`] || '').trim();
+  if (!url || !apiKey) return res.status(400).json({ error: `Enter the ${allowed[service]} URL and API key first.` });
+  try {
+    const response = await axios.get(`${url}/api/v3/system/status`, { headers: { 'X-Api-Key': apiKey, Accept: 'application/json' }, timeout: 8000 });
+    res.json({ success: true, message: `${allowed[service]} responded successfully${response.data?.version ? ` (${response.data.version})` : ''}.` });
+  } catch (error) {
+    console.error(`[${service} test]`, error.response?.status || 'network', error.message);
+    res.status(502).json({ error: `${allowed[service]} connection failed (${error.response?.status || 'network error'}). Check the URL and API key.` });
+  }
+});
+
+// ─── API: Portal-hosted Seerr flow ───────────────────────────────────────────
+// Seerr remains the media-request engine, but members use Portal's authenticated
+// UI and API. The Seerr API key never reaches the browser. Portal users are
+// matched to Seerr users by email or provider username before requests/history
+// are returned.
+const SEERR_USER_CACHE = new Map();
+const SEERR_USER_CACHE_MS = 60 * 1000;
+
+function seerrBaseUrl() {
+  return String(process.env.SEERR_URL || '').trim().replace(/\/+$/, '');
+}
+
+async function seerrApi(method, endpoint, config = {}) {
+  const base = seerrBaseUrl();
+  const apiKey = String(process.env.SEERR_API_KEY || '').trim();
+  if (!base || !apiKey) throw new Error('Seerr is not configured');
+  return axios({
+    method,
+    url: `${base}/api/v1${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`,
+    timeout: 12000,
+    ...config,
+    headers: { Accept: 'application/json', 'X-Api-Key': apiKey, ...(config.headers || {}) },
+  });
+}
+
+function seerrPortalIdentity(req) {
+  const user = req.session?.user || {};
+  const username = String(user.emby_username || user.silo_username || user.discord_username || user.username || '').trim();
+  const email = String(user.recovery_email || user.email || '').trim().toLowerCase();
+  const key = user.emby_user_id ? `emby:${user.emby_user_id}` : user.silo_user_id ? `silo:${user.silo_user_id}` : user.discord_id ? `discord:${user.discord_id}` : `username:${username.toLowerCase()}`;
+  return { key, username, email };
+}
+
+function seerrMembershipAllowed(req) {
+  const features = getPortalFeatures();
+  if (!features.requests) return false;
+  const user = req.session?.user || {};
+  return ['emby', 'silo', 'plex', 'jellyfin'].some(provider => {
+    const linked = Boolean(user[`has_${provider}`] || user[`${provider}_user_id`]);
+    return linked && features.seerrServices?.[provider] === true;
+  });
+}
+
+async function seerrUserForRequest(req) {
+  const identity = seerrPortalIdentity(req);
+  if (!identity.username && !identity.email) return null;
+  const cached = SEERR_USER_CACHE.get(identity.key);
+  if (cached && Date.now() - cached.updatedAt < SEERR_USER_CACHE_MS) return cached.user;
+  const response = await seerrApi('get', '/user', { params: { take: 1000 } });
+  const users = Array.isArray(response.data) ? response.data : response.data?.results || response.data?.users || [];
+  const wanted = [identity.email, identity.username.toLowerCase()].filter(Boolean);
+  const user = users.find(item => [item.email, item.username, item.plexUsername, item.jellyfinUsername, item.embyUsername]
+    .map(value => String(value || '').trim().toLowerCase()).some(value => value && wanted.includes(value))) || null;
+  SEERR_USER_CACHE.set(identity.key, { updatedAt: Date.now(), user });
+  if (user?.id) {
+    await db.from('seerr_users').upsert({
+      portal_user_key: identity.key,
+      seerr_user_id: String(user.id),
+      username: identity.username,
+      email: identity.email,
+      seerr_user: user,
+    }, { onConflict: 'portal_user_key' });
+  }
+  return user;
+}
+
+async function requireSeerrPortalAccess(req, res) {
+  if (!seerrMembershipAllowed(req)) {
+    res.status(403).json({ error: 'Seerr access is not enabled for this Portal membership.' });
+    return null;
+  }
+  try {
+    const user = await seerrUserForRequest(req);
+    if (!user?.id) {
+      res.status(409).json({ error: 'Your Portal account is not linked to a matching Seerr account.' });
+      return null;
+    }
+    return { user, identity: seerrPortalIdentity(req) };
+  } catch (error) {
+    console.error('[seerr portal access]', error.response?.status || 'network', error.message);
+    res.status(502).json({ error: 'Seerr could not be reached.' });
+    return null;
+  }
+}
+
+async function persistSeerrHistory(kind, context, item) {
+  const id = item?.id || item?.request?.id || item?.issue?.id;
+  if (!id) return;
+  await db.from('seerr_history').upsert({
+    kind,
+    seerr_id: String(id),
+    portal_user_key: context.identity.key,
+    seerr_user_id: String(context.user.id),
+    payload: item,
+  }, { onConflict: 'kind,seerr_id,portal_user_key' });
+}
+
+async function localSeerrHistory(kind, context) {
+  const result = await db.from('seerr_history').select('payload,created_at,updated_at')
+    .eq('kind', kind).eq('portal_user_key', context.identity.key)
+    .order('created_at', { ascending: false }).limit(100);
+  return (result.data || []).map(row => row.payload).filter(Boolean);
+}
+
+app.get('/api/seerr/discover', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  try {
+    const response = await seerrApi('get', '/discover/trending', { params: { page: Math.max(1, Number(req.query.page) || 1), type: req.query.type || 'all' } });
+    res.json(response.data);
+  } catch (error) {
+    console.error('[seerr discover]', error.response?.status || 'network', error.message);
+    res.status(error.response?.status || 502).json({ error: 'Could not load Seerr Discover.' });
+  }
+});
+
+app.get('/api/seerr/search', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  const query = String(req.query.query || '').trim();
+  if (!query) return res.status(400).json({ error: 'Search query is required.' });
+  try {
+    const response = await seerrApi('get', '/search', { params: { query, page: Math.max(1, Number(req.query.page) || 1) } });
+    res.json(response.data);
+  } catch (error) {
+    console.error('[seerr search]', error.response?.status || 'network', error.message);
+    res.status(error.response?.status || 502).json({ error: 'Could not search Seerr.' });
+  }
+});
+
+app.get('/api/seerr/movie/:id', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  try { res.json((await seerrApi('get', `/movie/${encodeURIComponent(req.params.id)}`)).data); }
+  catch (error) { res.status(error.response?.status || 502).json({ error: 'Could not load movie details.' }); }
+});
+
+app.get('/api/seerr/tv/:id', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  try { res.json((await seerrApi('get', `/tv/${encodeURIComponent(req.params.id)}`)).data); }
+  catch (error) { res.status(error.response?.status || 502).json({ error: 'Could not load TV details.' }); }
+});
+
+app.get('/api/seerr/requests', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  try {
+    const response = await seerrApi('get', '/request', { params: { requestedBy: context.user.id, take: 100, skip: 0, sort: 'added', sortDirection: 'desc' } });
+    const payload = response.data || {};
+    const items = Array.isArray(payload) ? payload : payload.results || [];
+    await Promise.all(items.map(item => persistSeerrHistory('request', context, item)));
+    res.json({ ...payload, results: items });
+  } catch (error) {
+    console.error('[seerr requests]', error.response?.status || 'network', error.message);
+    try {
+      const items = await localSeerrHistory('request', context);
+      if (items.length) return res.json({ results: items, localHistory: true });
+    } catch (historyError) {
+      console.error('[seerr local requests]', historyError.message);
+    }
+    res.status(error.response?.status || 502).json({ error: 'Could not load your Seerr requests.' });
+  }
+});
+
+app.post('/api/seerr/requests', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  const body = req.body || {};
+  if (!['movie', 'tv'].includes(body.mediaType) || !body.mediaId) return res.status(400).json({ error: 'A movie or TV media ID is required.' });
+  try {
+    const response = await seerrApi('post', '/request', { data: { ...body, userId: context.user.id } });
+    await persistSeerrHistory('request', context, response.data);
+    res.status(response.status || 201).json(response.data);
+  } catch (error) {
+    console.error('[seerr request]', error.response?.status || 'network', error.message);
+    res.status(error.response?.status || 502).json({ error: error.response?.data?.message || 'Could not create the Seerr request.' });
+  }
+});
+
+app.get('/api/seerr/issues', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  try {
+    const response = await seerrApi('get', '/issue');
+    const raw = Array.isArray(response.data) ? response.data : response.data?.results || [];
+    const items = raw.filter(item => String(item.createdBy?.id || item.reportedBy?.id || '') === String(context.user.id));
+    await Promise.all(items.map(item => persistSeerrHistory('issue', context, item)));
+    res.json({ issues: items });
+  } catch (error) {
+    console.error('[seerr issues]', error.response?.status || 'network', error.message);
+    try {
+      const items = await localSeerrHistory('issue', context);
+      if (items.length) return res.json({ issues: items, localHistory: true });
+    } catch (historyError) {
+      console.error('[seerr local issues]', historyError.message);
+    }
+    res.status(error.response?.status || 502).json({ error: 'Could not load your Seerr issues.' });
+  }
+});
+
+app.post('/api/seerr/issues', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  const body = req.body || {};
+  if (!body.mediaId || !body.issueType || !String(body.message || '').trim()) return res.status(400).json({ error: 'Media, issue type, and message are required.' });
+  try {
+    const response = await seerrApi('post', '/issue', { data: { ...body, message: String(body.message).trim(), userId: context.user.id } });
+    await persistSeerrHistory('issue', context, response.data);
+    res.status(response.status || 201).json(response.data);
+  } catch (error) {
+    console.error('[seerr issue]', error.response?.status || 'network', error.message);
+    res.status(error.response?.status || 502).json({ error: error.response?.data?.message || 'Could not create the Seerr issue.' });
   }
 });
 

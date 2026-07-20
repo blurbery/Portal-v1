@@ -1,132 +1,90 @@
-# Portal Portal — GitHub Build v1
+# Portal Discord Bot Template
 
-This is a separate, provider-neutral v1 build. It is not the private live portal and does not contain the owner’s credentials, API keys, Discord IDs, private domains, or personal server addresses. All installation-specific values belong in environment variables or the encrypted PostgreSQL settings table.
+This is a separate, provider-neutral template. It does not modify or include the existing private Portal bot, private APIs, personal IDs, payment code, or live credentials.
 
-## Important boundary
+## What is included
 
-Do not copy private portal changes directly into this repository. Keep the portal integration contract intact: authentication, provider configuration, PostgreSQL table names, /api/* routes, and the member-session shape are shared interfaces. Extend those interfaces deliberately and add a migration/documentation entry for every change.
+- Ticket panel, ticket creation, and ticket close flow.
+- The ticket panel uses a category dropdown; configured media servers become ticket categories, and every ticket gets a Close Ticket button.
+- `/pricing` using the portal-generated `PRICING_JSON` value.
+- Provider-gated command registration:
+  - Emby: `/embtrial`, `/embadd`, `/embdelete`, `/embrenew`, `/emblookup`, `/embaddsub`, `/embpoollookup`, `/embupgrade`, `/embreclaim`, `/embaddstream`, `/embdeletesub`
+  - Silo: `/silotrial`, `/siloadd`, `/silodelete`, `/silorenew`, `/silolookup`, `/siloaddsub`, `/silopoollookup`, `/siloupgrade`, `/siloreclaim`, `/siloaddstream`, `/silodeletesub`
+  - Jellyfin: `/jellytrial`, `/jellyadd`, `/jellydelete`, `/jellyrenew`, `/jellylookup`, `/jellyaddsub`, `/jellypoollookup`, `/jellyupgrade`, `/jellyreclaim`, `/jellyaddstream`, `/jellydeletesub`
+  - Plex: `/plextrial`, `/plexadd`, `/plexdelete`, `/plexrenew`, `/plexlookup`, `/plexaddsub`, `/plexpoollookup`, `/plexupgrade`, `/plexreclaim`, `/plexaddstream`, `/plexdeletesub`
+- Portal-linked persistence through the existing `emby_accounts` and `silo_accounts` tables, plus the bot membership audit table. Every created account stores the Discord ID; Lifetime sub-users retain their provider parent ID.
+- Sub-users intentionally inherit the parent’s Discord ownership ID and do not receive a separate Discord login. The parent can share the generated media-server credentials with family or friends; sub-users remain isolated by their provider `parent_*` relationship.
+- Credentials embeds are posted in the command channel and sent to the linked Discord member by DM. The portal address comes from `PORTAL_URL`, which must match the portal's General Settings → Base URL (Portal URL).
+- Five-day, two-stream trial defaults.
 
-v1 is a clean provider-neutral deployment. Do not add owner-specific sync jobs, private library backends, private Portal integrations, or installation-specific defaults to this repository.
+Commands and ticket categories are only registered when the provider is enabled in the portal pricing JSON and both its URL and API key are present. Emby, Jellyfin-compatible account creation, and Silo account creation are wired to environment-only provider adapters. Plex account creation is intentionally not guessed because Plex uses an invite/claim flow rather than a portable local-user API; its commands remain visible only after a Plex adapter is supplied.
 
-## Installation at a glance
+## Setup
 
-Portal has two supported deployment modes:
+1. Create a Discord application and bot in the Developer Portal.
+2. Copy the Application ID into `CLIENT_ID` and reset the bot token into `DISCORD_TOKEN`.
+3. Under OAuth2 URL Generator, select `bot` and `applications.commands`.
+4. Grant View Channels, Send Messages, Embed Links, Attach Files, Read Message History, Manage Messages, Manage Channels, and Manage Roles.
+5. Under Bot → Privileged Gateway Intents, enable Server Members Intent and Message Content Intent.
+6. Download the portal-generated `bot-config.json` after saving the Discord Bot card and copy it into this project root. It controls selected providers, commands, ticket categories and pricing.
+7. Add only the services configured in the portal and their host environment variables. Copy the exact portal Base URL into `PORTAL_URL`.
+8. Run `npm install`, then `npm run register` and `npm start`.
 
-- **Docker Compose (recommended):** runs Portal and PostgreSQL together, applies `portal_schema.sql` on the first database-volume creation, and exposes Portal on host port `3100`.
-- **Node.js plus external PostgreSQL:** use Node.js 20+, apply the schema manually, and run Portal behind your own process manager and reverse proxy.
+## Register commands from a terminal
 
-Before starting, you need a PostgreSQL database, a long random `SESSION_SECRET`, a long random `CONFIG_ENCRYPTION_KEY`, and a bootstrap administrator username/password hash. Provider credentials are optional and should be added only after the first administrator login.
+Node.js 22 or newer is required. Homebrew is optional.
 
-### Docker installation
+macOS with Homebrew:
 
 ```bash
-git clone https://github.com/blurbery/Portal-v1.git /opt/portal-v1-public
-cd /opt/portal-v1-public
-cp .env.example .env
-# Edit .env: PORTAL_URL, secrets, and any provider values you need.
-docker compose -p portal-v1-public up -d --build
-docker compose -p portal-v1-public ps
-curl -fsS http://127.0.0.1:3100/api/health
+brew install node@22
 ```
 
-The first Docker start creates the named PostgreSQL volume and applies `portal_schema.sql`. If the volume already exists, schema changes must be applied through the documented migration process; do not delete a production volume to retry setup.
-
-### Node.js installation
+macOS/Linux with nvm:
 
 ```bash
-cp .env.example .env
-# Set DATABASE_URL, PORTAL_URL, SESSION_SECRET, CONFIG_ENCRYPTION_KEY,
-# PORTAL_ADMIN_USERNAME, PORTAL_ADMIN_PASSWORD_HASH, and PORTAL_ADMIN_PASSWORD_SALT.
-psql "$DATABASE_URL" -f portal_schema.sql
+nvm install 22
+nvm use 22
+```
+
+Windows PowerShell: install Node.js 22 from nodejs.org, open a new PowerShell window, then run:
+
+```powershell
+cd C:\path\to\your\private-bot-repository
+copy env.example .env
+notepad .env
 npm install
-npm run check
-npm start
+node --env-file=.env index.js register
+node --env-file=.env index.js
 ```
 
-Put a reverse proxy with HTTPS in front of the Node process before exposing it to the internet. See [docs/SETUP.md](docs/SETUP.md) for the complete checklist and [docs/DOCKER.md](docs/DOCKER.md) for Docker operations. Never commit `.env`, bot tokens, provider API keys, OAuth client secrets, service-role keys, password hashes, or OPDS URLs containing credentials.
+macOS/Linux terminal:
 
-## Operator isolation
+```bash
+cd /path/to/your/private-bot-repository
+cp env.example .env
+chmod 600 .env
+nano .env
+npm install
+node --env-file=.env index.js register
+node --env-file=.env index.js
+```
 
-Each operator must create and use their own PostgreSQL project, Discord application, provider accounts, environment variables, and encrypted settings. Invited GitHub collaborators receive the distributable source only; never share the private portal’s .env, database, bot configuration, credentials, domains, or server details.
+The `.env` file must contain the real values locally or in the host environment, but must never be committed. Keep it beside the bot on the VPS with permissions `600`.
 
-## Included
+For the public PostgreSQL build, run the bot beside the portal with PM2 or Docker Compose. Keep the PostgreSQL connection and all provider credentials in the VPS environment only. Verify the portal health endpoint and bot logs after deployment.
 
-- Admin-configured portal settings stored encrypted in PostgreSQL.
-- Discord OAuth and Emby Connect authentication switches; WHMCS is currently an external SSO-bridge entry point, not a complete Portal callback integration.
-- Configurable Emby, Silo, Jellyfin and Plex provider slots.
-- Announcements, role routing, member/sub-user session handling, and optional Seerr configuration.
-- PostgreSQL and hosting-provider deployment instructions.
+Never commit `.env`, bot tokens, service-role keys, provider API keys, private IDs, or private adapter code.
 
-Read [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for the system map, configuration order, service-linking flow, and verification checklist. The static route and runtime checklist is in [docs/INTEGRATION_AUDIT.md](docs/INTEGRATION_AUDIT.md). Also see docs/SETUP.md, docs/SECURITY.md, docs/DOCKER.md, and docs/UPDATES.md before installing.
+## Generated archive workflow
 
+The Portal Discord Bot card generates one complete `.tar.gz` folder containing the bot source, package manifest, Docker files, PostgreSQL adapter/schema, `env.example`, `bot-config.json`, and deployment documentation. Configure providers, pricing, roles, and announcements in Portal before downloading it.
 
-## Public PostgreSQL installation
-
-The supported public release is self-hosted PostgreSQL plus the Portal container. Apply portal_schema.sql, copy .env.example to .env, configure PostgreSQL, and run docker compose -p portal-v1-public up -d --build. Verify /api/health reports database: ok.
-
-Configure General Settings, Authentication & Access, Media Servers, Permissions & Announcements, and then the separate Discord Bot card. The Bot card reuses the single shared Discord Server ID from Authentication & Access. Download one complete bot archive and run npm register after first deployment and after command/provider changes. Lifetime parents own a stream pool for linked sub-users; Plex and Jellyfin remain adapter slots until their tested bridges exist.
-
-
-## Library media flow
-
-The public library actions are wired by media type: eBooks are converted to EPUB with Calibre and open in Portal's reader, audiobooks stream through Portal's mobile-friendly audio player and remain downloadable, and comics use Kavita for the rich reader/OPDS experience. Configure Kavita in the Library administration card; see [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for the OPDS setup.
+The shared Discord Server/Guild ID is read from Portal Authentication & Access. Channel IDs and allowed role IDs are entered separately under Permissions & Announcements. Create `.env` on the bot host only. Run `npm run register` after the first deployment and after command, provider, or pricing changes; starting the bot alone does not publish changed slash commands.
 
 
-## First-launch checklist
+## Provider/account support boundary
 
-1. Confirm `GET /api/health` reports the database as healthy.
-2. Sign in with the bootstrap administrator account.
-3. Set General Settings, especially the canonical `PORTAL_URL`.
-4. Configure Authentication & Access, then Media Servers.
-5. Configure Permissions & Announcements and enable only the member groups that should see each feature.
-6. Configure Library, Requests & metadata, and Kindle delivery only when those services are installed.
-7. Download and deploy the generated Discord bot separately; run its command registration after the first deployment and after command/provider/pricing changes.
-8. Test one login, one provider link, one library search/download, one request if enabled, one Kindle send if enabled, and one announcement before inviting members.
+The public bot shares the Portal PostgreSQL account contract for **Emby** and **Silo**. Its create/trial/renew/delete and Lifetime-parent/sub-user commands write the same provider tables the Portal Users card reads. Use the same `DATABASE_URL`, provider credentials, and Discord user IDs across both processes.
 
-The Portal does not install Emby, Silo, Jellyfin, Plex, BookWarehouse, Shelfmark, Kavita, Seerr, SMTP, or Discord. Those are separate services that the operator owns and configures. The Portal stores their settings and provides the integration routes.
-
-## Admin and recovery email
-
-The **Admin & Recovery Email** card is a provider-configurable delivery path for member account recovery, subscription-expiry reminders, and private support notifications. It is separate from the Kindle delivery card.
-
-Configure:
-
-1. A Resend API key with permission to send.
-2. A verified sender address on a verified Resend domain.
-3. A private support inbox for issue reports.
-
-Use **Test Connection** before saving to verify the selected provider. For Resend it checks the API key and sender domain; for SMTP it verifies the connection and authentication. The test does not send an email. After saving, verify the live flow by setting a member recovery address under Account, requesting a password reset from the sign-in page, and confirming the link arrives and expires as documented. The recovery email is never shown to other members. The card does not reset the bootstrap Portal administrator password; administrators change that under Administration → Administrator Accounts.
-
-When SMTP is selected, configure the SMTP host, port, security mode, username/password if required, sender address, and private support inbox in the Admin & Recovery Email card. Port 587 normally uses STARTTLS with SSL/TLS off; port 465 normally uses SSL/TLS with it enabled. The card’s Test Connection verifies SMTP with `transporter.verify()` and sends no message.
-
-## Administrator account lifecycle
-
-The first Portal login is bootstrapped from `PORTAL_ADMIN_USERNAME`, `PORTAL_ADMIN_PASSWORD_SALT`, and `PORTAL_ADMIN_PASSWORD_HASH` in the host environment. After signing in, open Administration → Administrator Accounts and save the **Primary Administrator** with the username and password you want to keep. Portal stores that credential record encrypted in PostgreSQL and then stops accepting the old environment bootstrap login. Additional administrator logins are stored in the same encrypted settings record.
-
-Back up PostgreSQL and the host `.env` separately. The `.env` bootstrap values are needed to recover access if the settings database has not yet been initialized; once a primary administrator is saved, use the stored primary login. Changing the primary administrator does not change member or media-server accounts.
-
-## Users card and provider support
-
-Administration → Users is the shared management view for provider accounts stored in PostgreSQL. Emby and Silo are the supported public account-provisioning paths: accounts created from the Users card or the Discord bot are written to the same provider tables, so they appear in the same tabs and share the same parent/sub-user and expiry records. A Discord user ID is required when creating an account manually so Portal and bot identity remain linked.
-
-Plex and Jellyfin tabs may appear when their server credentials are configured, but they are configuration/adapter slots only in this release. Their native account-creation and session bridges are not complete, and the Discord bot must not be treated as a supported Plex/Jellyfin provisioning path. Do not enable those member flows until their provider bridges are implemented and tested.
-
-
-## Profile recovery email
-
-The Profile → Recovery Email card stores a member-owned recovery address on the linked Emby or Silo account. The sign-in page's Forgot Password flow looks up that address, creates a 30-minute single-use token, and sends the reset link through the configured **Admin & Recovery Email** provider. The reset page verifies the token, asks Emby to change the password, and only then updates the Portal record and consumes the token.
-
-Admin mail supports either Resend or SMTP. SMTP uses the Admin card's host, port, security, credentials, and sender; Kindle SMTP settings are separate. The request response intentionally does not reveal whether an address exists. Plex/Jellyfin are not included because their account bridges are not implemented.
-
-
-## Linked Media Servers
-
-The **Linked Media Servers** account view is provider-neutral. It lists only service accounts linked to the current Portal account. The Add-service modal offers a provider only when that provider has been configured in Administration → Media Servers with the required URL and credentials. The portal administrator is the only user who can link or unlink the stored service credentials; ordinary members can sign in with an enabled provider and use the account records provisioned for them, but cannot attach arbitrary provider credentials or unlink the administrator's service connection.
-
-## Media Server Health and Downtime Alerts
-
-Administrators configure one health endpoint per enabled media server under **Administration → Media Server Health**. The provider URL and credential must already be configured under **Administration → Media Servers**; a health endpoint alone does not enable a provider. Use the provider's direct, stable health or ping URL and keep it reachable from the Portal server.
-
-The server checks configured endpoints every 30 seconds. Three consecutive failures mark a provider offline; two consecutive successes mark it recovered. The notification bell shows the affected provider and the current downtime duration, while the downtime history records resolved events held by the running Portal process.
-
-Visibility is scoped by the signed-in account: members see only providers they are subscribed to, while the portal administrator sees every configured health endpoint. Push notifications are also targeted to subscriptions associated with the affected provider where the provider account mapping is available. Health history is runtime state and should be treated as recent operational status, not an incident archive.
+Plex and Jellyfin are not supported account-provisioning targets in this release. Do not select or deploy their generated commands as operational; their current adapter/API contract is incomplete.
