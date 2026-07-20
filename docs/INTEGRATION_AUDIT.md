@@ -63,3 +63,13 @@ A static route audit cannot prove that an API key has the required provider perm
 - **Discord:** enable the provider, register the exact `/auth/callback` URL, complete OAuth, and verify guild/role restrictions.
 - **Emby Connect:** configure Emby URL/API key, enable the provider, save the member's Emby Connect email from the profile, then verify a fresh Connect login creates the correct Portal session. Confirm a wrong password fails and the Connect password is not persisted.
 - **WHMCS:** do not mark this provider operational based on the card alone. The public implementation only redirects to `AUTH_WHMCS_URL`; a complete deployment still needs a tested callback, token exchange, user lookup, and Portal-session handoff.
+
+
+## Users and provider contract verification
+
+- Configure Emby or Silo and confirm the matching Users tab appears.
+- Create a manual account with a Discord user ID; verify the provider account and PostgreSQL row are both created.
+- Create a Discord-bot trial/paid account using the same PostgreSQL database; verify it appears in the same provider tab.
+- Edit username, password, stream limit, expiry/lifetime, and deletion; verify the provider and PostgreSQL records stay aligned.
+- For Lifetime parents, verify the displayed pool and five-sub-user limit; delete a child and confirm capacity returns.
+- Confirm Plex/Jellyfin are shown as pending adapters and are not treated as supported provisioning or login flows.
