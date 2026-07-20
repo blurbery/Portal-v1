@@ -8,7 +8,7 @@ a{color:#a78bfa;text-decoration:none}h1{font-size:1.25rem;margin:0 0 1.5rem}audi
 <script>
 const p=new URLSearchParams(location.search), id=p.get('id')||'', title=p.get('title')||'Audiobook';
 const key='portal-audio-progress:'+id, player=document.getElementById('player');
-document.getElementById('title').textContent=decodeURIComponent(title);
+document.getElementById('title').textContent=title;
 player.src='/api/library/audiobooks/'+encodeURIComponent(id)+'/stream';
 player.addEventListener('loadedmetadata',()=>{const v=Number(localStorage.getItem(key));if(v>0&&v<player.duration-2)player.currentTime=v;});
 let timer; player.addEventListener('timeupdate',()=>{clearTimeout(timer);timer=setTimeout(()=>localStorage.setItem(key,String(player.currentTime)),250);});
