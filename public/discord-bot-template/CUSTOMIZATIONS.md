@@ -57,3 +57,7 @@ The Portal is the announcement reader and permission gate. The sanitized bot doe
 The shared Discord Server ID identifies the guild for OAuth and the bot, but it does not discover channel IDs or role IDs. Enter announcement channel IDs and their audience role IDs explicitly in Permissions & Announcements. OAuth uses the guild ID plus the allowed member-role list; announcement delivery uses the guild’s channel/role rules and the bot’s matching guild ID. If the IDs are missing or mismatched, the Portal must show a setup warning and announcements should not be treated as connected.
 
 Emby and Silo are the active membership/session paths in the public PostgreSQL build. Plex and Jellyfin remain configuration/adapter slots until their account/session bridges are implemented and tested; do not enable them as live announcement audiences before then. Update the server resolver, bot adapter, card, SQL/docs and tests together when that changes.
+
+## Source-of-truth rules
+
+Change the Discord Server/Guild ID only in Portal Authentication & Access. The Bot card mirrors it and must not introduce a conflicting value. Announcement channel IDs and provider-specific role IDs are separate explicit settings. Keep generated source provider-neutral and PostgreSQL-compatible; do not add private credentials, domains, IPTV production code, or Supabase dependencies.
