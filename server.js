@@ -2573,6 +2573,60 @@ app.post('/api/admin/seerr/test', requireAdmin, async (req, res) => {
   }
 });
 
+function seerrArrUrlParts(value) {
+  const parsed = new URL(String(value || '').trim());
+  return { hostname: parsed.hostname, port: Number(parsed.port || (parsed.protocol === 'https:' ? 443 : 80)), useSsl: parsed.protocol === 'https:', baseUrl: parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/$/, '') };
+}
+
+app.get('/api/admin/seerr/automation', requireAdmin, async (req, res) => {
+  try {
+    const [radarr, sonarr] = await Promise.all([seerrApi('get', '/settings/radarr'), seerrApi('get', '/settings/sonarr')]);
+    const map = (service, response) => (Array.isArray(response.data) ? response.data : []).map(item => ({
+      id: `${service}-${item.id}`, seerrId: item.id, service, name: item.name || `${service[0].toUpperCase()}${service.slice(1)} instance`,
+      url: item.externalUrl || `${item.useSsl ? 'https' : 'http'}://${item.hostname}${item.port ? `:${item.port}` : ''}${item.baseUrl || ''}`,
+      apiKeyConfigured: Boolean(item.apiKey), enabled: true, is4k: item.is4k === true,
+      categories: service === 'radarr' ? (item.is4k ? ['movies-4k','movies-4kdv'] : ['movies']) : (item.is4k ? ['shows-4k'] : ['shows']),
+      roleIds: [], seerrServerId: String(item.id), qualityProfileId: String(item.activeProfileId || ''), rootFolder: String(item.activeDirectory || ''),
+      profileName: item.activeProfileName || '', rootFolderName: item.activeDirectory || '', isDefault: item.isDefault === true,
+    }));
+    res.json({ instances: [...map('radarr', radarr), ...map('sonarr', sonarr)], source: 'seerr' });
+  } catch (error) {
+    console.error('[seerr automation list]', error.response?.status || 'network', error.message);
+    res.status(502).json({ error: 'Could not read Radarr/Sonarr servers from Seerr. Check the Seerr URL, API key, and admin permissions.' });
+  }
+});
+
+app.post('/api/admin/seerr/automation', requireAdmin, async (req, res) => {
+  const service = String(req.body?.service || '').toLowerCase();
+  if (!['radarr', 'sonarr'].includes(service)) return res.status(400).json({ error: 'Choose Radarr or Sonarr.' });
+  const apiKey = String(req.body?.apiKey || '').trim();
+  if (!apiKey) return res.status(400).json({ error: `Enter the ${service[0].toUpperCase() + service.slice(1)} API key.` });
+  let parts;
+  try { parts = seerrArrUrlParts(req.body?.url); } catch (_) { return res.status(400).json({ error: 'Enter a valid Radarr/Sonarr URL.' }); }
+  try {
+    const arrBase = `${parts.useSsl ? 'https' : 'http'}://${parts.hostname}${parts.port ? `:${parts.port}` : ''}${parts.baseUrl}`;
+    const headers = { 'X-Api-Key': apiKey, Accept: 'application/json' };
+    const [profiles, folders] = await Promise.all([
+      axios.get(`${arrBase}/api/v3/qualityprofile`, { headers, timeout: 8000 }),
+      axios.get(`${arrBase}/api/v3/rootfolder`, { headers, timeout: 8000 }),
+    ]);
+    const profile = Array.isArray(profiles.data) ? profiles.data[0] : null;
+    const folder = Array.isArray(folders.data) ? folders.data[0] : null;
+    if (!profile || !folder) return res.status(400).json({ error: 'The service responded, but no quality profile or root folder was available.' });
+    const payload = {
+      name: String(req.body?.name || `${service[0].toUpperCase()}${service.slice(1)} instance`).trim(), ...parts, apiKey,
+      activeProfileId: profile.id, activeProfileName: profile.name, activeDirectory: folder.path,
+      is4k: req.body?.is4k === true, isDefault: req.body?.isDefault === true, externalUrl: String(req.body?.url || '').trim(), syncEnabled: true, preventSearch: false,
+      ...(service === 'sonarr' ? { activeLanguageProfileId: 1, activeAnimeProfileId: 0, activeAnimeLanguageProfileId: 0, activeAnimeProfileName: profile.name, activeAnimeDirectory: folder.path, enableSeasonFolders: true } : { minimumAvailability: 'Released' }),
+    };
+    const response = await seerrApi('post', `/settings/${service}`, { data: payload });
+    res.status(response.status || 201).json({ success: true, instance: response.data });
+  } catch (error) {
+    console.error('[seerr automation add]', error.response?.status || 'network', error.message);
+    res.status(error.response?.status || 502).json({ error: error.response?.data?.message || 'Could not add the automation service to Seerr. Verify the service URL, API key, and Seerr admin API key.' });
+  }
+});
+
 app.post('/api/admin/arr/test', requireAdmin, async (req, res) => {
   const service = String(req.body?.service || '').toLowerCase();
   const allowed = { radarr: 'Radarr', sonarr: 'Sonarr', sportarr: 'Sportarr' };
@@ -2593,8 +2647,9 @@ app.post('/api/admin/arr/test', requireAdmin, async (req, res) => {
 // ─── API: Portal-hosted Seerr flow ───────────────────────────────────────────
 // Seerr remains the media-request engine, but members use Portal's authenticated
 // UI and API. The Seerr API key never reaches the browser. Portal users are
-// matched to Seerr users by email or provider username before requests/history
-// are returned.
+// matched by their linked media-provider identity; recovery email is not part of
+// the request identity. If a matching Seerr user is absent, Portal provisions a
+// server-only Seerr local user with a generated password.
 const SEERR_USER_CACHE = new Map();
 const SEERR_USER_CACHE_MS = 60 * 1000;
 
@@ -2618,9 +2673,10 @@ async function seerrApi(method, endpoint, config = {}) {
 function seerrPortalIdentity(req) {
   const user = req.session?.user || {};
   const username = String(user.emby_username || user.silo_username || user.discord_username || user.username || '').trim();
-  const email = String(user.recovery_email || user.email || '').trim().toLowerCase();
-  const key = user.emby_user_id ? `emby:${user.emby_user_id}` : user.silo_user_id ? `silo:${user.silo_user_id}` : user.discord_id ? `discord:${user.discord_id}` : `username:${username.toLowerCase()}`;
-  return { key, username, email };
+  const provider = user.emby_user_id ? 'emby' : user.jellyfin_user_id ? 'jellyfin' : user.plex_user_id ? 'plex' : user.silo_user_id ? 'silo' : user.discord_id ? 'discord' : 'username';
+  const providerId = String(user[`${provider}_user_id`] || user[`${provider}_id`] || '').trim();
+  const key = providerId ? `${provider}:${providerId}` : `${provider}:${username.toLowerCase()}`;
+  return { key, provider, providerId, username };
 }
 
 function seerrMembershipAllowed(req) {
@@ -2635,25 +2691,51 @@ function seerrMembershipAllowed(req) {
 
 async function seerrUserForRequest(req) {
   const identity = seerrPortalIdentity(req);
-  if (!identity.username && !identity.email) return null;
+  if (!identity.username && !identity.providerId) return null;
   const cached = SEERR_USER_CACHE.get(identity.key);
   if (cached && Date.now() - cached.updatedAt < SEERR_USER_CACHE_MS) return cached.user;
+  const linked = await db.from('seerr_users').select('seerr_user').eq('portal_user_key', identity.key).maybeSingle();
+  if (linked.data?.seerr_user?.id) {
+    SEERR_USER_CACHE.set(identity.key, { updatedAt: Date.now(), user: linked.data.seerr_user });
+    return linked.data.seerr_user;
+  }
+  if (identity.provider === 'jellyfin' && identity.providerId) {
+    try {
+      const direct = await seerrApi('get', `/user/jellyfin/${encodeURIComponent(identity.providerId)}`);
+      if (direct.data?.id) return await rememberSeerrUser(identity, direct.data);
+    } catch (error) {
+      if (error.response?.status !== 404) throw error;
+    }
+  }
   const response = await seerrApi('get', '/user', { params: { take: 1000 } });
   const users = Array.isArray(response.data) ? response.data : response.data?.results || response.data?.users || [];
-  const wanted = [identity.email, identity.username.toLowerCase()].filter(Boolean);
-  const user = users.find(item => [item.email, item.username, item.plexUsername, item.jellyfinUsername, item.embyUsername]
-    .map(value => String(value || '').trim().toLowerCase()).some(value => value && wanted.includes(value))) || null;
+  const wanted = identity.username.toLowerCase();
+  const providerFieldMatches = identity.provider === 'jellyfin'
+    ? ['jellyfinUserId', 'jellyfinUsername', 'username']
+    : identity.provider === 'plex'
+      ? ['plexUserId', 'plexUsername', 'username']
+      : ['embyUserId', 'embyUsername', 'username'];
+  const user = users.find(item => providerFieldMatches.map(field => String(item[field] || '').trim().toLowerCase()).some(value => value && (identity.providerId && value === identity.providerId.toLowerCase() || value === wanted))) || null;
+  if (user?.id) return rememberSeerrUser(identity, user);
+  return provisionSeerrUser(identity);
+}
+
+async function rememberSeerrUser(identity, user) {
   SEERR_USER_CACHE.set(identity.key, { updatedAt: Date.now(), user });
-  if (user?.id) {
-    await db.from('seerr_users').upsert({
-      portal_user_key: identity.key,
-      seerr_user_id: String(user.id),
-      username: identity.username,
-      email: identity.email,
-      seerr_user: user,
-    }, { onConflict: 'portal_user_key' });
-  }
+  await db.from('seerr_users').upsert({ portal_user_key: identity.key, seerr_user_id: String(user.id), username: identity.username, email: '', seerr_user: user }, { onConflict: 'portal_user_key' });
   return user;
+}
+
+async function provisionSeerrUser(identity) {
+  if (!identity.username) return null;
+  const settings = await seerrApi('get', '/settings/main');
+  const permissions = Number(settings.data?.defaultPermissions || 0);
+  if (!permissions) throw new Error('Seerr has no default member request permissions. Configure Seerr → Settings → Users → Default Permissions first.');
+  const suffix = crypto.createHash('sha256').update(identity.key).digest('hex').slice(0, 12);
+  const username = `${identity.username.slice(0, 60)}-${suffix}`;
+  const email = `portal-${suffix}@example.invalid`;
+  const created = await seerrApi('post', '/user', { data: { username, email, password: crypto.randomBytes(32).toString('base64url'), permissions } });
+  return rememberSeerrUser(identity, created.data);
 }
 
 async function requireSeerrPortalAccess(req, res) {
@@ -2682,6 +2764,18 @@ function requestCategoryAllowed(req, category, mediaType) {
   const policy = configuredArrPolicies().find(item => String(item.id) === normalized);
   if (!publicArrInstances().some(instance => instance.enabled && instance.categories.includes(normalized) && (!policy?.instanceId || instance.id === policy.instanceId))) return false;
   return arrPolicyAllowed(req, normalized);
+}
+
+function seerrMediaIdFromRequest(item) {
+  return String(item?.media?.tmdbId || item?.media?.mediaId || item?.mediaId || item?.tmdbId || '');
+}
+
+async function findExistingSeerrRequest(mediaType, mediaId) {
+  const response = await seerrApi('get', '/request', { params: { take: 500, skip: 0, mediaType, sort: 'added', sortDirection: 'desc' } });
+  const payload = response.data || {};
+  const items = Array.isArray(payload) ? payload : payload.results || [];
+  const ignored = new Set(['deleted', 'failed']);
+  return items.find(item => seerrMediaIdFromRequest(item) === String(mediaId) && !ignored.has(String(item.status || '').toLowerCase())) || null;
 }
 
 app.get('/api/seerr/request-config', requireAuth, async (req, res) => {
@@ -2776,7 +2870,9 @@ app.post('/api/seerr/requests', requireAuth, async (req, res) => {
   const policy = configuredArrPolicies().find(item => String(item.id) === category);
   const instance = configuredArrInstances().find(item => item.enabled !== false && item.categories?.includes(category) && (!policy?.instanceId || String(item.id) === String(policy.instanceId)));
   try {
-    const requestData = { ...body, userId: context.user.id };
+    const existing = await findExistingSeerrRequest(body.mediaType, body.mediaId);
+    if (existing) return res.status(409).json({ error: 'This title is already requested or available.', existing });
+    const requestData = { ...body, userId: context.user.id, is4k: category.includes('4k') };
     delete requestData.requestCategory;
     if (instance?.seerrServerId) requestData.serverId = Number(instance.seerrServerId) || instance.seerrServerId;
     if (instance?.qualityProfileId) requestData.profileId = Number(instance.qualityProfileId) || instance.qualityProfileId;

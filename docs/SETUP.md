@@ -100,19 +100,49 @@ Then verify administrator login, member login, provider linking, navigation gati
 
 When Seerr is enabled, the member sidebar shows a **Requests** dropdown above **Library**. It links to Discover, Movies, TV Shows, My Requests, and My Issues. The homepage Search/Request buttons are intentionally not used; library searches and requests remain in their dedicated Library categories.
 
+### Install Seerr separately
+
+Seerr is a required companion service for the Portal request features; it is not bundled into the Portal container. Run one shared Seerr installation for the shared content pool, preferably on the same private network as the Portal, Radarr, Sonarr, and storage services. For example:
+
+```bash
+mkdir -p /opt/seerr/config
+docker run -d --name seerr --init \
+  -e LOG_LEVEL=info \
+  -e TZ=Australia/Sydney \
+  -e PORT=5055 \
+  -p 5055:5055 \
+  -v /opt/seerr/config:/app/config \
+  --restart unless-stopped \
+  ghcr.io/seerr-team/seerr:latest
+```
+
+After Seerr starts, open its setup page and configure the media-server integration and user defaults. Under **Settings → Users**, set Default Permissions to include normal requests, and enable new provider sign-in or import the users from the configured media server. Portal users sign in to Portal; they do not need Seerr passwords.
+
+Under **Seerr → Settings → Services**, add every Radarr and Sonarr instance that Seerr can use. Generate each service API key in that service’s own security settings, then enter its URL, API key, quality profile, root folder, and 4K setting in Seerr. Do not put Radarr/Sonarr keys in the Portal `.env` unless you are using the legacy fallback. Portal’s Administration → Seerr card reads the configured services from Seerr and can submit new service connections to Seerr.
+
+In Portal, open **Administration → Seerr**, enter the Seerr URL reachable from the Portal container and the Seerr API key from Seerr’s general settings, then test and save. For multiple trusted portals sharing one content pool, point every Portal at this same Seerr URL. This gives them one request history and prevents duplicate requests. The Seerr API key grants administrative access, so share it only with Portal installations you control and never expose it to members.
+
 Seerr's **My Issues** area is for media/request issues handled by Seerr. **Portal Issues** is for Portal itself, account access, playback, or general service-support problems. The Portal page calls Seerr through the server-side API proxy; members do not leave Portal or receive the Seerr API key.
 
-Portal issue reports, BookWarehouse library requests, Seerr request records, and Seerr issue records are stored or mirrored in the Portal PostgreSQL database. Configure a matching Seerr user identity for each Portal member; the server matches email or provider username before allowing Seerr actions. Seerr remains the media backend, while Portal is the member-facing interface.
+Portal issue reports, BookWarehouse library requests, Seerr request records, and Seerr issue records are stored or mirrored in the Portal PostgreSQL database. Portal links each member to Seerr through the linked media-provider identity and can provision a server-only Seerr user when necessary. Seerr remains the media backend, while Portal is the member-facing interface.
 
 The Portal-native Seerr flow is server-hosted. In Administration → Seerr, use the three tabs:
 
 - **Seerr:** set the Seerr URL and API key, then test the connection.
-- **Radarr & Sonarr:** add every named Radarr, Sonarr, or compatible Sportarr instance, including separate 4K, 4K DV, anime, international, and sports servers. Select the categories each instance serves and test each connection from the Portal server. Seerr must also be configured to use those same services and quality profiles; Portal does not replace Seerr's download orchestration.
+- **Radarr & Sonarr:** Portal reads the configured Radarr/Sonarr instances from Seerr. Use **Add instance** to submit a service URL and its service API key to Seerr; Portal never displays the key back to members. Seerr remains the owner of the server, 4K flag, quality profile, root folder, and download orchestration. Add each Radarr/Sonarr instance to Seerr once, including separate 4K, anime, international, or sports services where applicable.
 - **Portal Permissions:** enable requests, movie/TV requests, personal history, media issues, and the linked provider memberships that may use Seerr.
 
-The equivalent environment values are `SEERR_URL`, `SEERR_API_KEY`, the legacy `RADARR_URL`/`RADARR_API_KEY` and `SONARR_URL`/`SONARR_API_KEY` fallback, `SEERR_ENABLED=true`, `REQUESTS_ENABLED=true`, and the relevant request switches. Multiple automation instances and category policies are stored encrypted in PostgreSQL from the Seerr administration card. Enable 4K and 4K DV policies only for the Discord role IDs or memberships that should request them, and configure the matching 4K/4K DV quality profiles and root folders in Seerr. The Seerr, Radarr, Sonarr, and Sportarr API keys stay server-side and are never sent to members. A member must both have an enabled Portal membership and match a Seerr user by email or provider username.
+The equivalent environment values are `SEERR_URL`, `SEERR_API_KEY`, the legacy `RADARR_URL`/`RADARR_API_KEY` and `SONARR_URL`/`SONARR_API_KEY` fallback, `SEERR_ENABLED=true`, `REQUESTS_ENABLED=true`, and the relevant request switches. Portal stores only encrypted permissions and routing metadata in PostgreSQL; Seerr stores the connected service credentials. Enable 4K and 4K DV permissions only for the memberships or Discord roles that should request them, and mark the matching Seerr server as 4K with the correct quality profile and root folder. The Seerr, Radarr, Sonarr, and Sportarr API keys stay server-side and are never sent to members. Portal identity is based on the linked media-provider type and user ID, with the provider username as a fallback; Portal does not require a recovery email for requests.
 
-The Portal page uses Seerr's server API for Discover, search, movie/TV details, requests, and media issues. **My Requests** and **My Issues** are filtered to the signed-in Seerr user. Portal mirrors returned activity in `seerr_history` and can show that local history if Seerr is temporarily unavailable. Seerr remains authoritative for live request and issue workflow state.
+The Portal page uses Seerr's server API for Discover, search, movie/TV details, requests, and media issues. **My Requests** and **My Issues** are filtered to the linked Seerr user. Before creating a request, Portal checks Seerr's live request list and refuses a duplicate when the title is already requested or available. If the linked media-provider user has not yet been imported into Seerr, Portal creates a server-only Seerr local user with a generated password and the Seerr default member permissions; that password is never shown or copied from Portal. Portal mirrors returned activity in `seerr_history`, but Seerr remains authoritative for live request and issue workflow state.
+
+### Media-provider identity linking
+
+Portal does not use recovery email as the request identity. A member is linked to Seerr using the stable Emby, Jellyfin, or Plex user ID stored in the Portal session, then the provider username as a fallback. Configure Seerr with the same media server and set its default member permissions to include normal requests before enabling automatic provisioning. For Jellyfin and Plex, importing users into Seerr is also supported; Emby users can be provisioned as Portal-managed local Seerr users while Portal remains the only member-facing login.
+
+### Multiple portals sharing one content pool
+
+For two trusted Portal installations that use the same Radarr/Sonarr services and storage, configure both portals with the same `SEERR_URL` and Seerr API key. They will share Seerr's request database: a request submitted in Portal A is visible in Portal B and cannot be submitted again. Both portals should use the same Seerr server IDs and 4K configuration. The API key grants administrative Seerr access, so only share it between installations you control. Separate Seerr installations do not share request history and can create duplicates even when their Radarr/Sonarr services point at the same files.
 
 For an existing PostgreSQL volume, apply the additive migration once from the repository root after backing up the database:
 
