@@ -27,3 +27,7 @@ When Portal provider, pricing, command, account, Lifetime-parent/sub-user, or da
 ## Portal branding
 
 Set the Portal name, logo, favicon, welcome message and public URL in Administration → General Settings before distributing the bot bundle. The login page and dashboard read the active values from `/api/branding`; the bot does not replace or duplicate this branding. After branding changes, redeploy the Portal dashboard/login files if needed and hard-refresh the browser. A bot bundle only needs rebuilding when its provider, command, account or database contract changes.
+
+## Deploy and register
+
+Extract the complete archive, create `.env` from `env.example`, and keep it out of Git. Run `npm install`, `npm run register`, and `npm start`. For Docker: `docker compose run --rm portal-discord-bot node index.js register`, then `docker compose up -d --build`. Re-register after command, provider, or pricing changes.
