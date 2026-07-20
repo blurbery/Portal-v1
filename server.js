@@ -106,6 +106,9 @@ const PORTAL_CONFIG_FIELDS = [
   { key: 'GOOGLE_BOOKS_API_KEY', label: 'Google Books API key', category: 'Library', type: 'password', secret: true },
   { key: 'NYT_BOOKS_API_KEY', label: 'New York Times Books API key', category: 'Library', type: 'password', secret: true },
   { key: 'BOOKS_DIR', label: 'Books directory', category: 'Library', type: 'text', secret: false },
+  { key: 'KAVITA_URL', label: 'Kavita URL', category: 'Library', type: 'url', secret: false },
+  { key: 'KAVITA_API_KEY', label: 'Kavita API key', category: 'Library', type: 'password', secret: true },
+  { key: 'KAVITA_OPDS_URL', label: 'Kavita OPDS URL (optional)', category: 'Library', type: 'url', secret: true },
   // Kindle delivery is deliberately independent from portal administration
   // email.  Members never see these credentials; they only see the sender
   // address they need to approve in Amazon.
@@ -4413,7 +4416,7 @@ app.post('/api/send-expiry-reminders', requireAuth, async (req, res) => {
 async function sendReminderEmail(toEmail, username, daysLeft) {
   const config = getAdminMailConfig();
   if (!config.apiKey || !config.fromEmail) return;
-  const PORTAL_URL = process.env.PORTAL_URL || '${process.env.PORTAL_URL || ""}';
+  const PORTAL_URL = process.env.PORTAL_URL || '';
   await sendAdminMail({
     label: 'Portal v1',
     to: toEmail,
@@ -4579,7 +4582,7 @@ function normAudiobook(b) {
     language: (b.language || '').toLowerCase().trim() || null,
     status: 'available',
     source: 'bookwarehouse',
-    lm_url: '${process.env.SHELFMARK_URL || ""}',
+    lm_url: process.env.SHELFMARK_URL || '',
     type: 'audiobook',
     _cacheKey: String(b.id || b.title),
     _raw: b,
@@ -5442,6 +5445,15 @@ async function ensureComicEpub(itemId, title) {
   }
 }
 
+// Return the operator's Kavita OPDS URL to an authenticated member. Kavita's
+// OPDS feed is the supported source for comic-reader apps (Panels, Chunky,
+// Moon+ Reader, etc.); Portal does not proxy or store comic files itself.
+app.get('/api/library/kavita/opds', requireAuth, (req, res) => {
+  const url = kavitaOpdsUrl();
+  if (!url) return res.status(503).json({ error: 'Kavita OPDS is not configured.' });
+  res.json({ url, provider: 'kavita', message: 'Add this URL to your comic reader app.' });
+});
+
 // Search: returns { library: [...], external: [...] }
 app.get('/api/library/search', requireAuth, async (req, res) => {
   const { type, q } = req.query;
@@ -6276,7 +6288,7 @@ app.get('/api/library/book-url', requireAuth, async (req, res) => {
   try {
     // If we already know the BW ID, skip search and build URL directly
     if (knownId) {
-      const lmBase = '${process.env.SHELFMARK_URL || ""}';
+      const lmBase = process.env.SHELFMARK_URL || '';
       let url;
       if (type === 'audiobook') url = `${lmBase}/audiobooks/${knownId}`;
       else if (type === 'comic') url = null;
@@ -6317,7 +6329,7 @@ app.get('/api/library/book-url', requireAuth, async (req, res) => {
     if (!match) return res.json({ url: type === 'audiobook' ? `${process.env.SHELFMARK_URL || ""}/audiobooks?q=${encodeURIComponent(title)}` : `${process.env.SHELFMARK_URL || ""}/search?query=${encodeURIComponent(title)}` });
     // Try all possible ID fields BW might use
     const id = match.uuid || match.id || match._id || match.calibre_id || match.book_id;
-    const lmBase = '${process.env.SHELFMARK_URL || ""}';
+    const lmBase = process.env.SHELFMARK_URL || '';
     let url;
     if (id) {
       if (type === 'audiobook') {
@@ -6372,7 +6384,7 @@ app.get('/api/library/trending', requireAuth, async (req, res) => {
             format: 'EPUB',
             status: 'available',
             source: 'bookwarehouse',
-            lm_url: '${process.env.SHELFMARK_URL || ""}',
+            lm_url: process.env.SHELFMARK_URL || '',
             type,
           };
         });
@@ -6399,7 +6411,7 @@ app.get('/api/library/trending', requireAuth, async (req, res) => {
               language: 'en',
               status: 'available',
               source: 'bookwarehouse',
-              lm_url: '${process.env.SHELFMARK_URL || ""}',
+              lm_url: process.env.SHELFMARK_URL || '',
               type,
               rank: b.rank,
             });
@@ -6417,7 +6429,7 @@ app.get('/api/library/trending', requireAuth, async (req, res) => {
           }).catch(() => null);
           items = (gbFallback?.data?.items || []).map(item => {
             const info = item.volumeInfo || {};
-            return { title: info.title || '—', author: (info.authors||[]).join(', ')||null, cover: info.imageLinks?.thumbnail?.replace('http://','https://')||null, description: info.description?.slice(0,300)||null, year: cleanYear(info.publishedDate), format: 'EPUB', language: (info.language||'en').toLowerCase(), status: 'available', source: 'bookwarehouse', lm_url: '${process.env.SHELFMARK_URL || ""}', type };
+            return { title: info.title || '—', author: (info.authors||[]).join(', ')||null, cover: info.imageLinks?.thumbnail?.replace('http://','https://')||null, description: info.description?.slice(0,300)||null, year: cleanYear(info.publishedDate), format: 'EPUB', language: (info.language||'en').toLowerCase(), status: 'available', source: 'bookwarehouse', lm_url: process.env.SHELFMARK_URL || '', type };
           });
         }
       }
@@ -6437,7 +6449,7 @@ app.get('/api/library/trending', requireAuth, async (req, res) => {
           ...norm,
           status: 'available',
           source: 'bookwarehouse',
-          lm_url: '${process.env.SHELFMARK_URL || ""}',
+          lm_url: process.env.SHELFMARK_URL || '',
           type,
         };
       });
@@ -6502,8 +6514,23 @@ let SM_PASS = process.env.SHELFMARK_PASS || '';
 let BOOKS_DIR = process.env.BOOKS_DIR || '/opt/shelfmark/books';
 let HC_API_KEY = process.env.HARDCOVER_API_KEY || '';
 let CV_API_KEY = process.env.COMICVINE_API_KEY || '';
+let KAVITA_URL = process.env.KAVITA_URL || '';
+let KAVITA_API_KEY = process.env.KAVITA_API_KEY || '';
+let KAVITA_OPDS_URL = process.env.KAVITA_OPDS_URL || '';
 const CV_BASE = 'https://comicvine.gamespot.com/api';
 const CV_HEADERS = { 'User-Agent': 'Portal v1/1.0 (portal.example.invalid)' };
+
+function kavitaOpdsUrl() {
+  const direct = String(KAVITA_OPDS_URL || process.env.KAVITA_OPDS_URL || '').trim();
+  if (direct) return direct.replace(/\\/$/, '');
+  const base = String(KAVITA_URL || process.env.KAVITA_URL || '').trim().replace(/\\/$/, '');
+  const key = String(KAVITA_API_KEY || process.env.KAVITA_API_KEY || '').trim();
+  return base && key ? `${base}/api/opds/${encodeURIComponent(key)}` : '';
+}
+
+function kavitaConfigured() {
+  return Boolean(kavitaOpdsUrl());
+}
 
 // ComicVine search helper
 async function cvSearch(query, limit = 10) {
@@ -6780,7 +6807,7 @@ app.get('/api/comicvine/search', requireAuth, async (req, res) => {
       // CV results are displayed as portal items — download via Shelfmark search at click time
       status: 'available',
       source: 'comicvine',
-      lm_url: '${process.env.SHELFMARK_URL || ""}',
+      lm_url: process.env.SHELFMARK_URL || '',
       type: 'comic',
       cv_id: String(v.id),
     }));
@@ -7385,6 +7412,17 @@ app.post('/api/shelfmark/download', requireAuth, async (req, res) => {
 // Poll download status
 app.get('/api/shelfmark/status/:source_id', requireAuth, async (req, res) => {
   const { source_id } = req.params;
+  if (String(source_id).startsWith('bw:')) {
+    try {
+      const bookId = String(source_id).slice(3);
+      const prepared = await ensureBookEpub(bookId, req.query.title || `book-${bookId}`);
+      res.setHeader('Content-Type', 'application/epub+zip');
+      res.setHeader('Content-Disposition', 'inline');
+      return res.sendFile(prepared.path);
+    } catch (e) {
+      return res.status(404).json({ error: 'Book file is not available.' });
+    }
+  }
   try {
     const { data: record } = await db.from('shelfmark_downloads')
       .select('title, status, filename, author').eq('source_id', source_id).maybeSingle();
@@ -7811,10 +7849,46 @@ async function liveComicSearch(q) {
 setTimeout(() => buildComicCache(), 15000);
 setInterval(() => buildComicCache(), 6 * 60 * 60 * 1000);
 
+
+// Stream BookWarehouse audio for the in-app player. Range forwarding is
+// required for seeking and for mobile browsers.
+app.get('/api/library/audiobooks/:id/stream', requireAuth, async (req, res) => {
+  try {
+    const headers = BW_HEADERS();
+    if (req.headers.range) headers.Range = req.headers.range;
+    const r = await axios.get(`${BW_BASE}/audiobooks/${encodeURIComponent(req.params.id)}/download`, {
+      headers, responseType: 'stream', timeout: 30000, validateStatus: () => true
+    });
+    if (r.status >= 400) return res.status(r.status).json({ error: 'Audiobook stream unavailable.' });
+    ['content-type','content-length','content-range','accept-ranges'].forEach(name => {
+      if (r.headers[name]) res.setHeader(name, r.headers[name]);
+    });
+    res.setHeader('Content-Disposition', 'inline');
+    res.status(r.status);
+    r.data.on('error', error => { if (!res.headersSent) res.status(502); res.end(); });
+    r.data.pipe(res);
+  } catch (e) {
+    console.error('[audiobook stream]', e.message);
+    if (!res.headersSent) res.status(502).json({ error: 'Audiobook stream unavailable.' });
+  }
+});
+
 // Prepare book for reading — find existing file or trigger download
 app.post('/api/reader/prepare', requireAuth, async (req, res) => {
   const { title, source_id, type } = req.body;
   const isComic = type === 'comic';
+  // BookWarehouse books are normalized to EPUB once and then opened by the
+  // same Portal reader used for Shelfmark downloads.
+  if (!isComic && String(source_id || '').startsWith('bw:')) {
+    const bookId = String(source_id).slice(3);
+    try {
+      await ensureBookEpub(bookId, title || `book-${bookId}`);
+      return res.json({ ready: true, source_id: `bw:${bookId}`, title: title || `book-${bookId}` });
+    } catch (e) {
+      console.error('[reader prepare bookwarehouse]', e.message);
+      return res.status(502).json({ error: 'Could not prepare this book for the Portal reader.' });
+    }
+  }
   const username = req.session.user.emby_username || req.session.user.discord_username;
   const crypto = require('crypto');
   try {
