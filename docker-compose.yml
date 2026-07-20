@@ -1,17 +1,50 @@
 services:
-  portal-discord-bot:
-    build: .
+  db:
+    image: postgres:16-alpine
     restart: unless-stopped
-    init: true
-    env_file:
-      - .env
+    environment:
+      POSTGRES_DB: portal
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: ${PORTAL_DB_PASSWORD:-change-this-password}
     volumes:
-      - ./bot-config.json:/app/bot-config.json:ro
-    networks:
-      - portal-v1-postgres_default
+      - portal-v1-public-postgres:/var/lib/postgresql/data
+      - ./portal_schema.sql:/docker-entrypoint-initdb.d/001-portal-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portal -d portal"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     security_opt:
       - no-new-privileges:true
 
-networks:
-  portal-v1-postgres_default:
-    external: true
+  portal-v1-public:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      PORTAL_BUILD_ID: portal-v1-public
+      VPS_NAME: ${VPS_NAME:-Portal public PostgreSQL VPS}
+      VPS_HOST: ${VPS_HOST:-}
+      VPS_SSH_PORT: ${VPS_SSH_PORT:-22}
+      VPS_SSH_USER: ${VPS_SSH_USER:-}
+      DATABASE_URL: postgres://portal:${PORTAL_DB_PASSWORD:-change-this-password}@db:5432/portal
+    ports:
+      - "3100:3000"
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      com.portal.build: public-safe
+      com.portal.name: Portal-v1
+      com.portal.installation: portal-v1-public
+
+volumes:
+  portal-v1-public-postgres:
