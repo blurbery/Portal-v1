@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Emby Connect | Portal</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0c10;--surface:#15171d;--field:#0e1015;--line:#2a2d35;--text:#f1f1f3;--muted:#92949d;--accent:#7168f7}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse 70% 55% at 4% 2%,rgba(86,76,218,.28),transparent 68%),linear-gradient(135deg,#0a0b13,#090a0f 52%,#0d0b14);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text)}
+    .shell{width:min(400px,100%)}.brand{text-align:center;margin-bottom:25px}.brand strong{display:block;font-size:1.16rem}.brand span{display:block;color:#777a84;font-size:.64rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin-top:6px}.panel{padding:30px;border:1px solid rgba(117,111,247,.28);border-radius:16px;background:linear-gradient(145deg,rgba(23,24,39,.96),rgba(16,17,23,.98));box-shadow:0 24px 70px rgba(0,0,0,.38)}h1{font-size:1.3rem;margin:0 0 8px}.intro{color:var(--muted);font-size:.78rem;line-height:1.5;margin:0 0 19px}.notice{padding:11px;border:1px solid rgba(113,104,247,.25);border-radius:8px;color:#aaa7d8;font-size:.72rem;line-height:1.5;margin-bottom:18px}label{display:block;color:#b4b6be;font-size:.7rem;font-weight:700;margin:15px 0 7px}input{width:100%;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:7px;background:rgba(9,10,15,.72);color:var(--text);font:inherit;font-size:.84rem;outline:none}input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(113,104,247,.12)}button{width:100%;height:44px;margin-top:21px;border:0;border-radius:7px;background:linear-gradient(110deg,#635cf0,#7a6df9);color:#fff;font:inherit;font-size:.82rem;font-weight:750;cursor:pointer}.error{display:none;margin-top:12px;padding:10px;border-radius:7px;background:rgba(207,75,75,.11);border:1px solid rgba(207,75,75,.28);color:#f29b9b;font-size:.73rem}.back{display:block;margin-top:17px;text-align:center;color:#aaa5ff;font-size:.72rem;text-decoration:none}
+  </style>
+</head>
+<body>
+  <main class="shell"><div class="brand"><strong>Portal</strong><span>Member Portal</span></div><section class="panel"><h1>Sign in with Emby Connect</h1><p class="intro">Use the Emby Connect email you linked from your Emby profile.</p><div class="notice">Your Emby Connect password is only sent to Emby Connect for verification. It is not saved by the portal.</div><form id="form"><label for="email">Emby Connect email</label><input id="email" name="email" type="email" autocomplete="email" required><label for="password">Emby Connect password</label><input id="password" name="password" type="password" autocomplete="current-password" required><button id="submit" type="submit">Continue</button><div class="error" id="error"></div></form><a class="back" href="/">Back to portal sign in</a></section></main>
+  <script>
+    const form=document.getElementById('form'),submit=document.getElementById('submit'),error=document.getElementById('error');
+    form.addEventListener('submit',async event=>{event.preventDefault();error.style.display='none';submit.disabled=true;submit.textContent='Checking…';try{const response=await fetch('/auth/emby-connect/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('email').value,password:document.getElementById('password').value})});const data=await response.json();if(data.success){location.href=data.redirect||'/dashboard';return}error.textContent=data.error||'Unable to sign in with Emby Connect.';error.style.display='block';}catch(_){error.textContent='Unable to reach the portal. Please try again.';error.style.display='block';}finally{submit.disabled=false;submit.textContent='Continue';}});
+  </script>
+</body>
+</html>
+
