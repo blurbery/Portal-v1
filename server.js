@@ -1879,7 +1879,7 @@ async function sendAdminMail(message) {
   return sendConfiguredMail(getAdminMailConfig(), message);
 }
 
-async function sendResetEmail(toEmail, resetUrl) {
+async function sendResetEmail(toEmail, resetUrl, serviceLabel = 'Media Server') {
   const config = getAdminMailConfig();
   const missingDeliveryConfig = config.provider === 'smtp' ? (!config.host || !config.fromEmail) : (!config.apiKey || !config.fromEmail);
   if (missingDeliveryConfig) { console.error('[admin email] Configure the Admin email card first'); return false; }
@@ -1887,12 +1887,12 @@ async function sendResetEmail(toEmail, resetUrl) {
     await sendAdminMail({
       label: 'Portal v1',
       to: toEmail,
-      subject: 'Reset your Portal v1 password',
+      subject: `Reset your ${serviceLabel} Portal password`,
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0d0d0d;color:#e2e8f0;padding:2rem;border-radius:12px">
           <img src="${process.env.PORTAL_URL || ""}/logo.png" alt="Portal v1" style="height:48px;margin-bottom:1.5rem">
           <h2 style="margin:0 0 0.75rem;color:#fff">Reset your password</h2>
-          <p style="color:#94a3b8;margin:0 0 1.5rem">Click the button below to set a new password for your Portal v1 account. This link expires in <strong style="color:#e2e8f0">30 minutes</strong>.</p>
+          <p style="color:#94a3b8;margin:0 0 1.5rem">Click the button below to set a new password for your ${serviceLabel} account. This link expires in <strong style="color:#e2e8f0">30 minutes</strong>.</p>
           <a href="${resetUrl}" style="display:inline-block;background:#6366f1;color:#fff;padding:0.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;margin-bottom:1.5rem">Reset Password</a>
           <p style="color:#64748b;font-size:0.8rem;margin:0">If you didn't request this, ignore this email. Your password won't change.</p>
           <hr style="border:none;border-top:1px solid #1e293b;margin:1.5rem 0">
@@ -2082,12 +2082,18 @@ app.post('/api/upload-avatar', requireAuth, async (req, res) => {
 app.post('/api/set-recovery-email', requireAuth, async (req, res) => {
   const { email } = req.body;
   if (!email || !email.includes('@')) return res.json({ error: 'Valid email required' });
-  const { emby_user_id } = req.session.user;
-  if (!emby_user_id) return res.json({ error: 'No Emby account linked' });
-  const { error } = await db.from('emby_accounts')
-    .update({ recovery_email: email.toLowerCase().trim() })
-    .eq('emby_user_id', emby_user_id);
-  if (error) return res.json({ error: 'Failed to save email' });
+  const cleanEmail = email.toLowerCase().trim();
+  const targets = [];
+  if (req.session.user.emby_user_id) targets.push({ table: 'emby_accounts', column: 'emby_user_id', id: req.session.user.emby_user_id });
+  const siloAccount = await linkedSiloAccount(req);
+  if (siloAccount?.silo_user_id) targets.push({ table: 'silo_accounts', column: 'silo_user_id', id: siloAccount.silo_user_id });
+  if (!targets.length) return res.json({ error: 'No supported media-server account linked' });
+  for (const target of targets) {
+    const { error } = await db.from(target.table)
+      .update({ recovery_email: cleanEmail })
+      .eq(target.column, target.id);
+    if (error) return res.json({ error: 'Failed to save email' });
+  }
   req.session.user.has_recovery_email = true;
   res.json({ success: true });
 });
@@ -2098,23 +2104,32 @@ app.post('/api/forgot-password', async (req, res) => {
   if (!email || !email.includes('@')) return res.json({ error: 'Please enter a valid email address.' });
   const cleanEmail = email.trim().toLowerCase();
   try {
-    // Match on recovery_email only — it's unique per account
-    const { data: accounts } = await db
-      .from('emby_accounts')
-      .select('emby_user_id, username, recovery_email, is_disabled')
-      .eq('recovery_email', cleanEmail)
-      .limit(1);
-    // Always return success — never reveal if email exists
-    if (!accounts?.length || accounts[0].is_disabled) return res.json({ success: true });
-    const account = accounts[0];
-    const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    await db.from('emby_accounts').update({
-      reset_token: token,
-      reset_token_expires: expires
-    }).eq('emby_user_id', account.emby_user_id);
-    const resetUrl = `${PORTAL_URL}/reset-password?token=${token}`;
-    await sendResetEmail(cleanEmail, resetUrl);
+    // Match the member-owned recovery address across the active public
+    // provider tables. Never reveal whether an address exists.
+    const [{ data: embyAccounts }, { data: siloAccounts }] = await Promise.all([
+      db.from('emby_accounts').select('emby_user_id, username, recovery_email, is_disabled').eq('recovery_email', cleanEmail).limit(1),
+      db.from('silo_accounts').select('silo_user_id, username, recovery_email, is_disabled').eq('recovery_email', cleanEmail).limit(1),
+    ]);
+    const matches = [
+      ...(embyAccounts || []).filter(account => !account.is_disabled).map(account => ({ service: 'Emby', table: 'emby_accounts', idColumn: 'emby_user_id', id: account.emby_user_id, username: account.username })),
+      ...(siloAccounts || []).filter(account => !account.is_disabled).map(account => ({ service: 'Silo', table: 'silo_accounts', idColumn: 'silo_user_id', id: account.silo_user_id, username: account.username })),
+    ];
+    if (!matches.length) return res.json({ success: true });
+
+    for (const match of matches) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      const { error } = await db.from(match.table).update({
+        reset_token: token,
+        reset_token_expires: expires
+      }).eq(match.idColumn, match.id);
+      if (error) throw error;
+      const resetUrl = `${PORTAL_URL}/reset-password?token=${token}`;
+      const sent = await sendResetEmail(cleanEmail, resetUrl, match.service);
+      if (!sent) {
+        await db.from(match.table).update({ reset_token: null, reset_token_expires: null }).eq(match.idColumn, match.id);
+      }
+    }
     return res.json({ success: true });
   } catch (e) {
     console.error('[forgot-password]', e.message);
@@ -2126,13 +2141,14 @@ app.post('/api/forgot-password', async (req, res) => {
 app.get('/api/reset-password/verify', async (req, res) => {
   const { token } = req.query;
   if (!token) return res.json({ valid: false });
-  const { data } = await db.from('emby_accounts')
-    .select('username, reset_token_expires')
-    .eq('reset_token', token)
-    .limit(1);
-  if (!data?.length) return res.json({ valid: false });
-  if (new Date(data[0].reset_token_expires) < new Date()) return res.json({ valid: false, expired: true });
-  return res.json({ valid: true, username: data[0].username });
+  const [{ data: embyRows }, { data: siloRows }] = await Promise.all([
+    db.from('emby_accounts').select('username, reset_token_expires').eq('reset_token', token).limit(1),
+    db.from('silo_accounts').select('username, reset_token_expires').eq('reset_token', token).limit(1),
+  ]);
+  const match = embyRows?.length ? { ...embyRows[0], service: 'Emby' } : siloRows?.length ? { ...siloRows[0], service: 'Silo' } : null;
+  if (!match) return res.json({ valid: false });
+  if (new Date(match.reset_token_expires) < new Date()) return res.json({ valid: false, expired: true });
+  return res.json({ valid: true, username: match.username, service: match.service });
 });
 
 // ─── API: Submit new password via reset token ──────────────────────────────────
@@ -2148,16 +2164,26 @@ app.post('/api/reset-password/submit', async (req, res) => {
       .limit(1);
     if (!data?.length) return res.json({ error: 'Invalid or expired reset link.' });
     if (new Date(data[0].reset_token_expires) < new Date()) return res.json({ error: 'Reset link has expired. Please request a new one.' });
-    const { emby_user_id } = data[0];
-    const passwordUpdated = await embySetPassword(emby_user_id, newPassword);
-    if (!passwordUpdated) return res.json({ error: 'Emby rejected the password update. Please request a new reset link or contact support.' });
-    // Update in PostgreSQL + clear token only after Emby accepted the new password.
-    const { error: accountUpdateError } = await db.from('emby_accounts').update({
+    const account = data[0];
+    const table = account.service === 'Silo' ? 'silo_accounts' : 'emby_accounts';
+    try {
+      if (account.service === 'Silo') {
+        await siloAdminRequest('PUT', `/api/v1/admin/users/${encodeURIComponent(account.silo_user_id)}`, { password: newPassword });
+      } else if (!(await embySetPassword(account.emby_user_id, newPassword))) {
+        return res.json({ error: 'Emby rejected the password update. Please request a new reset link or contact support.' });
+      }
+    } catch (error) {
+      console.error('[reset-password] provider update failed:', error.response?.data || error.message);
+      return res.json({ error: `${account.service} rejected the password update. Please request a new reset link or contact support.` });
+    }
+    // Update PostgreSQL and clear the token only after the provider accepted it.
+    const idColumn = account.service === 'Silo' ? 'silo_user_id' : 'emby_user_id';
+    const { error: accountUpdateError } = await db.from(table).update({
       password: newPassword,
       reset_token: null,
       reset_token_expires: null
-    }).eq('emby_user_id', emby_user_id);
-    if (accountUpdateError) return res.json({ error: 'The password changed in Emby, but the Portal record could not be synchronized. Contact support.' });
+    }).eq(idColumn, account[ idColumn ]);
+    if (accountUpdateError) return res.json({ error: `The password changed in ${account.service}, but the Portal record could not be synchronized. Contact support.` });
     return res.json({ success: true });
   } catch (e) {
     console.error('[reset-password]', e.message);
