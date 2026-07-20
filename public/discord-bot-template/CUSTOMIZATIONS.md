@@ -60,4 +60,4 @@ Emby and Silo are the active membership/session paths in the public PostgreSQL b
 
 ## Source-of-truth rules
 
-Change the Discord Server/Guild ID only in Portal Authentication & Access. The Bot card mirrors it and must not introduce a conflicting value. Announcement channel IDs and provider-specific role IDs are separate explicit settings. Keep generated source provider-neutral and PostgreSQL-compatible; do not add private credentials, domains, IPTV production code, or Supabase dependencies.
+Change the Discord Server/Guild ID only in Portal Authentication & Access. The Bot card mirrors it and must not introduce a conflicting value. Announcement channel IDs and provider-specific role IDs are separate explicit settings. Keep generated source provider-neutral and PostgreSQL-compatible; do not add private credentials, domains, IPTV production code, or PostgreSQL dependencies.
