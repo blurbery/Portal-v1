@@ -170,3 +170,11 @@ Portal has a two-stage administrator setup:
 2. **Persistent:** when the first administrator saves **Primary Administrator** in Administration → Administrator Accounts, the credentials are hashed and encrypted into PostgreSQL. The saved primary record becomes the source of truth and the original bootstrap login is disabled.
 
 Additional administrators are also hashed and stored in encrypted PostgreSQL settings. They are independent of member and provider identities. Verify the new primary login after saving and keep a protected backup of both PostgreSQL and the host `.env`.
+
+## Authentication provider boundaries
+
+Discord is the implemented OAuth provider. Its callback is `/auth/callback`, and the server validates the Discord identity and optional guild-role access before creating a member session.
+
+Emby Connect is implemented against Emby's Connect authentication service. The member first links their Emby Connect email from the Emby profile card; the server links that address to the member's Emby account through the Emby API. On login, Portal verifies the email/password with Emby Connect, finds the matching stored `connect_email`, and creates the Portal session. The Connect password is not stored. This requires a reachable Emby server, an Emby API key, and a member account with the email link saved.
+
+WHMCS is currently only an external redirect entry point. The public build does not yet provide the callback, token exchange, user mapping, or session creation needed for native WHMCS login. Treat the WHMCS card as disabled unless an external bridge supplies that missing integration and has been tested end to end.
