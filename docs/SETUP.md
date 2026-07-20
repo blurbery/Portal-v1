@@ -135,3 +135,17 @@ After the first login:
 The saved primary and additional administrator records are encrypted in PostgreSQL under `portal_settings`. The primary administrator cannot be removed from the card. Do not delete the database row or rotate `CONFIG_ENCRYPTION_KEY` without a migration/backup plan. Changing Portal administrators does not change member accounts, provider accounts, Discord users, or media-server passwords.
 
 If the database has not been initialized, the `.env` bootstrap login remains the recovery path. Once a saved primary record exists, the old bootstrap login is intentionally disabled.
+
+## Authentication provider status
+
+### Discord
+
+Discord is a complete OAuth path in the public build. Set `AUTH_DISCORD_ENABLED=true`, the Discord client ID/secret, and the exact callback `https://YOUR_PORTAL_HOST/auth/callback`. Set the guild and allowed role IDs only when access should be restricted by Discord membership roles.
+
+### Emby Connect
+
+Emby Connect is a complete public login path when Emby is configured. Set `EMBY_URL` or `EMBY_DIRECT_URL` and `EMBY_API_KEY`, enable `AUTH_EMBY_CONNECT_ENABLED`, and use the callback generated from the Emby server URL. Each member must first save the same Emby Connect email in their Portal profile. Portal sends the entered password to Emby Connect for verification, matches the verified email to the member's stored Emby `connect_email`, and creates the Portal session; it does not store the Connect password. Test both the profile-link action and a fresh sign-in.
+
+### WHMCS
+
+WHMCS is not a complete native Portal authentication provider in this public release. The card only exposes an external entry URL through `/auth/whmcs`; the public server does not implement a WHMCS callback, OAuth token exchange, WHMCS user lookup, or Portal session creation. Leave it disabled unless you have an installation-specific WHMCS SSO bridge that handles those steps and returns users through a separately implemented Portal-compatible session flow. The WHMCS client ID/secret fields are reserved and are not consumed by the public runtime.
