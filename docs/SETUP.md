@@ -51,6 +51,20 @@ After the first administrator login, open Administration → Library Configurati
 
 A successful configuration-card test confirms that the Portal can reach BookWarehouse with the supplied key. It does not validate every catalogue, cover, download, or external enrichment operation, which should be checked against the operator’s live provider after deployment. Keep all provider URLs and keys out of `.env.example`, source control, screenshots, and support logs.
 
+## Seerr request configuration
+
+Seerr is optional and must be installed and configured separately. After the Portal administrator login:
+
+1. Open Administration → Requests & metadata.
+2. Enter the reachable Seerr URL and Seerr API key, then select **Test Seerr connection**. The test checks Seerr status with the key currently in the form and does not save values.
+3. Select **Save Seerr settings**, enable **Seerr**, and enable **Requests navigation**.
+4. Enable the request areas needed by the installation: Movies, Shows, My requests, or Issue reports.
+5. Enable member access only for services whose provider URL and credentials are already configured: Emby, Silo, Plex, or Jellyfin.
+
+The Portal uses Seerr for request search, approvals, downloads, and status tracking. Seerr’s own media-server integrations, download clients, libraries, and user permissions remain configured in Seerr. The Portal card does not provision those services. A successful status test is not a complete request-flow test; submit a safe test request after deployment and confirm the resulting status link.
+
+Keep `SEERR_URL`, `SEERR_API_KEY`, and provider credentials in encrypted PostgreSQL settings or the uncommitted host environment. Never add them to `.env.example`, source control, screenshots, or logs.
+
 ## Updates
 
 Pull updates into a staging directory, back up `.env` and the database, run `npm run check`, then restart the process. Do not overwrite the live/private portal from this repository without a tested migration plan.
