@@ -135,3 +135,27 @@ Configure the Library card only with services owned by this installation. For eb
 For comics, Kavita is the recommended backend for the in-app comic library and external reader apps. In Kavita, create/copy the user's OPDS URL from Preferences → OPDS. Either paste that complete URL into the Portal Library card as `KAVITA_OPDS_URL`, or configure `KAVITA_URL` plus `KAVITA_API_KEY` and let Portal construct `/api/opds/<key>`. The signed-in member can retrieve the URL from `GET /api/library/kavita/opds`; never place it in public documentation or commit it to Git.
 
 After configuration, verify an ebook opens at `/reader`, an audiobook opens at `/audio-reader`, and the returned Kavita OPDS URL works in the target comic app. A Kavita OPDS URL is separate from Portal's own `/opds/*` feed.
+
+
+## Admin and recovery email flow
+
+Admin email is a server-side Resend integration. The Admin & Recovery Email card stores the API key, verified sender, and private support inbox in encrypted PostgreSQL settings. Its connection test checks Resend without sending.
+
+The flow is:
+
+```text
+Member saves recovery email
+  -> /api/set-recovery-email
+Sign-in reset request
+  -> /api/forgot-password
+  -> 30-minute single-use token
+  -> Resend message from Admin sender
+Expiry reminder
+  -> member recovery email
+Issue report
+  -> private support inbox
+```
+
+The recovery address belongs to the member account and is not used for the bootstrap Portal administrator login. Change the bootstrap administrator password under Administration → Administrator Accounts. Kindle mail is configured and tested independently in the SMTP Configuration card.
+
+For release verification, test connection, recovery-link delivery, token expiry/reuse rejection, expiry reminders, and support-report delivery with a test member account.
