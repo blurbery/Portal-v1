@@ -118,3 +118,20 @@ If the installation still has legacy RESEND_API_KEY and RESEND_FROM_EMAIL settin
 ### Choosing Resend or SMTP
 
 For Resend, enter the API key and a sender on a verified domain. For SMTP, select **Other SMTP** and enter the host, port, security mode, username, password or app password, sender, and support inbox. Use port 587 with SSL/TLS off for STARTTLS, or port 465 with SSL/TLS enabled. **Test Connection** verifies the selected provider and intentionally sends no email. After saving, test an actual recovery message with a non-production member account.
+
+## Administrator account lifecycle
+
+Before the first launch, set the bootstrap values in the host `.env`: `PORTAL_ADMIN_USERNAME`, `PORTAL_ADMIN_PASSWORD_SALT`, and `PORTAL_ADMIN_PASSWORD_HASH`. These values provide the initial portal-only administrator login while PostgreSQL has no saved primary administrator.
+
+After the first login:
+
+1. Open Administration → Administrator Accounts.
+2. Under **Primary Administrator**, enter the permanent portal administrator username and password.
+3. Select **Save Primary Admin**.
+4. Sign out and sign back in with the saved credentials.
+5. Confirm the old bootstrap credentials no longer authenticate.
+6. Add additional administrators only when needed; they receive separate portal-only logins.
+
+The saved primary and additional administrator records are encrypted in PostgreSQL under `portal_settings`. The primary administrator cannot be removed from the card. Do not delete the database row or rotate `CONFIG_ENCRYPTION_KEY` without a migration/backup plan. Changing Portal administrators does not change member accounts, provider accounts, Discord users, or media-server passwords.
+
+If the database has not been initialized, the `.env` bootstrap login remains the recovery path. Once a saved primary record exists, the old bootstrap login is intentionally disabled.
