@@ -91,3 +91,12 @@ A static route audit cannot prove that an API key has the required provider perm
 ## Multi-server recovery verification
 
 The Forgot Password token lookup covers both `emby_accounts` and `silo_accounts`. Verify an Emby reset calls the Emby password API and a Silo reset calls the Silo admin password API, then confirm the shared token is consumed only after the provider accepts the new password.
+
+
+## Linked Media Server verification
+
+- Clear all provider URL/API settings and confirm the modal says **Configure at least one media server in Administration → Media Servers before linking an account**, without naming a specific provider.
+- Configure one provider and confirm only that provider appears as an add-service choice.
+- Confirm an unconfigured provider cannot be selected or linked.
+- Confirm ordinary members can sign in only through configured provider paths and cannot link or unlink administrator service credentials.
+- Confirm the portal administrator can link and unlink configured administrator service credentials.
