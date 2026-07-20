@@ -21,7 +21,7 @@ v1 is a clean provider-neutral deployment. Do not add owner-specific sync jobs, 
 Docker is the recommended distribution path for independent operators:
 
 ```bash
-git clone git@github.com:blurbery/Portal-v1.git /opt/portal-v1-public
+git clone https://github.com/blurbery/Portal-v1.git /opt/portal-v1-public
 cd /opt/portal-v1-public
 cp .env.example .env
 # Set the database password in docker-compose.yml and configure .env.
@@ -43,3 +43,10 @@ Each operator must create and use their own PostgreSQL project, Discord applicat
 - PostgreSQL and hosting-provider deployment instructions.
 
 Read [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for the system map, configuration order, service-linking flow, and verification checklist. The static route and runtime checklist is in [docs/INTEGRATION_AUDIT.md](docs/INTEGRATION_AUDIT.md). Also see docs/SETUP.md, docs/SECURITY.md, docs/DOCKER.md, and docs/UPDATES.md before installing.
+
+
+## Public PostgreSQL installation
+
+The supported public release is self-hosted PostgreSQL plus the Portal container. Apply portal_schema.sql, copy .env.example to .env, configure PostgreSQL, and run docker compose -p portal-v1-public up -d --build. Verify /api/health reports database: ok.
+
+Configure General Settings, Authentication & Access, Media Servers, Permissions & Announcements, and then the separate Discord Bot card. The Bot card reuses the single shared Discord Server ID from Authentication & Access. Download one complete bot archive and run npm register after first deployment and after command/provider changes. Lifetime parents own a stream pool for linked sub-users; Plex and Jellyfin remain adapter slots until their tested bridges exist.
