@@ -73,3 +73,16 @@ A static route audit cannot prove that an API key has the required provider perm
 - Edit username, password, stream limit, expiry/lifetime, and deletion; verify the provider and PostgreSQL records stay aligned.
 - For Lifetime parents, verify the displayed pool and five-sub-user limit; delete a child and confirm capacity returns.
 - Confirm Plex/Jellyfin are shown as pending adapters and are not treated as supported provisioning or login flows.
+
+
+## Profile recovery verification
+
+- Save a recovery address from Dashboard → Account → Recovery Email for a non-production Emby account.
+- Request Forgot Password with that address and confirm the response does not reveal account existence.
+- Verify delivery through the selected Admin Resend provider.
+- Repeat with Admin SMTP and confirm the reset message is delivered; Kindle SMTP settings must not be used for this flow.
+- Open the link within 30 minutes, set a six-character-or-longer password, and sign in to Emby with it.
+- Submit the same link again and confirm it is rejected as invalid/used.
+- Simulate an expired token and confirm it is rejected.
+- Confirm an Emby-side password failure does not produce a false success or overwrite the Portal password record.
+- Confirm Silo-only accounts are not presented as supported by this Emby recovery flow.
