@@ -61,3 +61,10 @@ Emby and Silo are the active membership/session paths in the public PostgreSQL b
 ## Source-of-truth rules
 
 Change the Discord Server/Guild ID only in Portal Authentication & Access. The Bot card mirrors it and must not introduce a conflicting value. Announcement channel IDs and provider-specific role IDs are separate explicit settings. Keep generated source provider-neutral and PostgreSQL-compatible; do not add private credentials, domains, IPTV production code, or PostgreSQL dependencies.
+
+
+## Users-card synchronization
+
+The Portal Users card and this bot are synchronized only for Emby and Silo. The bot writes `emby_accounts` or `silo_accounts` plus `discord_bot_memberships`; the Portal Users card reads the provider account tables. Keep the bot and Portal on the same PostgreSQL database and use the same provider credentials.
+
+Plex and Jellyfin may be visible in configuration, but they do not have a complete public account/session bridge and are not supported bot provisioning targets.
