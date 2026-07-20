@@ -114,6 +114,6 @@ Plex and Jellyfin tabs may appear when their server credentials are configured, 
 
 ## Profile recovery email
 
-The Profile → Recovery Email card stores a member-owned recovery address on the linked **Emby** account. The sign-in page's Forgot Password flow looks up that address, creates a 30-minute single-use token, and sends the reset link through the configured **Admin & Recovery Email** provider. The reset page verifies the token, asks Emby to change the password, and only then updates the Portal record and consumes the token.
+The Profile → Recovery Email card stores a member-owned recovery address on the linked Emby or Silo account. The sign-in page's Forgot Password flow looks up that address, creates a 30-minute single-use token, and sends the reset link through the configured **Admin & Recovery Email** provider. The reset page verifies the token, asks Emby to change the password, and only then updates the Portal record and consumes the token.
 
-Admin mail supports either Resend or SMTP. SMTP uses the Admin card's host, port, security, credentials, and sender; Kindle SMTP settings are separate. The request response intentionally does not reveal whether an address exists. A Silo-only account cannot use this Emby recovery route yet.
+Admin mail supports either Resend or SMTP. SMTP uses the Admin card's host, port, security, credentials, and sender; Kindle SMTP settings are separate. The request response intentionally does not reveal whether an address exists. Plex/Jellyfin are not included because their account bridges are not implemented.
