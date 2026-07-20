@@ -149,3 +149,17 @@ Emby Connect is a complete public login path when Emby is configured. Set `EMBY_
 ### WHMCS
 
 WHMCS is not a complete native Portal authentication provider in this public release. The card only exposes an external entry URL through `/auth/whmcs`; the public server does not implement a WHMCS callback, OAuth token exchange, WHMCS user lookup, or Portal session creation. Leave it disabled unless you have an installation-specific WHMCS SSO bridge that handles those steps and returns users through a separately implemented Portal-compatible session flow. The WHMCS client ID/secret fields are reserved and are not consumed by the public runtime.
+
+
+## Users card and Discord account flow
+
+Open Administration → Users after configuring the provider under Media Servers. The public account-management flow is:
+
+1. Configure Emby or Silo URL/API credentials.
+2. Open the matching Users tab; the tab is enabled when the provider is configured or has saved accounts.
+3. Create a parent account with a Discord user ID, username, password, stream limit, and expiry/lifetime choice.
+4. Confirm the account appears in the provider table and can be edited or deleted from both the provider and PostgreSQL.
+5. For a Lifetime parent, create linked sub-users only within the displayed pool and five-sub-user limit.
+6. For Discord provisioning, save the Discord Bot card, download a fresh bundle, provide the same provider credentials and PostgreSQL URL on the bot host, register commands, and test a trial/paid account. Bot-created Emby/Silo records appear in the same Users tabs.
+
+Plex and Jellyfin tabs are intentionally marked as pending. They expose configuration visibility only; native account provisioning, session linking, and supported Discord-bot account creation are not complete in this public release. Do not use those tabs as proof that the provider is operational.
