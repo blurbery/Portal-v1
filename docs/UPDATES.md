@@ -31,3 +31,6 @@ The public build keeps Portal as the authenticated control plane and uses the ap
 - Portal's custom BookWarehouse comic feed remains available for installations that do not use Kavita; it is not a substitute for Kavita's richer OPDS/OPDS-PS experience.
 
 The old external-library popup links were removed from the public flow. Ebook, audiobook, and comic actions now stay inside Portal or use the configured Kavita OPDS path.
+## Multi-instance request automation
+
+The Seerr administration card now supports named Radarr, Sonarr, and compatible Sportarr instances instead of assuming one Radarr and one Sonarr. Add each server, assign the categories it handles, test it, and configure the same instances and quality profiles in Seerr. Category policies support separate Movies 4K, Movies 4K DV, TV 4K, anime, international, and sports permissions. Role-restricted categories require the member to hold one of the configured Discord role IDs.

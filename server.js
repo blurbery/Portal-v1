@@ -158,6 +158,8 @@ const PORTAL_CONFIG_FIELDS = [
   { key: 'REQUESTS_ISSUES_ENABLED', label: 'Portal Issues enabled', category: 'Feature switches', type: 'toggle', secret: false },
 ]; 
 const PORTAL_CONFIG_BY_KEY = new Map(PORTAL_CONFIG_FIELDS.map(field => [field.key, field]));
+const ARR_INSTANCES_KEY = 'ARR_INSTANCES_JSON';
+const ARR_POLICIES_KEY = 'ARR_REQUEST_POLICIES_JSON';
 let portalSettings = new Map();
 let settingsReady = Promise.resolve();
 
@@ -171,6 +173,62 @@ function featureEnabled(key, defaultValue = true) {
 function authProviderEnabled(key, fallback = false) {
   return featureEnabled(key, fallback);
 }
+
+function parseJsonSetting(key, fallback) {
+  try {
+    const value = portalSettings.get(key) || process.env[key];
+    const parsed = JSON.parse(String(value || ''));
+    return parsed;
+  } catch (_) { return fallback; }
+}
+
+function configuredArrInstances() {
+  const stored = parseJsonSetting(ARR_INSTANCES_KEY, null);
+  if (Array.isArray(stored)) return stored;
+  const legacy = [];
+  for (const service of ['radarr', 'sonarr']) {
+    const url = String(process.env[`${service.toUpperCase()}_URL`] || portalSettings.get(`${service.toUpperCase()}_URL`) || '').trim();
+    const apiKey = String(process.env[`${service.toUpperCase()}_API_KEY`] || portalSettings.get(`${service.toUpperCase()}_API_KEY`) || '').trim();
+    if (url || apiKey) legacy.push({ id: `${service}-legacy`, name: service[0].toUpperCase() + service.slice(1), service, url, apiKey, enabled: true, categories: service === 'radarr' ? ['movies'] : ['shows'], roleIds: [] });
+  }
+  return legacy;
+}
+
+function publicArrInstances() {
+  return configuredArrInstances().map(item => ({
+    id: String(item.id || '').trim(), name: String(item.name || item.service || 'Instance').trim(),
+    service: String(item.service || '').toLowerCase(), url: String(item.url || '').trim(),
+    enabled: item.enabled !== false, categories: Array.isArray(item.categories) ? item.categories.map(String) : [],
+    roleIds: Array.isArray(item.roleIds) ? item.roleIds.map(String) : [], apiKeyConfigured: Boolean(String(item.apiKey || '').trim()),
+    seerrServerId: String(item.seerrServerId || '').trim(), qualityProfileId: String(item.qualityProfileId || '').trim(), rootFolder: String(item.rootFolder || '').trim(),
+  }));
+}
+
+function configuredArrPolicies() {
+  const stored = parseJsonSetting(ARR_POLICIES_KEY, null);
+  const defaults = [
+    { id: 'movies', label: 'Movies', enabled: true, roleIds: [], instanceId: '' },
+    { id: 'shows', label: 'TV Shows', enabled: true, roleIds: [], instanceId: '' },
+    { id: 'movies-4k', label: 'Movies 4K', enabled: false, roleIds: [], instanceId: '' },
+    { id: 'movies-4kdv', label: 'Movies 4K DV', enabled: false, roleIds: [], instanceId: '' },
+    { id: 'shows-4k', label: 'TV Shows 4K', enabled: false, roleIds: [], instanceId: '' },
+    { id: 'anime', label: 'Anime', enabled: false, roleIds: [], instanceId: '' },
+    { id: 'international', label: 'International', enabled: false, roleIds: [], instanceId: '' },
+    { id: 'sports', label: 'Sports', enabled: false, roleIds: [], instanceId: '' },
+  ];
+  return Array.isArray(stored) ? stored : defaults;
+}
+
+function arrPolicyAllowed(req, category) {
+  const policy = configuredArrPolicies().find(item => String(item.id) === String(category));
+  if (!policy || policy.enabled === false) return false;
+  const roleIds = Array.isArray(policy.roleIds) ? policy.roleIds.map(String).filter(Boolean) : [];
+  if (!roleIds.length) return true;
+  const user = req.session?.user || {};
+  const memberRoles = new Set([...(user.discord_role_ids || []), ...(user.discord_roles || []), ...(user.role_ids || [])].map(String));
+  return roleIds.some(role => memberRoles.has(role));
+}
+
 function embyConnectCallbackUrl() {
   const raw = String(process.env.EMBY_DIRECT_URL || process.env.EMBY_URL || '').trim();
   if (!raw) return '';
@@ -272,7 +330,7 @@ async function loadPortalSettings() {
     return;
   }
   for (const row of data || []) {
-    if (!PORTAL_CONFIG_BY_KEY.has(row.key_name)) continue;
+    if (!PORTAL_CONFIG_BY_KEY.has(row.key_name) && ![ARR_INSTANCES_KEY, ARR_POLICIES_KEY].includes(row.key_name)) continue;
     try { portalSettings.set(row.key_name, decryptConfigValue(row.value_encrypted)); }
     catch (e) { console.error(`[config] could not decrypt ${row.key_name}: ${e.message}`); }
   }
@@ -782,7 +840,8 @@ app.get('/auth/callback', async (req, res) => {
     // can continue using Discord identity-only login until it is configured.
     const oauthGuildId = String(process.env.DISCORD_GUILD_ID || '').trim();
     const allowedRoleIds = splitDiscordRoleIds(process.env.DISCORD_ALLOWED_ROLE_IDS);
-    if (oauthGuildId && allowedRoleIds.length) {
+    let discordRoleIds = [];
+    if (oauthGuildId) {
       let guildMember;
       try {
         guildMember = await getDiscordGuildMember(access_token, oauthGuildId);
@@ -790,8 +849,9 @@ app.get('/auth/callback', async (req, res) => {
         console.error('[Discord OAuth] guild member lookup failed:', roleError.response?.status || roleError.message);
         return res.redirect('/?error=discord_guild_access');
       }
-      const memberRoleIds = new Set(Array.isArray(guildMember?.roles) ? guildMember.roles.map(String) : []);
-      if (!allowedRoleIds.some(roleId => memberRoleIds.has(roleId))) return res.redirect('/?error=discord_role_required');
+      discordRoleIds = Array.isArray(guildMember?.roles) ? guildMember.roles.map(String) : [];
+      const memberRoleIds = new Set(discordRoleIds);
+      if (allowedRoleIds.length && !allowedRoleIds.some(roleId => memberRoleIds.has(roleId))) return res.redirect('/?error=discord_role_required');
     }
 
     // Discord identifies the parent/owner account. Sub-users intentionally
@@ -820,6 +880,7 @@ app.get('/auth/callback', async (req, res) => {
       discord_id: discordUser.id,
       discord_username: discordUser.username,
       discord_avatar: discordUser.avatar,
+      discord_role_ids: discordRoleIds,
       emby_user_id: account?.emby_user_id || null,
       emby_username: account?.username || null,
       silo_user_id: siloAccount?.silo_user_id || null,
@@ -2514,10 +2575,11 @@ app.post('/api/admin/seerr/test', requireAdmin, async (req, res) => {
 
 app.post('/api/admin/arr/test', requireAdmin, async (req, res) => {
   const service = String(req.body?.service || '').toLowerCase();
-  const allowed = { radarr: 'Radarr', sonarr: 'Sonarr' };
-  if (!allowed[service]) return res.status(400).json({ error: 'Choose Radarr or Sonarr.' });
-  const url = String(req.body?.url || process.env[`${service.toUpperCase()}_URL`] || '').trim().replace(/\/+$/, '');
-  const apiKey = String(req.body?.apiKey || process.env[`${service.toUpperCase()}_API_KEY`] || '').trim();
+  const allowed = { radarr: 'Radarr', sonarr: 'Sonarr', sportarr: 'Sportarr' };
+  if (!allowed[service]) return res.status(400).json({ error: 'Choose Radarr, Sonarr, or Sportarr.' });
+  const instance = req.body?.instanceId ? configuredArrInstances().find(item => String(item.id) === String(req.body.instanceId)) : null;
+  const url = String(req.body?.url || instance?.url || process.env[`${service.toUpperCase()}_URL`] || '').trim().replace(/\/+$/, '');
+  const apiKey = String(req.body?.apiKey || instance?.apiKey || process.env[`${service.toUpperCase()}_API_KEY`] || '').trim();
   if (!url || !apiKey) return res.status(400).json({ error: `Enter the ${allowed[service]} URL and API key first.` });
   try {
     const response = await axios.get(`${url}/api/v3/system/status`, { headers: { 'X-Api-Key': apiKey, Accept: 'application/json' }, timeout: 8000 });
@@ -2613,6 +2675,23 @@ async function requireSeerrPortalAccess(req, res) {
   }
 }
 
+function requestCategoryAllowed(req, category, mediaType) {
+  const normalized = String(category || (mediaType === 'tv' ? 'shows' : 'movies')).toLowerCase();
+  if (normalized === 'movies' && !featureEnabled('REQUESTS_MOVIES_ENABLED')) return false;
+  if (normalized === 'shows' && !featureEnabled('REQUESTS_SHOWS_ENABLED')) return false;
+  const policy = configuredArrPolicies().find(item => String(item.id) === normalized);
+  if (!publicArrInstances().some(instance => instance.enabled && instance.categories.includes(normalized) && (!policy?.instanceId || instance.id === policy.instanceId))) return false;
+  return arrPolicyAllowed(req, normalized);
+}
+
+app.get('/api/seerr/request-config', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  res.json({
+    categories: configuredArrPolicies().map(policy => ({ ...policy, allowed: requestCategoryAllowed(req, policy.id, policy.id.includes('shows') ? 'tv' : 'movie') })),
+    instances: publicArrInstances().filter(item => item.enabled),
+  });
+});
+
 async function persistSeerrHistory(kind, context, item) {
   const id = item?.id || item?.request?.id || item?.issue?.id;
   if (!id) return;
@@ -2692,8 +2771,17 @@ app.post('/api/seerr/requests', requireAuth, async (req, res) => {
   const context = await requireSeerrPortalAccess(req, res); if (!context) return;
   const body = req.body || {};
   if (!['movie', 'tv'].includes(body.mediaType) || !body.mediaId) return res.status(400).json({ error: 'A movie or TV media ID is required.' });
+  const category = String(body.requestCategory || (body.mediaType === 'tv' ? 'shows' : 'movies')).toLowerCase();
+  if (!requestCategoryAllowed(req, category, body.mediaType)) return res.status(403).json({ error: `Your account is not permitted to request ${category}.` });
+  const policy = configuredArrPolicies().find(item => String(item.id) === category);
+  const instance = configuredArrInstances().find(item => item.enabled !== false && item.categories?.includes(category) && (!policy?.instanceId || String(item.id) === String(policy.instanceId)));
   try {
-    const response = await seerrApi('post', '/request', { data: { ...body, userId: context.user.id } });
+    const requestData = { ...body, userId: context.user.id };
+    delete requestData.requestCategory;
+    if (instance?.seerrServerId) requestData.serverId = Number(instance.seerrServerId) || instance.seerrServerId;
+    if (instance?.qualityProfileId) requestData.profileId = Number(instance.qualityProfileId) || instance.qualityProfileId;
+    if (instance?.rootFolder) requestData.rootFolder = instance.rootFolder;
+    const response = await seerrApi('post', '/request', { data: requestData });
     await persistSeerrHistory('request', context, response.data);
     res.status(response.status || 201).json(response.data);
   } catch (error) {
@@ -2848,6 +2936,57 @@ app.put('/api/admin/config', requireAdmin, async (req, res) => {
     res.status(500).json({ error: e.message.includes('CONFIG_ENCRYPTION_KEY')
       ? 'Set CONFIG_ENCRYPTION_KEY on the server before saving provider settings.'
       : 'Could not save provider settings. Check that the portal_settings table exists.' });
+  }
+});
+
+async function saveEncryptedPortalSetting(key, value) {
+  configEncryptionKey();
+  const { error } = await db.from('portal_settings').upsert({
+    key_name: key, value_encrypted: encryptConfigValue(JSON.stringify(value)), is_secret: true, updated_at: new Date().toISOString(),
+  }, { onConflict: 'key_name' });
+  if (error) throw error;
+  portalSettings.set(key, JSON.stringify(value));
+  process.env[key] = JSON.stringify(value);
+}
+
+app.get('/api/admin/arr/instances', requireAdmin, async (req, res) => {
+  await settingsReady;
+  res.json({ instances: publicArrInstances(), policies: configuredArrPolicies(), legacyFallback: !portalSettings.has(ARR_INSTANCES_KEY) && !process.env[ARR_INSTANCES_KEY] });
+});
+
+app.put('/api/admin/arr/instances', requireAdmin, async (req, res) => {
+  await settingsReady;
+  const input = Array.isArray(req.body?.instances) ? req.body.instances : [];
+  const policies = Array.isArray(req.body?.policies) ? req.body.policies : configuredArrPolicies();
+  if (input.length > 50) return res.status(400).json({ error: 'A maximum of 50 automation instances can be configured.' });
+  const ids = new Set();
+  let instances;
+  try { instances = input.map((item, index) => {
+    const service = String(item?.service || '').toLowerCase();
+    const id = String(item?.id || `${service || 'instance'}-${index + 1}`).trim().replace(/[^a-z0-9_-]/g, '-');
+    if (ids.has(id)) throw new Error(`Duplicate automation instance ID: ${id}`);
+    ids.add(id);
+    if (!['radarr', 'sonarr', 'sportarr'].includes(service)) throw new Error(`Unsupported automation service: ${service || 'blank'}`);
+    const previous = configuredArrInstances().find(existing => String(existing.id) === id);
+    return {
+      id, name: String(item?.name || `${service[0].toUpperCase()}${service.slice(1)} ${index + 1}`).trim().slice(0, 80),
+      service, url: String(item?.url || '').trim().replace(/\/+$/, ''),
+      apiKey: String(item?.apiKey || '').trim() || String(previous?.apiKey || '').trim(), enabled: item?.enabled !== false,
+      categories: Array.isArray(item?.categories) ? [...new Set(item.categories.map(String).filter(Boolean))] : [],
+      roleIds: Array.isArray(item?.roleIds) ? [...new Set(item.roleIds.map(String).filter(Boolean))] : [],
+      seerrServerId: String(item?.seerrServerId || '').trim(), qualityProfileId: String(item?.qualityProfileId || '').trim(), rootFolder: String(item?.rootFolder || '').trim(),
+    };
+  }); } catch (error) { return res.status(400).json({ error: error.message }); }
+  try {
+    await saveEncryptedPortalSetting(ARR_INSTANCES_KEY, instances);
+    await saveEncryptedPortalSetting(ARR_POLICIES_KEY, policies.map(item => ({
+      id: String(item?.id || '').trim(), label: String(item?.label || item?.id || '').trim(), enabled: item?.enabled === true,
+      roleIds: Array.isArray(item?.roleIds) ? [...new Set(item.roleIds.map(String).filter(Boolean))] : [], instanceId: String(item?.instanceId || '').trim(),
+    })).filter(item => item.id));
+    res.json({ success: true, instances: publicArrInstances(), policies: configuredArrPolicies() });
+  } catch (error) {
+    console.error('[arr settings]', error.message);
+    res.status(500).json({ error: 'Could not save automation settings. Check CONFIG_ENCRYPTION_KEY and portal_settings.' });
   }
 });
 
