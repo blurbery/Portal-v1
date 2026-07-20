@@ -33,3 +33,11 @@ After a Portal contract or bot-command change, deploy a fresh bundle and run:
 `docker compose run --rm portal-discord-bot node index.js register`
 
 Preserve the protected configuration loader at the top of `index.js`. Test ticket categories, selected provider commands, `/pricing`, provider account creation, trials, Lifetime membership, parent/sub-user limits, sub-user deletion and stream return, and Portal membership sync after every contract change.
+
+## Portal branding contract
+
+Branding is configured in the Portal administration **General Settings** card. The Portal stores the configured name, logo URL, favicon URL, welcome message and public URL, and exposes the active values through `/api/branding`.
+
+The login page and dashboard load those values at runtime. Their safe fallback text is `My Portal`, but the API response is authoritative after the page loads. Do not hard-code a second bot-specific brand or replace the branding fetch when changing the Portal UI.
+
+The Discord bot bundle talks to the Portal and follows the Portal’s identity and account contract; it does not own the Portal logo, favicon or login branding. If branding fields, API response shape, or branding storage changes, update the login page, dashboard General Settings card, `/api/branding` handling, generated bundle documentation and tests together. Verify a hard refresh, login page, dashboard header, browser title, logo and favicon after deployment.
