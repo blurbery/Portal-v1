@@ -7,7 +7,11 @@ ENV PORT=3000
 ENV PORTAL_BUILD_ID=portal-v1-public
 
 COPY package*.json ./
-RUN npm install --omit=dev && npm cache clean --force
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends calibre \
+  && rm -rf /var/lib/apt/lists/* \
+  && npm install --omit=dev \
+  && npm cache clean --force
 
 COPY . .
 COPY docker/entrypoint.sh /usr/local/bin/portal-v1-public
