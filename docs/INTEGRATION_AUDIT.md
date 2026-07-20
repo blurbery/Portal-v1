@@ -100,3 +100,14 @@ The Forgot Password token lookup covers both `emby_accounts` and `silo_accounts`
 - Confirm an unconfigured provider cannot be selected or linked.
 - Confirm ordinary members can sign in only through configured provider paths and cannot link or unlink administrator service credentials.
 - Confirm the portal administrator can link and unlink configured administrator service credentials.
+
+## Media server health verification
+
+- Configure a provider URL and credential, then confirm its matching health endpoint appears in **Administration → Media Server Health**.
+- Enter a reachable endpoint and confirm the provider is listed as online after the initial check.
+- Point the endpoint at an unavailable path and confirm three failed checks are required before an offline alert appears.
+- Restore the endpoint and confirm two successful checks resolve the event and show the elapsed duration.
+- Sign in as a member attached to one provider and confirm the bell exposes only that provider.
+- Sign in as the portal administrator and confirm the bell exposes every configured provider health endpoint.
+- Clear a provider or its health endpoint and confirm it disappears from monitoring.
+- Treat runtime history as non-durable across restarts unless an external incident archive is configured.

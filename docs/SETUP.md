@@ -184,3 +184,11 @@ The Admin mail provider may be Resend or SMTP. For SMTP, configure the Admin & R
 The Add-service list is populated from the providers configured in Administration → Media Servers. A provider is considered available only when its required URL and server credential/API key are saved. If none are configured, the modal shows a provider-neutral warning.
 
 The portal administrator can link or unlink the administrator's service credentials. Ordinary members can sign in only through configured/available provider paths and cannot link arbitrary service credentials or unlink the administrator's connection. Configure and test the provider before inviting members.
+
+## Media server health configuration
+
+After saving a provider under **Administration → Media Servers**, open **Administration → Media Server Health** and enter that provider's health endpoint. Configure only endpoints that the Portal host can reach; health requests use the provider credential already saved for that server. A server without both provider configuration and a health endpoint is not monitored.
+
+The monitor runs every 30 seconds. It requires three consecutive failed checks before showing a server as offline and two consecutive successful checks before resolving the incident. The homepage notification bell shows the provider name, offline start time, and elapsed duration. Members receive only the downtime for providers attached to their Portal account; the portal administrator sees all configured monitored providers. Clear the provider configuration or its health endpoint to stop monitoring it.
+
+The current public implementation keeps health events in process memory, so restart the Portal after a deployment and use external monitoring if you need durable incident history.

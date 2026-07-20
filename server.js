@@ -68,7 +68,10 @@ const PORTAL_CONFIG_FIELDS = [
   { key: 'EMBY_DIRECT_URL', label: 'Emby direct URL', category: 'Media servers', type: 'url', secret: false },
   { key: 'EMBY_API_KEY', label: 'Emby API key', category: 'Media servers', type: 'password', secret: true },
   { key: 'EMBY_TEMPLATE_USER_ID', label: 'Emby template user ID', category: 'Media servers', type: 'text', secret: false },
-  { key: 'EMBY_HEALTH_URL', label: 'Emby health URL', category: 'Media servers', type: 'url', secret: false },
+  { key: 'EMBY_HEALTH_URL', label: 'Emby health endpoint', category: 'Media server health', type: 'url', secret: false },
+  { key: 'SILO_HEALTH_URL', label: 'Silo health endpoint', category: 'Media server health', type: 'url', secret: false },
+  { key: 'PLEX_HEALTH_URL', label: 'Plex health endpoint', category: 'Media server health', type: 'url', secret: false },
+  { key: 'JELLYFIN_HEALTH_URL', label: 'Jellyfin health endpoint', category: 'Media server health', type: 'url', secret: false },
   { key: 'EMBY_ROLE_IDS', label: 'Emby Discord role IDs (optional)', category: 'Media servers', type: 'text', secret: false },
   { key: 'JELLYFIN_URL', label: 'Jellyfin server URL', category: 'Media servers', type: 'url', secret: false },
   { key: 'JELLYFIN_API_KEY', label: 'Jellyfin API key', category: 'Media servers', type: 'password', secret: true },
@@ -3729,280 +3732,248 @@ app.post('/api/libraries', requireAuth, async (req, res) => {
   }
 });
 
-// ─── API: Server status ───────────────────────────────────────────────────────
-let serverOnline = true;
-let downtimeLog = [];
-let currentDowntime = null;
-let healthCheckRunning = false;
-let healthInitialized = false;
-let healthFailureStreak = 0;
-let healthSuccessStreak = 0;
-let lastHealthCheck = null;
-let lastHealthError = null;
+// ─── API: Media-server health and downtime ─────────────────────────────────────
+const HEALTH_PROVIDERS = {
+  emby: {
+    label: 'Emby',
+    urlKey: 'EMBY_URL',
+    credentialKey: 'EMBY_API_KEY',
+    healthKey: 'EMBY_HEALTH_URL',
+    headers: () => ({ 'X-Emby-Token': process.env.EMBY_API_KEY }),
+    table: 'emby_accounts',
+    idColumn: 'emby_user_id',
+  },
+  silo: {
+    label: 'Silo',
+    urlKey: 'SILO_URL',
+    credentialKey: 'SILO_API_KEY',
+    healthKey: 'SILO_HEALTH_URL',
+    headers: () => ({ Authorization: `Bearer ${process.env.SILO_API_KEY}` }),
+    table: 'silo_accounts',
+    idColumn: 'silo_user_id',
+  },
+  plex: {
+    label: 'Plex',
+    urlKey: 'PLEX_URL',
+    credentialKey: 'PLEX_TOKEN',
+    healthKey: 'PLEX_HEALTH_URL',
+    headers: () => ({ 'X-Plex-Token': process.env.PLEX_TOKEN }),
+    table: null,
+    idColumn: null,
+  },
+  jellyfin: {
+    label: 'Jellyfin',
+    urlKey: 'JELLYFIN_URL',
+    credentialKey: 'JELLYFIN_API_KEY',
+    healthKey: 'JELLYFIN_HEALTH_URL',
+    headers: () => ({ 'X-Emby-Token': process.env.JELLYFIN_API_KEY }),
+    table: null,
+    idColumn: null,
+  },
+};
 
-// Availability alerts use the direct Emby origin, not Discord/PostgreSQL
-// announcements. A proxy hiccup must persist across several checks before it
-// is treated as a real outage.
-function buildEmbyHealthUrls() {
-  const configured = String(process.env.EMBY_HEALTH_URL || '').trim();
-  const base = String(process.env.EMBY_DIRECT_URL || process.env.EMBY_URL || '').trim().replace(/\/+$/, '');
-  const urls = configured
-    ? [configured]
-    : base
-      ? [
-          `${base}/emby/System/Ping`,
-          `${base}/emby/System/Info/Public`,
-          `${base}/System/Info/Public`,
-        ]
-      : [];
-  return urls.filter((url, index, all) => url && all.indexOf(url) === index);
-}
-const EMBY_HEALTH_URLS = buildEmbyHealthUrls();
 const HEALTH_TIMEOUT_MS = 8000;
 const HEALTH_INTERVAL_MS = 30000;
 const HEALTH_FAILURES_TO_ALERT = 3;
 const HEALTH_SUCCESSES_TO_RECOVER = 2;
+const healthStates = Object.fromEntries(Object.keys(HEALTH_PROVIDERS).map(key => [key, {
+  online: true,
+  initialized: false,
+  failureStreak: 0,
+  successStreak: 0,
+  currentDowntime: null,
+  log: [],
+  lastCheck: null,
+  lastError: null,
+}]));
 
-app.get('/api/health', async (req, res) => {
-  try {
-    await db.pool.query('SELECT 1');
-    res.status(200).json({ status: 'ok', database: 'ok' });
-  } catch (error) {
-    console.error('[health endpoint]', error.message);
-    res.status(503).json({ status: 'degraded', database: 'unavailable' });
-  }
-});
-
-async function checkDirectEmbyHealth() {
-  if (!EMBY_HEALTH_URLS.length) return { online: true, skipped: true };
-  const errors = [];
-  for (const url of EMBY_HEALTH_URLS) {
-    try {
-      const response = await axios.get(url, {
-        headers: { 'X-Emby-Token': process.env.EMBY_API_KEY },
-        timeout: HEALTH_TIMEOUT_MS,
-        validateStatus: () => true,
-        maxContentLength: 1024 * 1024,
-        maxBodyLength: 1024 * 1024
-      });
-      // 2xx is normal. 401/403 still proves the Emby service is reachable;
-      // a 404 is not accepted because it can be a healthy proxy with a bad route.
-      if (response.status >= 200 && response.status < 400) {
-        return { online: true, url, status: response.status };
-      }
-      if (response.status === 401 || response.status === 403) {
-        return { online: true, url, status: response.status };
-      }
-      errors.push(`${url} -> HTTP ${response.status}`);
-    } catch (error) {
-      errors.push(`${url} -> ${error.code || error.message}`);
-    }
-  }
-  throw new Error(errors.join('; ') || 'No health endpoints configured');
+function providerHealthConfiguration(key) {
+  const def = HEALTH_PROVIDERS[key];
+  if (!def) return { enabled: false, healthConfigured: false, endpoint: '' };
+  const enabled = Boolean(String(process.env[def.urlKey] || '').trim() && String(process.env[def.credentialKey] || '').trim());
+  const endpoint = String(process.env[def.healthKey] || '').trim();
+  return { enabled, healthConfigured: enabled && Boolean(endpoint), endpoint };
 }
 
-async function monitorServer() {
-  if (healthCheckRunning) return;
-  healthCheckRunning = true;
-  lastHealthCheck = new Date().toISOString();
-  try {
-    const health = await checkDirectEmbyHealth();
-    lastHealthError = null;
-    healthFailureStreak = 0;
-    healthSuccessStreak += 1;
+function availableHealthProviders() {
+  return Object.keys(HEALTH_PROVIDERS).filter(key => providerHealthConfiguration(key).healthConfigured);
+}
 
-    // Do not announce the first successful check after a restart.
-    if (!healthInitialized) {
-      healthInitialized = true;
-      serverOnline = true;
-      healthSuccessStreak = 0;
-      console.log(health.skipped
-        ? '[health] Emby health checks skipped: no endpoint configured'
-        : `[health] Emby reachable via ${health.url} (HTTP ${health.status})`);
+async function checkProviderHealth(key) {
+  const def = HEALTH_PROVIDERS[key];
+  const config = providerHealthConfiguration(key);
+  if (!config.healthConfigured) return { skipped: true };
+  const response = await axios.get(config.endpoint, {
+    headers: def.headers(),
+    timeout: HEALTH_TIMEOUT_MS,
+    validateStatus: () => true,
+    maxContentLength: 1024 * 1024,
+    maxBodyLength: 1024 * 1024,
+  });
+  // An authenticated endpoint may answer 401/403 while still proving the
+  // server is reachable. A 404 is not accepted because it often means the
+  // health path is wrong.
+  if ((response.status >= 200 && response.status < 400) || response.status === 401 || response.status === 403) {
+    return { online: true, status: response.status };
+  }
+  throw new Error(`${config.endpoint} -> HTTP ${response.status}`);
+}
+
+async function sendHealthPush(key, title, body) {
+  if (!webpush) return;
+  const def = HEALTH_PROVIDERS[key];
+  if (!def.table) return;
+  try {
+    const { data: accounts } = await db.from(def.table).select(`${def.idColumn}, discord_user_id`);
+    const ids = new Set((accounts || []).flatMap(account => [account[def.idColumn], account.discord_user_id]).filter(Boolean).map(String));
+    if (!ids.size) return;
+    const { data: subs } = await db.from('push_subscriptions').select('endpoint, subscription, user_id');
+    await Promise.all((subs || []).filter(sub => ids.has(String(sub.user_id))).map(async sub => {
+      try {
+        await webpush.sendNotification(JSON.parse(sub.subscription), JSON.stringify({ title, body, url: '/', icon: '/logo.png' }));
+      } catch (error) {
+        if (error.statusCode === 410 || error.statusCode === 404) {
+          await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+        }
+      }
+    }));
+  } catch (error) {
+    console.warn('[health push]', key, error.message);
+  }
+}
+
+async function monitorProviderHealth(key) {
+  const state = healthStates[key];
+  const def = HEALTH_PROVIDERS[key];
+  const config = providerHealthConfiguration(key);
+  if (!config.healthConfigured) {
+    state.online = true;
+    state.initialized = false;
+    state.failureStreak = 0;
+    state.successStreak = 0;
+    state.currentDowntime = null;
+    state.lastError = null;
+    return;
+  }
+  state.lastCheck = new Date().toISOString();
+  try {
+    await checkProviderHealth(key);
+    state.lastError = null;
+    state.failureStreak = 0;
+    state.successStreak += 1;
+    if (!state.initialized) {
+      state.initialized = true;
+      state.online = true;
+      state.successStreak = 0;
+      console.log(`[health] ${def.label} reachable via configured endpoint`);
       return;
     }
-
-    if (!serverOnline && healthSuccessStreak >= HEALTH_SUCCESSES_TO_RECOVER) {
+    if (!state.online && state.successStreak >= HEALTH_SUCCESSES_TO_RECOVER) {
       const now = new Date();
-      const duration = currentDowntime ? Math.floor((now - new Date(currentDowntime.startedAt)) / 1000) : 0;
-      const event = {
-        id: Date.now(),
-        startedAt: currentDowntime?.startedAt || now.toISOString(),
-        resolvedAt: now.toISOString(),
-        duration,
-        resolved: true
-      };
-      downtimeLog.unshift(event);
-      if (downtimeLog.length > 50) downtimeLog.pop();
-      currentDowntime = null;
-      const mins = Math.floor(duration / 60);
-      const secs = duration % 60;
-      const durStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-      console.log(`Server back online after ${duration}s`);
-      sendPushToAll('✅ Emby is Back Online', `Back up after ${durStr} downtime`, '/');
-      serverOnline = true;
+      const startedAt = state.currentDowntime?.startedAt || now.toISOString();
+      const duration = Math.max(0, Math.floor((now - new Date(startedAt)) / 1000));
+      state.log.unshift({ id: `${key}-${Date.now()}`, provider: key, providerLabel: def.label, startedAt, resolvedAt: now.toISOString(), duration, resolved: true });
+      state.log = state.log.slice(0, 50);
+      state.currentDowntime = null;
+      state.online = true;
+      state.successStreak = 0;
+      await sendHealthPush(key, `✅ ${def.label} is back online`, `Back up after ${formatHealthDuration(duration)} downtime`);
     }
-    if (serverOnline) healthSuccessStreak = 0;
-  } catch(e) {
-    lastHealthError = e.message;
-    healthSuccessStreak = 0;
-    healthFailureStreak += 1;
-    console.warn(`[health] Check failed ${healthFailureStreak}/${HEALTH_FAILURES_TO_ALERT}: ${e.message}`);
-
-    if (!healthInitialized) {
-      // Stay online until the service has had enough consecutive failed checks.
-      if (healthFailureStreak < HEALTH_FAILURES_TO_ALERT) return;
-      healthInitialized = true;
-    }
-
-    if (serverOnline && healthFailureStreak >= HEALTH_FAILURES_TO_ALERT) {
+  } catch (error) {
+    state.lastError = error.message;
+    state.successStreak = 0;
+    state.failureStreak += 1;
+    console.warn(`[health] ${def.label} check failed ${state.failureStreak}/${HEALTH_FAILURES_TO_ALERT}: ${error.message}`);
+    if (!state.initialized && state.failureStreak < HEALTH_FAILURES_TO_ALERT) return;
+    state.initialized = true;
+    if (state.online && state.failureStreak >= HEALTH_FAILURES_TO_ALERT) {
       const now = new Date();
-      currentDowntime = { startedAt: now.toISOString() };
-      console.log(`Server went offline at ${now.toISOString()}`);
-      sendPushToAll('⚠️ Emby is Offline', 'Emby has gone offline unexpectedly. We\'re working on it.', '/');
-      serverOnline = false;
+      state.currentDowntime = { startedAt: now.toISOString() };
+      state.online = false;
+      await sendHealthPush(key, `⚠️ ${def.label} is offline`, `${def.label} has been unreachable for three consecutive health checks.`);
     }
-  } finally {
-    healthCheckRunning = false;
   }
 }
 
-setInterval(monitorServer, HEALTH_INTERVAL_MS);
-monitorServer();
+function formatHealthDuration(seconds) {
+  const s = Math.max(0, Number(seconds) || 0);
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${Math.floor(s % 60)}s`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+}
 
-// Cache downtime log so server-status responds instantly
-let cachedDowntimeLog = [];
-let downtimeCacheTs = 0;
-
-async function refreshDowntimeCache() {
-  const STATUS_CHANNEL = '000000000000000000';
-  const t = Date.now();
-  const { data: events } = await db
-    .from('announcements')
-    .select('id,embed_title,embed_desc,embed_fields,posted_at')
-    .eq('channel_id', STATUS_CHANNEL)
-    .order('posted_at', { ascending: false })
-    .limit(200);
-  console.log(`[downtime cache] PostgreSQL query took ${Date.now()-t}ms, ${(events||[]).length} rows`);
-  if (events?.length) {
-    console.log('[downtime cache] Sample titles:', events.slice(0, 5).map(e => `"${e.embed_title}" (${e.posted_at?.slice(0,10)})`).join(', '));
-  }
-  const msgs = events || [];
-
-  function classify(msg) {
-    // Title is authoritative — check it first in isolation to avoid desc contamination
-    const title = (msg.embed_title || '').toLowerCase();
-    const desc  = (msg.embed_desc  || '').toLowerCase();
-    if (title.includes('back online') || title.includes('is online') ||
-        title.includes('resolved')    || title.includes('all clear') ||
-        title.includes('back up and running')) return 'online';
-    if (title.includes('offline') || title.includes('outage') ||
-        title.includes(' down'))   return 'offline';
-    // Desc fallback — use only unambiguous phrases not shared with offline messages
-    if (desc.includes('back up and running') || desc.includes('back online') ||
-        desc.includes('now online') || desc.includes('restored') ||
-        desc.includes('recovered'))  return 'online';
-    if (desc.includes('gone offline') || desc.includes('unavailable') ||
-        desc.includes('maintenance') || desc.includes('degraded'))  return 'offline';
-    return 'unknown';
-  }
-
-  const log = [];
-  for (let i = 0; i < msgs.length; i++) {
-    const type = classify(msgs[i]);
-    if (type === 'online') {
-      const resolvedAt = msgs[i].posted_at;
-      // Try to extract duration_seconds saved by bot directly in embed_desc
-      const descMatch = (msgs[i].embed_desc || '').match(/duration_seconds:(\d+)/);
-      let duration = null, startedAt = null;
-      if (descMatch) {
-        duration = parseInt(descMatch[1], 10);
-        startedAt = new Date(new Date(resolvedAt).getTime() - duration * 1000).toISOString();
-      } else {
-        // Fall back: find nearest offline message AFTER index i (msgs sorted newest-first, so after = older)
-        const offline = msgs.slice(i + 1).find(m => classify(m) === 'offline');
-        startedAt = offline?.posted_at || null;
-        duration = startedAt ? Math.floor((new Date(resolvedAt) - new Date(startedAt)) / 1000) : null;
-      }
-      log.push({
-        id: msgs[i].id,
-        title: msgs[i].embed_title,
-        startedAt: startedAt || resolvedAt,
-        resolvedAt,
-        duration,
-        resolved: true
-      });
-    } else if (type === 'offline') {
-      // Only add as unresolved if no later 'online' event exists
-      const resolved = msgs.slice(0, i).find(m => classify(m) === 'online');
-      if (!resolved) {
-        log.push({
-          id: msgs[i].id,
-          title: msgs[i].embed_title,
-          startedAt: msgs[i].posted_at,
-          resolvedAt: null,
-          duration: null,
-          resolved: false
-        });
-      }
-    }
-  }
-  // Only drop truly bad pairs where we have literally no timing info at all
-  // (startedAt === resolvedAt AND duration is 0 or null with no offline pair)
-  cachedDowntimeLog = log.filter(entry => {
-    if (!entry.resolved) return true;
-    // Keep if we have any real duration
-    if (entry.duration != null && entry.duration > 0) return true;
-    // Keep if startedAt differs from resolvedAt (pair found even if duration calc failed)
-    if (entry.startedAt !== entry.resolvedAt) return true;
-    // Drop only if both are identical (no offline pair found and no duration_seconds)
+function healthServicesForRequest(req) {
+  const session = req.session?.user || {};
+  if (session.admin_login === true) return availableHealthProviders();
+  return availableHealthProviders().filter(key => {
+    if (key === 'emby') return Boolean(session.has_emby || session.emby_user_id);
+    if (key === 'silo') return Boolean(session.has_silo || session.silo_user_id);
+    if (key === 'plex') return Boolean(session.has_plex || session.plex_user_id);
+    if (key === 'jellyfin') return Boolean(session.has_jellyfin || session.jellyfin_user_id);
     return false;
   });
-  console.log(`[downtime cache] Built ${cachedDowntimeLog.length} entries from ${msgs.length} rows`);
-  downtimeCacheTs = Date.now();
 }
 
-refreshDowntimeCache();
-setInterval(refreshDowntimeCache, 2 * 60 * 1000);
+function healthEventView(key, event) {
+  return { ...event, provider: key, providerLabel: HEALTH_PROVIDERS[key].label };
+}
 
-app.get('/api/downtime-debug', requireAuth, (req, res) => {
-  res.json({
-    cacheAge: Math.floor((Date.now() - downtimeCacheTs) / 1000) + 's',
-    totalCached: cachedDowntimeLog.length,
-    log: cachedDowntimeLog.slice(0, 20)
+function healthSnapshotForRequest(req, days = 7) {
+  const keys = healthServicesForRequest(req);
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const services = keys.map(key => {
+    const state = healthStates[key];
+    const events = state.log.filter(event => new Date(event.startedAt).getTime() >= cutoff || !event.resolved).map(event => healthEventView(key, event));
+    return {
+      key,
+      label: HEALTH_PROVIDERS[key].label,
+      online: state.online,
+      endpointConfigured: true,
+      currentDowntime: state.currentDowntime,
+      log: events,
+      health: { initialized: state.initialized, failureStreak: state.failureStreak, successStreak: state.successStreak, lastCheck: state.lastCheck, lastError: state.lastError },
+    };
   });
-});
+  const log = services.flatMap(service => service.log).sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+  const current = services.filter(service => !service.online && service.currentDowntime);
+  return {
+    online: services.every(service => service.online),
+    services,
+    currentDowntime: current[0]?.currentDowntime || null,
+    log: log.slice(0, 50),
+    health: services.map(service => ({ provider: service.key, ...service.health })),
+  };
+}
 
-app.get('/api/server-status', (req, res) => {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const recent = [...cachedDowntimeLog]
-    .filter(e => e.startedAt >= sevenDaysAgo || !e.resolved)
-    .sort((a,b) => new Date(b.startedAt) - new Date(a.startedAt))
-    .slice(0, 7);
-  res.json({ online: serverOnline, currentDowntime: currentDowntime, log: recent,
-    health: { initialized: healthInitialized, failureStreak: healthFailureStreak,
-      successStreak: healthSuccessStreak, lastCheck: lastHealthCheck,
-      lastError: lastHealthError } });
+app.get('/api/server-status', requireAuth, (req, res) => {
+  res.json(healthSnapshotForRequest(req));
 });
 
 app.get('/api/downtime-history', requireAuth, (req, res) => {
   const days = Math.min(30, Math.max(1, parseInt(req.query.days) || 7));
-  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-  const filtered = cachedDowntimeLog
-    .filter(e => e.startedAt >= cutoff || !e.resolved)
-    .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+  const snapshot = healthSnapshotForRequest(req, days);
   const windowMs = days * 24 * 60 * 60 * 1000;
-  const totalDowntimeMs = filtered.reduce((s, e) => s + (e.duration ? e.duration * 1000 : 0), 0);
+  const totalDowntimeMs = snapshot.log.reduce((sum, event) => sum + (event.duration ? event.duration * 1000 : 0), 0);
   const uptimePct = parseFloat(Math.max(0, Math.min(100, ((windowMs - totalDowntimeMs) / windowMs) * 100)).toFixed(4));
   res.json({
-    days, log: filtered,
-    uptimePct, downtimePct: parseFloat((100 - uptimePct).toFixed(4)),
+    days,
+    services: snapshot.services,
+    log: snapshot.log,
+    uptimePct,
+    downtimePct: parseFloat((100 - uptimePct).toFixed(4)),
     totalDowntimeSeconds: Math.floor(totalDowntimeMs / 1000),
-    eventCount: filtered.length
+    eventCount: snapshot.log.length,
   });
 });
 
+function startHealthMonitoring() {
+  availableHealthProviders().forEach(key => monitorProviderHealth(key));
+  setInterval(() => availableHealthProviders().forEach(key => monitorProviderHealth(key)), HEALTH_INTERVAL_MS);
+}
+settingsReady.then(startHealthMonitoring).catch(error => console.warn('[health] monitor startup', error.message));
+
 // ─── API: Push notifications ──────────────────────────────────────────────────
+
 app.get('/api/push/vapid-key', (req, res) => {
   res.json({ key: process.env.VAPID_PUBLIC_KEY || null });
 });

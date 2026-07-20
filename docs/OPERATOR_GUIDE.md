@@ -210,3 +210,20 @@ This is an Emby-backed flow. The recovery card is not a Silo password-reset brid
 `GET /api/provider-status` exposes only configuration state needed by the account UI. The Add-service modal filters against that state, so an unconfigured provider cannot be selected. The server separately protects link/unlink actions with the dedicated portal-admin session; member sessions cannot manage administrator-linked credentials.
 
 Member sign-in also depends on the configured provider adapters and matching Portal account records. Disabling or clearing a provider stops it from appearing as an available link target; existing database rows are not evidence that the provider is currently reachable.
+
+## Media server health monitoring
+
+The **Media server health** card is separate from provider credentials but linked to them by provider key:
+
+| Provider | Provider configuration | Health endpoint field |
+| --- | --- | --- |
+| Emby | EMBY_URL + EMBY_API_KEY | EMBY_HEALTH_URL |
+| Silo | SILO_URL + SILO_API_KEY | SILO_HEALTH_URL |
+| Plex | PLEX_URL + PLEX_TOKEN | PLEX_HEALTH_URL |
+| Jellyfin | JELLYFIN_URL + JELLYFIN_API_KEY | JELLYFIN_HEALTH_URL |
+
+The health endpoint must be a direct URL reachable from the Portal host. Configure it only after the matching provider is enabled. The monitor checks every 30 seconds, waits for three consecutive failures before declaring downtime, and requires two successful checks to recover.
+
+The server-status and downtime-history endpoints are authenticated and scoped. A member receives only providers represented by their signed-in account (Emby, Silo, or a future provider account mapping); a portal-admin session receives all configured health endpoints. The homepage bell renders provider-specific status and duration instead of a global Emby status.
+
+The monitor currently keeps events in process memory. Use a separate durable monitoring/incident system if you need history to survive Portal restarts. Verify each configured endpoint from the Portal host and test the bell with a controlled endpoint failure before inviting members.
