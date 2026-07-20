@@ -8,27 +8,42 @@ Do not copy private portal changes directly into this repository. Keep the porta
 
 v1 is a clean provider-neutral deployment. Do not add owner-specific sync jobs, private library backends, private Portal integrations, or installation-specific defaults to this repository.
 
-## Quick start
+## Installation at a glance
 
-1. Clone the repository locally or download the public-safe release.
-2. Copy .env.example to .env and fill only the values for this installation.
-3. Create the PostgreSQL schema by following docs/SETUP.md.
-4. Run npm install and npm run check.
-5. Start with npm start, or use the process manager provided by your host.
+Portal has two supported deployment modes:
 
-## Docker quick start
+- **Docker Compose (recommended):** runs Portal and PostgreSQL together, applies `portal_schema.sql` on the first database-volume creation, and exposes Portal on host port `3100`.
+- **Node.js plus external PostgreSQL:** use Node.js 20+, apply the schema manually, and run Portal behind your own process manager and reverse proxy.
 
-Docker is the recommended distribution path for independent operators:
+Before starting, you need a PostgreSQL database, a long random `SESSION_SECRET`, a long random `CONFIG_ENCRYPTION_KEY`, and a bootstrap administrator username/password hash. Provider credentials are optional and should be added only after the first administrator login.
+
+### Docker installation
 
 ```bash
 git clone https://github.com/blurbery/Portal-v1.git /opt/portal-v1-public
 cd /opt/portal-v1-public
 cp .env.example .env
-# Set the database password in docker-compose.yml and configure .env.
+# Edit .env: PORTAL_URL, secrets, and any provider values you need.
 docker compose -p portal-v1-public up -d --build
+docker compose -p portal-v1-public ps
+curl -fsS http://127.0.0.1:3100/api/health
 ```
 
-The public-safe container uses the distinct service name portal-v1-public, host port 3100, and explicit public-build labels. See docs/DOCKER.md for updates and troubleshooting. Never commit .env, bot tokens, provider API keys, OAuth client secrets, service-role keys, or password hashes.
+The first Docker start creates the named PostgreSQL volume and applies `portal_schema.sql`. If the volume already exists, schema changes must be applied through the documented migration process; do not delete a production volume to retry setup.
+
+### Node.js installation
+
+```bash
+cp .env.example .env
+# Set DATABASE_URL, PORTAL_URL, SESSION_SECRET, CONFIG_ENCRYPTION_KEY,
+# PORTAL_ADMIN_USERNAME, PORTAL_ADMIN_PASSWORD_HASH, and PORTAL_ADMIN_PASSWORD_SALT.
+psql "$DATABASE_URL" -f portal_schema.sql
+npm install
+npm run check
+npm start
+```
+
+Put a reverse proxy with HTTPS in front of the Node process before exposing it to the internet. See [docs/SETUP.md](docs/SETUP.md) for the complete checklist and [docs/DOCKER.md](docs/DOCKER.md) for Docker operations. Never commit `.env`, bot tokens, provider API keys, OAuth client secrets, service-role keys, password hashes, or OPDS URLs containing credentials.
 
 ## Operator isolation
 
@@ -55,3 +70,17 @@ Configure General Settings, Authentication & Access, Media Servers, Permissions 
 ## Library media flow
 
 The public library actions are wired by media type: eBooks are converted to EPUB with Calibre and open in Portal's reader, audiobooks stream through Portal's mobile-friendly audio player and remain downloadable, and comics use Kavita for the rich reader/OPDS experience. Configure Kavita in the Library administration card; see [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for the OPDS setup.
+
+
+## First-launch checklist
+
+1. Confirm `GET /api/health` reports the database as healthy.
+2. Sign in with the bootstrap administrator account.
+3. Set General Settings, especially the canonical `PORTAL_URL`.
+4. Configure Authentication & Access, then Media Servers.
+5. Configure Permissions & Announcements and enable only the member groups that should see each feature.
+6. Configure Library, Requests & metadata, and Kindle delivery only when those services are installed.
+7. Download and deploy the generated Discord bot separately; run its command registration after the first deployment and after command/provider/pricing changes.
+8. Test one login, one provider link, one library search/download, one request if enabled, one Kindle send if enabled, and one announcement before inviting members.
+
+The Portal does not install Emby, Silo, Jellyfin, Plex, BookWarehouse, Shelfmark, Kavita, Seerr, SMTP, or Discord. Those are separate services that the operator owns and configures. The Portal stores their settings and provides the integration routes.
