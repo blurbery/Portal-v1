@@ -23,3 +23,7 @@ This folder is generated from the public Portal Discord Bot card. Use the steps 
 The generated Compose file joins the existing `portal-v1-postgres_default` Docker network. Deploy the bot on the same Docker host as the public Portal when using `DATABASE_URL=...@db`. Keep the bot `.env` on the VPS only.
 
 When Portal provider, pricing, command, account, Lifetime-parent/sub-user, or database-contract behavior changes: save the Portal Discord Bot card, download a fresh complete bundle, replace the bot folder, rebuild it, and run the registration command again. Do not manually edit generated `bot-config.json` to bypass the Portal card.
+
+## Portal branding
+
+Set the Portal name, logo, favicon, welcome message and public URL in Administration → General Settings before distributing the bot bundle. The login page and dashboard read the active values from `/api/branding`; the bot does not replace or duplicate this branding. After branding changes, redeploy the Portal dashboard/login files if needed and hard-refresh the browser. A bot bundle only needs rebuilding when its provider, command, account or database contract changes.
