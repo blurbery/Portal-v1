@@ -1881,7 +1881,8 @@ async function sendAdminMail(message) {
 
 async function sendResetEmail(toEmail, resetUrl) {
   const config = getAdminMailConfig();
-  if (!config.apiKey || !config.fromEmail) { console.error('[admin email] Configure the Admin email card first'); return false; }
+  const missingDeliveryConfig = config.provider === 'smtp' ? (!config.host || !config.fromEmail) : (!config.apiKey || !config.fromEmail);
+  if (missingDeliveryConfig) { console.error('[admin email] Configure the Admin email card first'); return false; }
   try {
     await sendAdminMail({
       label: 'Portal v1',
@@ -2148,13 +2149,15 @@ app.post('/api/reset-password/submit', async (req, res) => {
     if (!data?.length) return res.json({ error: 'Invalid or expired reset link.' });
     if (new Date(data[0].reset_token_expires) < new Date()) return res.json({ error: 'Reset link has expired. Please request a new one.' });
     const { emby_user_id } = data[0];
-    await embySetPassword(emby_user_id, newPassword);
-    // Update in PostgreSQL + clear token
-    await db.from('emby_accounts').update({
+    const passwordUpdated = await embySetPassword(emby_user_id, newPassword);
+    if (!passwordUpdated) return res.json({ error: 'Emby rejected the password update. Please request a new reset link or contact support.' });
+    // Update in PostgreSQL + clear token only after Emby accepted the new password.
+    const { error: accountUpdateError } = await db.from('emby_accounts').update({
       password: newPassword,
       reset_token: null,
       reset_token_expires: null
     }).eq('emby_user_id', emby_user_id);
+    if (accountUpdateError) return res.json({ error: 'The password changed in Emby, but the Portal record could not be synchronized. Contact support.' });
     return res.json({ success: true });
   } catch (e) {
     console.error('[reset-password]', e.message);
