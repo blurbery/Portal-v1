@@ -122,3 +122,11 @@ Admin mail supports either Resend or SMTP. SMTP uses the Admin card's host, port
 ## Linked Media Servers
 
 The **Linked Media Servers** account view is provider-neutral. It lists only service accounts linked to the current Portal account. The Add-service modal offers a provider only when that provider has been configured in Administration → Media Servers with the required URL and credentials. The portal administrator is the only user who can link or unlink the stored service credentials; ordinary members can sign in with an enabled provider and use the account records provisioned for them, but cannot attach arbitrary provider credentials or unlink the administrator's service connection.
+
+## Media Server Health and Downtime Alerts
+
+Administrators configure one health endpoint per enabled media server under **Administration → Media Server Health**. The provider URL and credential must already be configured under **Administration → Media Servers**; a health endpoint alone does not enable a provider. Use the provider's direct, stable health or ping URL and keep it reachable from the Portal server.
+
+The server checks configured endpoints every 30 seconds. Three consecutive failures mark a provider offline; two consecutive successes mark it recovered. The notification bell shows the affected provider and the current downtime duration, while the downtime history records resolved events held by the running Portal process.
+
+Visibility is scoped by the signed-in account: members see only providers they are subscribed to, while the portal administrator sees every configured health endpoint. Push notifications are also targeted to subscriptions associated with the affected provider where the provider account mapping is available. Health history is runtime state and should be treated as recent operational status, not an incident archive.
