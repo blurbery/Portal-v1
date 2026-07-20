@@ -44,7 +44,7 @@ Pull updates into a staging directory, back up `.env` and the database, run `npm
 
 ## Required configuration
 
-Copy `.env.example` to `.env` and set the PostgreSQL connection values before starting the server. The schema is `portal_schema.sql`; `portal_settings.sql` is not required for the public PostgreSQL build.
+Copy `.env.example` to `.env` and set the PostgreSQL connection values before starting the server. The schema is `portal_schema.sql`; `portal_schema.sql` is not required for the public PostgreSQL build.
 
 After the first admin login, configure General Settings, Authentication & Access, Media Servers, Permissions & Announcements, and then the separate Discord Bot card. The Bot card reads the shared Discord Server ID from Authentication & Access. Enter announcement channel IDs and allowed media-server role IDs explicitly.
 
