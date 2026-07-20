@@ -50,3 +50,8 @@ Read [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for the system map, config
 The supported public release is self-hosted PostgreSQL plus the Portal container. Apply portal_schema.sql, copy .env.example to .env, configure PostgreSQL, and run docker compose -p portal-v1-public up -d --build. Verify /api/health reports database: ok.
 
 Configure General Settings, Authentication & Access, Media Servers, Permissions & Announcements, and then the separate Discord Bot card. The Bot card reuses the single shared Discord Server ID from Authentication & Access. Download one complete bot archive and run npm register after first deployment and after command/provider changes. Lifetime parents own a stream pool for linked sub-users; Plex and Jellyfin remain adapter slots until their tested bridges exist.
+
+
+## Library media flow
+
+The public library actions are wired by media type: eBooks are converted to EPUB with Calibre and open in Portal's reader, audiobooks stream through Portal's mobile-friendly audio player and remain downloadable, and comics use Kavita for the rich reader/OPDS experience. Configure Kavita in the Library administration card; see [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for the OPDS setup.
