@@ -2841,6 +2841,31 @@ app.get('/api/seerr/tv/:id', requireAuth, async (req, res) => {
   catch (error) { res.status(error.response?.status || 502).json({ error: 'Could not load TV details.' }); }
 });
 
+function normaliseSeerrRequestStatus(item) {
+  const media = item?.media || item?.mediaInfo || item?.request?.media || {};
+  return {
+    mediaId: String(item?.mediaId || item?.tmdbId || media?.tmdbId || media?.mediaId || ''),
+    mediaType: String(item?.mediaType || media?.mediaType || '').toLowerCase(),
+    title: String(item?.title || item?.name || media?.title || media?.name || ''),
+    requestStatus: item?.status ?? item?.requestStatus ?? '',
+    mediaStatus: media?.status ?? item?.mediaInfo?.status ?? '',
+  };
+}
+
+app.get('/api/seerr/request-status', requireAuth, async (req, res) => {
+  const context = await requireSeerrPortalAccess(req, res); if (!context) return;
+  try {
+    const payload = (await seerrApi('get', '/request', {
+      params: { requestedBy: context.user.id, take: 500, skip: 0, sort: 'added', sortDirection: 'desc' }
+    })).data || {};
+    const raw = Array.isArray(payload) ? payload : payload.results || [];
+    res.json({ results: raw.map(normaliseSeerrRequestStatus).filter(item => item.mediaId) });
+  } catch (error) {
+    console.error('[seerr request status]', error.response?.status || 'network', error.message);
+    res.status(error.response?.status || 502).json({ error: 'Could not load Seerr request status.' });
+  }
+});
+
 app.get('/api/seerr/requests', requireAuth, async (req, res) => {
   const context = await requireSeerrPortalAccess(req, res); if (!context) return;
   try {
