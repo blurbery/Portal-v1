@@ -2886,6 +2886,23 @@ app.get('/api/seerr/requests', requireAuth, async (req, res) => {
   }
 });
 
+async function seerrRequestWithFallback(requestData) {
+  try {
+    return await seerrApi('post', '/request', { data: requestData });
+  } catch (error) {
+    // Some Seerr/Arr versions reject routing hints for anime or international
+    // profiles. Retry once with Seerr's own default routing instead of failing
+    // the member request.
+    const status = Number(error.response?.status || 0);
+    const retryable = status >= 400 && status < 500;
+    const hasRoutingHints = ['serverId', 'profileId', 'rootFolder'].some(key => Object.prototype.hasOwnProperty.call(requestData, key));
+    if (!retryable || !hasRoutingHints) throw error;
+    const fallback = { ...requestData };
+    delete fallback.serverId; delete fallback.profileId; delete fallback.rootFolder;
+    return seerrApi('post', '/request', { data: fallback });
+  }
+}
+
 app.post('/api/seerr/requests', requireAuth, async (req, res) => {
   const context = await requireSeerrPortalAccess(req, res); if (!context) return;
   const body = req.body || {};
@@ -2902,7 +2919,7 @@ app.post('/api/seerr/requests', requireAuth, async (req, res) => {
     if (instance?.seerrServerId) requestData.serverId = Number(instance.seerrServerId) || instance.seerrServerId;
     if (instance?.qualityProfileId) requestData.profileId = Number(instance.qualityProfileId) || instance.qualityProfileId;
     if (instance?.rootFolder) requestData.rootFolder = instance.rootFolder;
-    const response = await seerrApi('post', '/request', { data: requestData });
+    const response = await seerrRequestWithFallback(requestData);
     await persistSeerrHistory('request', context, response.data);
     res.status(response.status || 201).json(response.data);
   } catch (error) {
