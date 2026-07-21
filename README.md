@@ -57,7 +57,7 @@ Each operator must create and use their own PostgreSQL project, Discord applicat
 - Announcements, role routing, member/sub-user session handling, and optional Seerr configuration.
 - PostgreSQL and hosting-provider deployment instructions.
 
-Read [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for the system map, configuration order, service-linking flow, and verification checklist. The static route and runtime checklist is in [docs/INTEGRATION_AUDIT.md](docs/INTEGRATION_AUDIT.md). Also see docs/SETUP.md, docs/SECURITY.md, docs/DOCKER.md, and docs/UPDATES.md before installing.
+Read [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for the system map, configuration order, service-linking flow, and verification checklist. See [docs/REQUESTS.md](docs/REQUESTS.md) for the provider-aware Requests and Seerr flow. The static route and runtime checklist is in [docs/INTEGRATION_AUDIT.md](docs/INTEGRATION_AUDIT.md). Also see docs/SETUP.md, docs/SECURITY.md, docs/DOCKER.md, and docs/UPDATES.md before installing.
 
 
 ## Public PostgreSQL installation
