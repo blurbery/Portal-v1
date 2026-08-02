@@ -1,12 +1,17 @@
 {
-  "name": "portal-portal-v1",
-  "version": "1.0.0",
+  "name": "portal-v1",
+  "version": "2.0.0",
   "private": true,
-  "description": "Provider-neutral Portal member portal build.",
-  "main": "server.js",
+  "description": "Provider-neutral Portal member portal (TypeScript).",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node server.js",
-    "check": "node --check server.js"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test",
+    "prestart": "npm run build"
   },
   "engines": {
     "node": ">=20"
@@ -14,12 +19,30 @@
   "dependencies": {
     "axios": "^1.7.0",
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "csrf": "^3.1.0",
     "dotenv": "^16.4.0",
     "express": "^4.21.0",
+    "express-rate-limit": "^8.6.1",
     "express-session": "^1.18.0",
+    "helmet": "^8.3.0",
     "nodemailer": "^6.9.0",
+    "pg": "^8.13.1",
     "web-push": "^3.6.7",
-    "ws": "^8.18.0",
-    "pg": "^8.13.1"
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^4.17.21",
+    "@types/express-session": "^1.18.0",
+    "@types/node": "^22.10.0",
+    "@types/nodemailer": "^6.4.17",
+    "@types/supertest": "^6.0.2",
+    "@types/ws": "^8.5.13",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
   }
 }

@@ -10,13 +10,15 @@ COPY package*.json ./
 RUN apt-get update \
   && apt-get install -y --no-install-recommends calibre \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install --omit=dev \
+  && npm install \
   && npm cache clean --force
 
 COPY . .
 COPY docker/entrypoint.sh /usr/local/bin/portal-v1-public
 
-RUN chmod 0555 /usr/local/bin/portal-v1-public \
+RUN npm run build \
+  && npm prune --omit=dev \
+  && chmod 0555 /usr/local/bin/portal-v1-public \
   && chown -R node:node /app
 
 USER node
