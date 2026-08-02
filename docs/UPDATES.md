@@ -1,4 +1,14 @@
-# Safe update boundary
+# Updates
+
+## 2.0.0 (2026-08-02)
+
+TypeScript restructure and security hardening. See [RELEASE_v2.0.0.md](RELEASE_v2.0.0.md).
+
+- Requires `npm run build` (entry: `dist/index.js`).
+- `SESSION_SECRET` mandatory; CSRF on mutating routes; secure session cookies; Helmet; auth rate limits.
+- Package name `portal-v1`. Tag: `v2.0.0`. Draft PR: https://github.com/blurbery/Portal-v1/pull/38
+
+---
 
 The portal and the Discord bot communicate through documented settings, PostgreSQL tables, API routes, and the member-session shape. A developer or AI must not replace these interfaces casually.
 

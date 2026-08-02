@@ -39,6 +39,10 @@ Preserved: server-derived `is_admin`, parameterized SQL via the query builder, `
 5. Front-end / clients: send CSRF tokens on mutating API calls. PWA `sw.js` and OPDS paths are unchanged.
 6. If sessions break behind TLS termination, confirm `TRUST_PROXY=1` and that the proxy sets `X-Forwarded-Proto`.
 
+## Build note
+
+`tsconfig` uses `module` / `moduleResolution`: `Node16` so `npm run build` and Docker image builds succeed on TypeScript 5.9+.
+
 ## Internal / cleanup
 
 - Deleted unused root copies of `dashboard.html`, `seerr.html`, `emby-connect-login.html` (served only from `public/`).
