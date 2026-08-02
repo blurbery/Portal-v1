@@ -1,6 +1,8 @@
-# Portal Portal — GitHub Build v1
+# Portal — GitHub Build v2 (TypeScript)
 
-This is a separate, provider-neutral v1 build. It is not the private live portal and does not contain the owner’s credentials, API keys, Discord IDs, private domains, or personal server addresses. All installation-specific values belong in environment variables or the encrypted PostgreSQL settings table.
+Provider-neutral member portal. This public build does not contain installation credentials, API keys, Discord IDs, private domains, or server addresses — those belong in environment variables or the encrypted PostgreSQL settings table.
+
+**Current release: [v2.0.0](docs/RELEASE_v2.0.0.md)** — TypeScript restructure + security hardening. See [AGENTS.md](AGENTS.md) for local bootstrap.
 
 ## Important boundary
 
@@ -39,6 +41,7 @@ cp .env.example .env
 # PORTAL_ADMIN_USERNAME, PORTAL_ADMIN_PASSWORD_HASH, and PORTAL_ADMIN_PASSWORD_SALT.
 psql "$DATABASE_URL" -f portal_schema.sql
 npm install
+npm run build
 npm run check
 npm start
 ```
