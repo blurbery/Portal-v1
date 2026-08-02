@@ -35,6 +35,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<{
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        // Dashboard/admin UI still uses inline onclick="..." handlers.
+        // Helmet's default script-src-attr 'none' blocks those clicks.
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
         connectSrc: ["'self'", 'https:'],
